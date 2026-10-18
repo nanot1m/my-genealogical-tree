@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Family Tree">
+<meta name="theme-color" content="#f7f8fa">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>Family Tree</title>
 <style>
   :root {
@@ -2064,6 +2071,13 @@
   if (restored) fitView(); else resetView();
   $('[data-act=download]').hidden = hasFS;
   navigator.storage?.persist?.().catch(() => {});
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+  if ('launchQueue' in window) {
+    window.launchQueue.setConsumer(async (params) => {
+      const h = params.files?.[0]; if (!h) return;
+      try { await openHandle(h); } catch (_) {}
+    });
+  }
   (async () => {
     const last = (hasFS ? await recents.all() : await library.all())[0];
     if (last && !(restored && dirty)) {

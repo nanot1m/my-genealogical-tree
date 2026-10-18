@@ -20,6 +20,7 @@ Live: https://nanot1m.github.io/my-genealogical-tree/
 - Autosave to the open file (Chrome, Edge) or to an on-device library (Safari, iOS, Firefox) with Download for a copy
 - Launch screen with recent files and unsaved-draft recovery
 - PDF export through the print dialog
+- Installable as an app (home screen on iOS and Android, desktop on Chrome and Edge), works offline, opens `.ftree` files when installed
 
 ## Run locally
 
