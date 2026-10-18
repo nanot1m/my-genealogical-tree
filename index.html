@@ -622,17 +622,36 @@
     const claimed = new Set();
     const STEP = CARD_W + COUPLE_GAP;
 
-    function spreadMarried(kids) {
+    function spreadMarried(kids, side) {
       const married = kids.map((c, i) => [c, i]).filter(([c]) => c.unit.length > 1);
       if (!married.length || kids.length < 2) return kids;
       const [firstC, firstI] = married[0], [lastC] = married[married.length - 1];
       const rest = kids.filter(c => c !== firstC && c !== lastC);
       if (married.length === 1) {
-        if (firstI < kids.length / 2) { firstC.unit.reverse(); return [firstC, ...rest]; }
-        return [...rest, firstC];
+        const left = side < 0 || (side === 0 && firstI < kids.length / 2);
+        return left ? [firstC, ...rest] : [...rest, firstC];
       }
-      firstC.unit.reverse();
       return [firstC, ...rest, lastC];
+    }
+    function assignSides(n, side) {
+      n.side = side;
+      const ownIdx = n.unit.indexOf(n.own);
+      if (side < 0 && ownIdx === 0 && n.unit.length > 1) n.unit.reverse();
+      if (side > 0 && ownIdx > 0) n.unit.reverse();
+      for (const g of n.groups) {
+        g.children = spreadMarried(g.children, side);
+        g.children.forEach((c, i, arr) => {
+          let cs = 0;
+          if (arr.length === 1) cs = side;
+          else if (i === 0 && side <= 0) cs = -1;
+          else if (i === arr.length - 1 && side >= 0) cs = 1;
+          assignSides(c, cs);
+        });
+      }
+      for (const { node: a, anchor } of n.ancestors) {
+        const k = n.unit.indexOf(anchor), o = n.unit.indexOf(n.own);
+        assignSides(a, k < o ? -1 : k > o ? 1 : (k === 0 ? -1 : 1));
+      }
     }
 
     function buildNode(pid) {
@@ -648,7 +667,7 @@
       }
       for (const f of [...new Set(unit.flatMap(parentFamilies))]) {
         const kids = f.children.filter(id => !claimed.has(id)).map(buildNode);
-        if (kids.length) n.groups.push({ f, children: spreadMarried(kids) });
+        if (kids.length) n.groups.push({ f, children: kids });
       }
       return n;
     }
@@ -708,24 +727,34 @@
         comp = shift(comp, -unitLeft, 0);
       }
       n.ext = union(comp, new Map([[0, [[0, n.uw]]]]));
-      n.ancs = [];
-      for (const { node: a, anchor } of n.ancestors) {
-        measure(a);
-        const k = n.unit.indexOf(anchor);
-        const dir = k < ownIdx ? -1 : k > ownIdx ? 1 : (k === 0 ? -1 : 1);
-        let dx = k * STEP + CARD_W / 2 - a.uw / 2;
-        const e = shift(a.ext, dx, -1);
-        dx += settle(n.ext, e, dir);
-        n.ext = union(n.ext, shift(a.ext, dx, -1));
-        n.ancs.push({ a, dx });
-      }
       return n;
     }
+    let occupied = new Map();
+    const pending = [];
     function place(n, x, row) {
       const y = row * (CARD_H + V_GAP);
       n.unit.forEach((id, i) => positions.set(id, { x: x + i * STEP, y }));
+      occupied = union(occupied, new Map([[row, [[x, x + n.uw]]]]));
       for (const { c, dx } of n.kids) place(c, x + dx, row + 1);
-      for (const { a, dx } of n.ancs) place(a, x + dx, row - 1);
+      const ownIdx = n.unit.indexOf(n.own);
+      const list = n.ancestors.map(({ node: a, anchor }) => {
+        const k = n.unit.indexOf(anchor);
+        const dir = n.side < 0 ? -1 : n.side > 0 ? 1 : k < ownIdx ? -1 : k > ownIdx ? 1 : (k === 0 ? -1 : 1);
+        return { a, k, dir };
+      }).sort((p, q) => (p.dir < 0 ? q.k - p.k : p.k - q.k));
+      for (const { a, k, dir } of list) pending.push({ a, row: row - 1, center: x + k * STEP + CARD_W / 2, dir, order: row });
+    }
+    function placeAncestors() {
+      pending.sort((p, q) => p.order - q.order);
+      for (let i = 0; i < pending.length; i++) {
+        const { a, row, center, dir } = pending[i];
+        measure(a);
+        let dx = center - a.uw / 2;
+        dx += settle(occupied, shift(a.ext, dx, row), dir);
+        const before = pending.length;
+        place(a, dx, row);
+        for (let j = before; j < pending.length; j++) pending[j].order = Infinity;
+      }
     }
 
     const roots = people().filter(p => !childFamily(p.id));
@@ -735,11 +764,16 @@
     for (const list of [topRoots, roots, people()]) {
       for (const p of list) {
         if (claimed.has(p.id)) continue;
-        const n = measure(buildNode(p.id));
-        let L = Infinity, R = -Infinity;
-        for (const segs of n.ext.values()) for (const [l, r] of segs) { L = Math.min(L, l); R = Math.max(R, r); }
-        place(n, x - L, 0);
-        x += R - L + TREE_GAP;
+        const root = buildNode(p.id); assignSides(root, 0);
+        const n = measure(root);
+        const before = positions.size;
+        place(n, x, 0);
+        placeAncestors(); pending.length = 0;
+        let R = -Infinity, L = Infinity;
+        for (const p of [...positions.values()].slice(before)) { L = Math.min(L, p.x); R = Math.max(R, p.x + CARD_W); }
+        if (L < x) { for (const p of [...positions.values()].slice(before)) p.x += x - L; R += x - L; }
+        x = R + TREE_GAP;
+        occupied = new Map();
       }
     }
     if (positions.size) {
