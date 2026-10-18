@@ -632,7 +632,21 @@
       const fams = [...new Set(unit.flatMap(parentFamilies))];
       const groups = fams.map(f => ({ f, children: f.children.filter(id => !claimed.has(id)).map(buildNode).filter(Boolean) }))
         .filter(g => g.children.length);
-      return { unit, groups };
+      for (const g of groups) g.children = spreadMarried(g.children);
+      return { own: pid, unit, groups };
+    }
+
+    function spreadMarried(kids) {
+      const married = kids.map((c, i) => [c, i]).filter(([c]) => c.unit.length > 1);
+      if (!married.length || kids.length < 2) return kids;
+      const [firstC, firstI] = married[0], [lastC] = married[married.length - 1];
+      const rest = kids.filter(c => c !== firstC && c !== lastC);
+      if (married.length === 1) {
+        if (firstI < kids.length / 2) { firstC.unit.reverse(); return [firstC, ...rest]; }
+        return [...rest, firstC];
+      }
+      firstC.unit.reverse();
+      return [firstC, ...rest, lastC];
     }
 
     const forest = [], attached = [];
@@ -649,7 +663,7 @@
 
     function measure(n) {
       n.uw = n.unit.length * CARD_W + Math.max(0, n.unit.length - 1) * COUPLE_GAP;
-      const order = (g) => { const other = g.f.parents.find(id => id !== n.unit[0]) ?? g.f.parents[0]; const k = n.unit.indexOf(other); return k < 0 ? 99 : k; };
+      const order = (g) => { const other = g.f.parents.find(id => id !== n.own) ?? g.f.parents[0]; const k = n.unit.indexOf(other); return k < 0 ? 99 : k; };
       n.groups.sort((a, b) => order(a) - order(b));
       let cw = 0; const own = [];
       for (const g of n.groups) {
@@ -659,7 +673,7 @@
       const unitRel = own.length ? own.reduce((a, b) => a + b, 0) / own.length - n.uw / 2 : 0;
       const left = Math.min(0, unitRel), right = Math.max(n.cw, unitRel + n.uw);
       n.childRel = -left; n.unitRel = unitRel - left; n.w = right - left;
-      n.ownCenter = n.unitRel + CARD_W / 2;
+      n.ownCenter = n.unitRel + n.unit.indexOf(n.own) * (CARD_W + COUPLE_GAP) + CARD_W / 2;
       return n.w;
     }
     function place(n, x, depth, out = positions) {
