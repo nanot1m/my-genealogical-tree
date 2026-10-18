@@ -186,6 +186,9 @@
   #crop .mask { position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 400px rgba(255,255,255,.6); pointer-events: none; border: 1px solid rgba(0,0,0,.15); }
   #crop .zoomrow { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 12px; color: var(--muted); }
   #crop .zoomrow input { flex: 1; }
+  #crop .zoomrow #crop-deg { width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+  #crop .rotrow { display: flex; gap: 8px; margin-top: 10px; }
+  #crop .rotrow button { flex: 1; }
   #crop .hint { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
   #crop .foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
   #crop button { border: none; background: #f0f2f7; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px; }
@@ -378,6 +381,11 @@
     <h4 data-i18n="crop_title"></h4>
     <div class="stage"><canvas id="crop-canvas" width="600" height="600"></canvas><div class="mask"></div></div>
     <div class="zoomrow"><span data-i18n="zoom"></span><input type="range" id="crop-zoom" min="0" max="1000" value="0"></div>
+    <div class="zoomrow"><span data-i18n="straighten"></span><input type="range" id="crop-angle" min="-45" max="45" value="0"><span id="crop-deg">0°</span></div>
+    <div class="rotrow">
+      <button type="button" id="crop-rl" data-i18n-title="rotate_l">↺ 90°</button>
+      <button type="button" id="crop-rr" data-i18n-title="rotate_r">↻ 90°</button>
+    </div>
     <p class="hint" data-i18n="crop_hint"></p>
     <div class="foot"><button id="crop-cancel" data-i18n="cancel"></button><button id="crop-ok" class="primary" data-i18n="apply"></button></div>
   </div>
@@ -410,7 +418,7 @@
       saved: 'Saved', opened: 'Opened', save_failed: 'Save failed', open_failed: 'Open failed', not_tree: 'Not a family tree file',
       discard: 'Discard unsaved changes?', file_name: 'File name', unlink_confirm: 'Unlink this couple? Their children stay attached to the first parent.',
       restored: 'Restored unsaved draft',
-      download: 'Download file', download_t: 'Download a copy of this tree as a file', import_file: 'Import file…', library: 'Saved trees', file_menu: 'File', delete_tree: 'Delete this tree from this device?', saved_local: 'Saved on this device', recent: 'Recent files', continue_draft: 'Continue unsaved work', open_file: 'Open file…', new_tree: 'New tree', no_recent: 'No recent files yet', perm_denied: 'Access to the file was not granted', file_missing: 'File not found, removed from recent', forget: 'Remove from list', last_opened: 'opened', sheet_title: 'Edit person', export_pdf: 'Export PDF', export_t: 'Export as PDF (print dialog)', change_photo: 'Change photo', adjust_crop: 'Adjust crop', crop_title: 'Crop photo', crop_hint: 'Drag to move, scroll or pinch to zoom', cancel: 'Cancel', apply: 'Apply', zoom: 'Zoom', nothing_export: 'Nothing to export',
+      download: 'Download file', download_t: 'Download a copy of this tree as a file', import_file: 'Import file…', library: 'Saved trees', file_menu: 'File', delete_tree: 'Delete this tree from this device?', saved_local: 'Saved on this device', recent: 'Recent files', continue_draft: 'Continue unsaved work', open_file: 'Open file…', new_tree: 'New tree', no_recent: 'No recent files yet', perm_denied: 'Access to the file was not granted', file_missing: 'File not found, removed from recent', forget: 'Remove from list', last_opened: 'opened', sheet_title: 'Edit person', export_pdf: 'Export PDF', export_t: 'Export as PDF (print dialog)', change_photo: 'Change photo', adjust_crop: 'Adjust crop', rotate_l: 'Rotate left', rotate_r: 'Rotate right', straighten: 'Straighten', crop_title: 'Crop photo', crop_hint: 'Drag to move, scroll or pinch to zoom', cancel: 'Cancel', apply: 'Apply', zoom: 'Zoom', nothing_export: 'Nothing to export',
       help: [
         ['Keyboard shortcuts'],
         ['Navigate', [['Select parent / child', '↑ ↓'], ['Select sibling / spouse', '← →'], ['Deselect / close', 'Esc'], ['Fit tree to screen', 'F'], ['Zoom in / out / reset', '+ − 0'], ['Pan', 'Space+drag, wheel'], ['Zoom at cursor', 'pinch, ⌘+wheel']]],
@@ -436,7 +444,7 @@
       saved: 'Сохранено', opened: 'Открыто', save_failed: 'Ошибка сохранения', open_failed: 'Ошибка открытия', not_tree: 'Это не файл семейного древа',
       discard: 'Отменить несохранённые изменения?', file_name: 'Имя файла', unlink_confirm: 'Разорвать связь пары? Дети останутся у первого родителя.',
       restored: 'Восстановлен несохранённый черновик',
-      download: 'Скачать файл', download_t: 'Скачать копию дерева файлом', import_file: 'Импортировать файл…', library: 'Сохранённые деревья', file_menu: 'Файл', delete_tree: 'Удалить это дерево с устройства?', saved_local: 'Сохранено на устройстве', recent: 'Недавние файлы', continue_draft: 'Продолжить несохранённую работу', open_file: 'Открыть файл…', new_tree: 'Новое дерево', no_recent: 'Недавних файлов пока нет', perm_denied: 'Доступ к файлу не предоставлен', file_missing: 'Файл не найден и удалён из списка', forget: 'Убрать из списка', last_opened: 'открыт', sheet_title: 'Редактирование', export_pdf: 'Экспорт в PDF', export_t: 'Экспорт в PDF (диалог печати)', change_photo: 'Заменить фото', adjust_crop: 'Изменить обрезку', crop_title: 'Обрезка фото', crop_hint: 'Перетащите для сдвига, колесо или щипок — масштаб', cancel: 'Отмена', apply: 'Применить', zoom: 'Масштаб', nothing_export: 'Нечего экспортировать',
+      download: 'Скачать файл', download_t: 'Скачать копию дерева файлом', import_file: 'Импортировать файл…', library: 'Сохранённые деревья', file_menu: 'Файл', delete_tree: 'Удалить это дерево с устройства?', saved_local: 'Сохранено на устройстве', recent: 'Недавние файлы', continue_draft: 'Продолжить несохранённую работу', open_file: 'Открыть файл…', new_tree: 'Новое дерево', no_recent: 'Недавних файлов пока нет', perm_denied: 'Доступ к файлу не предоставлен', file_missing: 'Файл не найден и удалён из списка', forget: 'Убрать из списка', last_opened: 'открыт', sheet_title: 'Редактирование', export_pdf: 'Экспорт в PDF', export_t: 'Экспорт в PDF (диалог печати)', change_photo: 'Заменить фото', adjust_crop: 'Изменить обрезку', rotate_l: 'Повернуть влево', rotate_r: 'Повернуть вправо', straighten: 'Выровнять', crop_title: 'Обрезка фото', crop_hint: 'Перетащите для сдвига, колесо или щипок — масштаб', cancel: 'Отмена', apply: 'Применить', zoom: 'Масштаб', nothing_export: 'Нечего экспортировать',
       help: [
         ['Горячие клавиши'],
         ['Навигация', [['Выбрать родителя / ребёнка', '↑ ↓'], ['Выбрать брата-сестру / супруга', '← →'], ['Снять выделение / закрыть', 'Esc'], ['Вписать дерево в экран', 'F'], ['Приблизить / отдалить / сброс', '+ − 0'], ['Перемещение', 'Space+мышь, колесо'], ['Масштаб у курсора', 'щипок, ⌘+колесо']]],
@@ -462,7 +470,7 @@
       saved: 'Gespeichert', opened: 'Geöffnet', save_failed: 'Speichern fehlgeschlagen', open_failed: 'Öffnen fehlgeschlagen', not_tree: 'Keine Stammbaum-Datei',
       discard: 'Ungespeicherte Änderungen verwerfen?', file_name: 'Dateiname', unlink_confirm: 'Dieses Paar trennen? Die Kinder bleiben beim ersten Elternteil.',
       restored: 'Ungespeicherten Entwurf wiederhergestellt',
-      download: 'Datei herunterladen', download_t: 'Kopie dieses Stammbaums als Datei herunterladen', import_file: 'Datei importieren…', library: 'Gespeicherte Stammbäume', file_menu: 'Datei', delete_tree: 'Diesen Stammbaum von diesem Gerät löschen?', saved_local: 'Auf diesem Gerät gespeichert', recent: 'Zuletzt geöffnet', continue_draft: 'Ungespeicherte Arbeit fortsetzen', open_file: 'Datei öffnen…', new_tree: 'Neuer Stammbaum', no_recent: 'Noch keine zuletzt geöffneten Dateien', perm_denied: 'Zugriff auf die Datei wurde nicht gewährt', file_missing: 'Datei nicht gefunden, aus der Liste entfernt', forget: 'Aus Liste entfernen', last_opened: 'geöffnet', sheet_title: 'Person bearbeiten', export_pdf: 'PDF exportieren', export_t: 'Als PDF exportieren (Druckdialog)', change_photo: 'Foto ändern', adjust_crop: 'Ausschnitt anpassen', crop_title: 'Foto zuschneiden', crop_hint: 'Ziehen zum Verschieben, Scrollen oder Pinch zum Zoomen', cancel: 'Abbrechen', apply: 'Übernehmen', zoom: 'Zoom', nothing_export: 'Nichts zu exportieren',
+      download: 'Datei herunterladen', download_t: 'Kopie dieses Stammbaums als Datei herunterladen', import_file: 'Datei importieren…', library: 'Gespeicherte Stammbäume', file_menu: 'Datei', delete_tree: 'Diesen Stammbaum von diesem Gerät löschen?', saved_local: 'Auf diesem Gerät gespeichert', recent: 'Zuletzt geöffnet', continue_draft: 'Ungespeicherte Arbeit fortsetzen', open_file: 'Datei öffnen…', new_tree: 'Neuer Stammbaum', no_recent: 'Noch keine zuletzt geöffneten Dateien', perm_denied: 'Zugriff auf die Datei wurde nicht gewährt', file_missing: 'Datei nicht gefunden, aus der Liste entfernt', forget: 'Aus Liste entfernen', last_opened: 'geöffnet', sheet_title: 'Person bearbeiten', export_pdf: 'PDF exportieren', export_t: 'Als PDF exportieren (Druckdialog)', change_photo: 'Foto ändern', adjust_crop: 'Ausschnitt anpassen', rotate_l: 'Nach links drehen', rotate_r: 'Nach rechts drehen', straighten: 'Begradigen', crop_title: 'Foto zuschneiden', crop_hint: 'Ziehen zum Verschieben, Scrollen oder Pinch zum Zoomen', cancel: 'Abbrechen', apply: 'Übernehmen', zoom: 'Zoom', nothing_export: 'Nichts zu exportieren',
       help: [
         ['Tastenkürzel'],
         ['Navigation', [['Elternteil / Kind wählen', '↑ ↓'], ['Geschwister / Partner wählen', '← →'], ['Auswahl aufheben / schließen', 'Esc'], ['Baum einpassen', 'F'], ['Vergrößern / verkleinern / zurücksetzen', '+ − 0'], ['Verschieben', 'Leertaste+Ziehen, Mausrad'], ['Zoom am Cursor', 'Pinch, ⌘+Mausrad']]],
@@ -1205,36 +1213,65 @@
     });
   }
 
-  const cropEl = $('#crop'), cropCanvas = $('#crop-canvas'), cropZoom = $('#crop-zoom');
+  const cropEl = $('#crop'), cropCanvas = $('#crop-canvas'), cropZoom = $('#crop-zoom'), cropAngle = $('#crop-angle');
   const cropCtx = cropCanvas.getContext('2d');
   let cr = null;
+  function normCrop(crop, img) {
+    if (!crop || !crop.s) return null;
+    if ('ox' in crop) return { ox: crop.ox, oy: crop.oy, s: crop.s, rot: crop.rot || 0 };
+    return { ox: crop.x + crop.s / 2 - img.width / 2, oy: crop.y + crop.s / 2 - img.height / 2, s: crop.s, rot: 0 };
+  }
   function openCropper(pid, src, crop) {
     const img = new Image();
     img.onload = () => {
-      const minS = Math.max(16, Math.min(img.width, img.height) * 0.1), maxS = Math.min(img.width, img.height);
-      cr = { pid, src, img, minS, maxS, s: maxS, cx: img.width / 2, cy: img.height / 2 };
-      if (crop && crop.s) { cr.s = crop.s; cr.cx = crop.x + crop.s / 2; cr.cy = crop.y + crop.s / 2; }
+      cr = { pid, src, img, s: 0, ox: 0, oy: 0, base: 0, fine: 0 };
+      const c = normCrop(crop, img);
+      if (c) { cr.s = c.s; cr.ox = c.ox; cr.oy = c.oy; cr.base = Math.round(c.rot / 90) * 90; cr.fine = c.rot - cr.base; }
+      rotatedDims(); if (!c) cr.s = cr.maxS;
       clampCrop(); cropEl.classList.add('show'); drawCrop();
     };
     img.src = src;
   }
+  const cropRot = () => cr.base + cr.fine;
+  function rotatedDims() {
+    const a = cropRot() * Math.PI / 180, w = cr.img.width, h = cr.img.height;
+    cr.rw = Math.abs(w * Math.cos(a)) + Math.abs(h * Math.sin(a));
+    cr.rh = Math.abs(w * Math.sin(a)) + Math.abs(h * Math.cos(a));
+    cr.maxS = Math.min(cr.rw, cr.rh); cr.minS = Math.max(16, cr.maxS * 0.1);
+  }
   function clampCrop() {
     cr.s = Math.min(cr.maxS, Math.max(cr.minS, cr.s));
-    cr.cx = Math.min(cr.img.width - cr.s / 2, Math.max(cr.s / 2, cr.cx));
-    cr.cy = Math.min(cr.img.height - cr.s / 2, Math.max(cr.s / 2, cr.cy));
+    const lx = (cr.rw - cr.s) / 2, ly = (cr.rh - cr.s) / 2;
+    cr.ox = Math.min(lx, Math.max(-lx, cr.ox)); cr.oy = Math.min(ly, Math.max(-ly, cr.oy));
+  }
+  function drawCropTo(ctx, size) {
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size, size);
+    ctx.save();
+    ctx.translate(size / 2, size / 2); ctx.scale(size / cr.s, size / cr.s);
+    ctx.translate(-cr.ox, -cr.oy); ctx.rotate(cropRot() * Math.PI / 180);
+    ctx.drawImage(cr.img, -cr.img.width / 2, -cr.img.height / 2);
+    ctx.restore();
   }
   function drawCrop() {
-    const W = cropCanvas.width;
-    cropCtx.fillStyle = '#fff'; cropCtx.fillRect(0, 0, W, W);
-    cropCtx.drawImage(cr.img, cr.cx - cr.s / 2, cr.cy - cr.s / 2, cr.s, cr.s, 0, 0, W, W);
+    drawCropTo(cropCtx, cropCanvas.width);
     cropZoom.value = Math.round(1000 * (cr.maxS - cr.s) / Math.max(1, cr.maxS - cr.minS));
+    cropAngle.value = Math.round(cr.fine); $('#crop-deg').textContent = Math.round(cropRot()) + '°';
   }
   function zoomCrop(factor, fx = 0.5, fy = 0.5) {
     const ns = Math.min(cr.maxS, Math.max(cr.minS, cr.s * factor));
-    cr.cx += (fx - 0.5) * (cr.s - ns); cr.cy += (fy - 0.5) * (cr.s - ns); cr.s = ns;
+    cr.ox += (fx - 0.5) * (cr.s - ns); cr.oy += (fy - 0.5) * (cr.s - ns); cr.s = ns;
     clampCrop(); drawCrop();
   }
   cropZoom.addEventListener('input', () => { cr.s = cr.maxS - (cropZoom.value / 1000) * (cr.maxS - cr.minS); clampCrop(); drawCrop(); });
+  cropAngle.addEventListener('input', () => { cr.fine = +cropAngle.value; rotatedDims(); clampCrop(); drawCrop(); });
+  cropAngle.addEventListener('dblclick', () => { cr.fine = 0; rotatedDims(); clampCrop(); drawCrop(); });
+  function rotate90(dir) {
+    cr.base = (cr.base + dir * 90 + 360) % 360;
+    [cr.ox, cr.oy] = dir > 0 ? [-cr.oy, cr.ox] : [cr.oy, -cr.ox];
+    rotatedDims(); clampCrop(); drawCrop();
+  }
+  $('#crop-rl').addEventListener('click', () => rotate90(-1));
+  $('#crop-rr').addEventListener('click', () => rotate90(1));
   const cps = new Map(); let cpinch = null;
   const stage = cropCanvas.parentElement;
   stage.addEventListener('pointerdown', (e) => { cps.set(e.pointerId, { x: e.clientX, y: e.clientY }); stage.setPointerCapture(e.pointerId); if (cps.size === 2) { const [a, b] = [...cps.values()]; cpinch = { d: Math.hypot(a.x - b.x, a.y - b.y), s: cr.s }; } });
@@ -1243,7 +1280,7 @@
     const prev = cps.get(e.pointerId); cps.set(e.pointerId, { x: e.clientX, y: e.clientY });
     const k = cr.s / stage.clientWidth;
     if (cps.size === 2 && cpinch) { const [a, b] = [...cps.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); cr.s = cpinch.s * cpinch.d / d; clampCrop(); drawCrop(); return; }
-    cr.cx -= (e.clientX - prev.x) * k; cr.cy -= (e.clientY - prev.y) * k; clampCrop(); drawCrop();
+    cr.ox -= (e.clientX - prev.x) * k; cr.oy -= (e.clientY - prev.y) * k; clampCrop(); drawCrop();
   });
   const cropUp = (e) => { cps.delete(e.pointerId); if (cps.size < 2) cpinch = null; };
   stage.addEventListener('pointerup', cropUp); stage.addEventListener('pointercancel', cropUp);
@@ -1252,13 +1289,14 @@
   $('#crop-cancel').addEventListener('click', closeCropper);
   cropEl.addEventListener('pointerdown', (e) => { if (e.target === cropEl) closeCropper(); });
   $('#crop-ok').addEventListener('click', () => {
-    const { pid, src, img, s: size, cx, cy } = cr;
+    const { pid, src } = cr;
     const c = document.createElement('canvas'); c.width = c.height = 256;
-    c.getContext('2d').drawImage(img, cx - size / 2, cy - size / 2, size, size, 0, 0, 256, 256);
+    drawCropTo(c.getContext('2d'), 256);
     const thumb = c.toDataURL('image/jpeg', 0.85);
+    const crop = { ox: Math.round(cr.ox), oy: Math.round(cr.oy), s: Math.round(cr.s), rot: Math.round(cropRot() * 10) / 10 };
     closeCropper();
     const p = state.people[pid]; if (!p) return;
-    mutate(() => { p.photo = thumb; p.photoSrc = src; p.crop = { x: Math.round(cx - size / 2), y: Math.round(cy - size / 2), s: Math.round(size) }; });
+    mutate(() => { p.photo = thumb; p.photoSrc = src; p.crop = crop; });
     select(pid, { scroll: false });
   });
   document.addEventListener('keydown', (e) => {
