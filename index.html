@@ -193,6 +193,37 @@
   #crop .foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
   #crop button { border: none; background: #f0f2f7; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px; }
   #crop button.primary { background: var(--accent); color: #fff; }
+  #rpop { position: absolute; z-index: 25; background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(20,24,40,.2); padding: 12px 14px; width: 260px; display: none; font-size: 13px; }
+  #rpop.show { display: block; }
+  #rpop h4 { margin: 0 0 8px; font-size: 13px; }
+  #rpop .row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  #rpop label { width: 60px; color: var(--muted); font-size: 12px; }
+  #rpop select, #rpop input { flex: 1; font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; outline: none; min-width: 0; background: #fff; }
+  #rpop .foot { display: flex; justify-content: space-between; margin-top: 10px; }
+  #rpop button { border: none; background: #f0f2f7; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 12px; }
+  #rpop button.danger { color: var(--danger); background: transparent; }
+  #mpop select { flex: 1; font: inherit; font-size: 13px; padding: 3px 6px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: #fff; min-width: 0; }
+  #sheet select { font: inherit; font-size: 16px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; width: 100%; background: #fff; color: var(--text); }
+  .edit select.f-fate { font: inherit; font-size: 12px; padding: 1px 4px; border: 1px solid var(--border); border-radius: 6px; flex: 1; min-width: 0; background: #fff; color: var(--text); }
+  .edit .row .ended { display: flex; align-items: center; gap: 4px; width: auto; color: var(--text); white-space: nowrap; cursor: pointer; }
+  .card.unborn { border-style: dashed; background: #fafbfd; }
+  .card.unborn .photo { background: #eef0f5; color: var(--muted); font-size: 22px; }
+  .card.unborn .name { color: #5b6377; }
+  .fate-chip { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 999px; background: #f0f2f7; color: var(--muted); margin-left: 4px; vertical-align: middle; }
+  body.linking #viewport { cursor: crosshair; }
+  body.linking .card { cursor: crosshair; }
+  body.linking .card.link-source { outline: 2px dashed var(--accent); outline-offset: 3px; }
+  body.linking .card:hover { box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow); }
+  #edges path.partners { stroke-dasharray: 6 5; }
+  #edges path.slash { stroke: var(--danger); stroke-width: 2; }
+  #edges path.ended { stroke: #9aa2b8; stroke-width: 2; }
+  #edges path.rel { fill: none; stroke-width: 2; }
+  #edges path.rel.close { stroke: #2aa871; stroke-width: 3; }
+  #edges path.rel.conflict { stroke: #e5484d; stroke-dasharray: 2 4; }
+  #edges path.rel.distant { stroke: #9aa2b8; stroke-dasharray: 8 6; }
+  #edges path.rel.cutoff { stroke: #1f2430; stroke-dasharray: 1 4; }
+  .relbadge { position: absolute; transform: translate(-50%, -50%); padding: 2px 8px; border-radius: 999px; background: #fff; border: 1.5px solid var(--line); font-size: 11px; color: #5b6377; white-space: nowrap; cursor: pointer; }
+  .relbadge:hover { border-color: var(--accent); }
   #menu { position: absolute; z-index: 45; background: #fff; border-radius: 10px; box-shadow: 0 10px 30px rgba(20,24,40,.2); padding: 6px; display: none; min-width: 180px; }
   #menu.show { display: block; }
   #menu .t { font-size: 11px; color: var(--muted); padding: 4px 8px; }
@@ -336,17 +367,25 @@
   <button data-sel="sibling-right" data-i18n="add_sibling"></button>
   <button data-sel="child" data-i18n="add_child"></button>
   <button data-sel="spouse" data-i18n="add_spouse"></button>
+  <button data-sel="link" data-i18n="link" data-i18n-title="link_t"></button>
   <span class="sep"></span>
   <button data-sel="delete" class="danger" data-i18n="delete"></button>
 </div>
 <div id="toast"></div>
 <div id="mpop">
   <h4 id="mpop-title">Marriage</h4>
+  <div class="row"><label data-i18n="status"></label><select id="m-status"><option value="married" data-i18n="st_married"></option><option value="partners" data-i18n="st_partners"></option><option value="separated" data-i18n="st_separated"></option><option value="divorced" data-i18n="st_divorced"></option></select></div>
   <div class="row"><label data-i18n="married"></label><input type="date" id="m-from"></div>
   <div class="row"><label data-i18n="until"></label><input type="date" id="m-to"></div>
   <div class="foot"><button class="danger" id="m-unlink" data-i18n="unlink"></button><button id="m-close" data-i18n="done"></button></div>
 </div>
 <div id="menu"></div>
+<div id="rpop">
+  <h4 data-i18n="relation"></h4>
+  <div class="row"><label data-i18n="fate"></label><select id="r-type"><option value="close" data-i18n="rel_close"></option><option value="conflict" data-i18n="rel_conflict"></option><option value="distant" data-i18n="rel_distant"></option><option value="cutoff" data-i18n="rel_cutoff"></option></select></div>
+  <div class="row"><label data-i18n="label"></label><input type="text" id="r-label" autocomplete="off" data-1p-ignore></div>
+  <div class="foot"><button class="danger" id="r-delete" data-i18n="delete"></button><button id="r-close" data-i18n="done"></button></div>
+</div>
 <div id="welcome">
   <div class="panel">
     <h2 data-i18n="app"></h2>
@@ -373,6 +412,8 @@
     <label class="sh-row"><span data-i18n="born"></span><input type="date" id="sh-birth"></label>
     <label class="sh-row sh-alive"><span data-i18n="living"></span><input type="checkbox" id="sh-alive"></label>
     <label class="sh-row" id="sh-death-row"><span data-i18n="died"></span><input type="date" id="sh-death"></label>
+    <label class="sh-row"><span data-i18n="fate"></span><select id="sh-fate"><option value="" data-i18n="fate_none"></option><option value="miscarriage" data-i18n="fate_miscarriage"></option><option value="abortion" data-i18n="fate_abortion"></option><option value="stillborn" data-i18n="fate_stillborn"></option></select></label>
+    <label class="sh-row sh-alive"><span data-i18n="line_ended"></span><input type="checkbox" id="sh-ended"></label>
     <div class="foot"><button id="sh-delete" class="danger" data-i18n="delete"></button><button id="sh-done" class="primary" data-i18n="done"></button></div>
   </div>
 </div>
@@ -418,12 +459,12 @@
       autosave_failed: 'Autosave failed', saved: 'Saved', opened: 'Opened', save_failed: 'Save failed', open_failed: 'Open failed', not_tree: 'Not a family tree file',
       discard: 'Discard unsaved changes?', file_name: 'File name', unlink_confirm: 'Unlink this couple? Their children stay attached to the first parent.',
       restored: 'Restored unsaved draft',
-      download: 'Download file', download_t: 'Download a copy of this tree as a file', import_file: 'Import file…', library: 'Saved trees', file_menu: 'File', delete_tree: 'Delete this tree from this device?', saved_local: 'Saved on this device', recent: 'Recent files', continue_draft: 'Continue unsaved work', open_file: 'Open file…', new_tree: 'New tree', no_recent: 'No recent files yet', perm_denied: 'Access to the file was not granted', file_missing: 'File not found, removed from recent', forget: 'Remove from list', last_opened: 'opened', sheet_title: 'Edit person', export_pdf: 'Export PDF', export_t: 'Export as PDF (print dialog)', change_photo: 'Change photo', adjust_crop: 'Adjust crop', rotate_l: 'Rotate left', rotate_r: 'Rotate right', straighten: 'Straighten', crop_title: 'Crop photo', crop_hint: 'Drag to move, scroll or pinch to zoom', cancel: 'Cancel', apply: 'Apply', zoom: 'Zoom', nothing_export: 'Nothing to export',
+      download: 'Download file', download_t: 'Download a copy of this tree as a file', import_file: 'Import file…', library: 'Saved trees', file_menu: 'File', delete_tree: 'Delete this tree from this device?', saved_local: 'Saved on this device', recent: 'Recent files', continue_draft: 'Continue unsaved work', open_file: 'Open file…', new_tree: 'New tree', no_recent: 'No recent files yet', perm_denied: 'Access to the file was not granted', file_missing: 'File not found, removed from recent', forget: 'Remove from list', last_opened: 'opened', link: 'Link…', link_hint: 'Click a person to link with', link_t: 'Link with an existing person (L)', as_spouse: 'Set as spouse', as_child: 'Set as child', as_parent: 'Set as parent', rel_arrow: 'Relationship arrow', rel_close: 'Close', rel_conflict: 'Conflict', rel_distant: 'Distant', rel_cutoff: 'Cut off', rel_custom: 'Custom…', relation: 'Relationship', label: 'Label', already_linked: 'These people are already linked this way', cycle: 'That would make someone their own ancestor', two_parents_t: 'already has two parents', status: 'Status', st_married: 'Married', st_divorced: 'Divorced', st_partners: 'Partners (unmarried)', st_separated: 'Separated', fate: 'Type', fate_none: 'Person', fate_miscarriage: 'Miscarriage', fate_abortion: 'Abortion', fate_stillborn: 'Stillborn', line_ended: 'Line ended (no descendants)', linked: 'Linked', sheet_title: 'Edit person', export_pdf: 'Export PDF', export_t: 'Export as PDF (print dialog)', change_photo: 'Change photo', adjust_crop: 'Adjust crop', rotate_l: 'Rotate left', rotate_r: 'Rotate right', straighten: 'Straighten', crop_title: 'Crop photo', crop_hint: 'Drag to move, scroll or pinch to zoom', cancel: 'Cancel', apply: 'Apply', zoom: 'Zoom', nothing_export: 'Nothing to export',
       help: [
         ['Keyboard shortcuts'],
         ['Navigate', [['Select parent / child', '↑ ↓'], ['Select sibling / spouse', '← →'], ['Deselect / close', 'Esc'], ['Fit tree to screen', 'F'], ['Zoom in / out / reset', '+ − 0'], ['Pan', 'Space+drag, wheel'], ['Zoom at cursor', 'pinch, ⌘+wheel']]],
         ['Edit', [['Edit selected card', 'Enter / F2'], ['Next / previous field', 'Tab / ⇧Tab'], ['Finish editing', 'Enter / Esc'], ['Set photo', 'click the circle'], ['Marriage dates', 'click the ♥ badge']]],
-        ['Create & delete', [['Add parent', 'P / ⇧↑'], ['Add child', 'C / ⇧↓'], ['Add sibling right / left', 'S ⇧→ / ⇧←'], ['Add spouse', 'M'], ['Delete selected', '⌫ / Del'], ['Undo / redo', '⌘Z / ⇧⌘Z']]],
+        ['Create & delete', [['Add parent', 'P / ⇧↑'], ['Add child', 'C / ⇧↓'], ['Add sibling right / left', 'S ⇧→ / ⇧←'], ['Add spouse', 'M'], ['Link with existing person', 'L'], ['Delete selected', '⌫ / Del'], ['Undo / redo', '⌘Z / ⇧⌘Z']]],
         ['File', [['New / Open / Save', '⌘N ⌘O ⌘S'], ['Save as', '⇧⌘S']]],
       ],
     },
@@ -444,12 +485,12 @@
       autosave_failed: 'Автосохранение не удалось', saved: 'Сохранено', opened: 'Открыто', save_failed: 'Ошибка сохранения', open_failed: 'Ошибка открытия', not_tree: 'Это не файл семейного древа',
       discard: 'Отменить несохранённые изменения?', file_name: 'Имя файла', unlink_confirm: 'Разорвать связь пары? Дети останутся у первого родителя.',
       restored: 'Восстановлен несохранённый черновик',
-      download: 'Скачать файл', download_t: 'Скачать копию дерева файлом', import_file: 'Импортировать файл…', library: 'Сохранённые деревья', file_menu: 'Файл', delete_tree: 'Удалить это дерево с устройства?', saved_local: 'Сохранено на устройстве', recent: 'Недавние файлы', continue_draft: 'Продолжить несохранённую работу', open_file: 'Открыть файл…', new_tree: 'Новое дерево', no_recent: 'Недавних файлов пока нет', perm_denied: 'Доступ к файлу не предоставлен', file_missing: 'Файл не найден и удалён из списка', forget: 'Убрать из списка', last_opened: 'открыт', sheet_title: 'Редактирование', export_pdf: 'Экспорт в PDF', export_t: 'Экспорт в PDF (диалог печати)', change_photo: 'Заменить фото', adjust_crop: 'Изменить обрезку', rotate_l: 'Повернуть влево', rotate_r: 'Повернуть вправо', straighten: 'Выровнять', crop_title: 'Обрезка фото', crop_hint: 'Перетащите для сдвига, колесо или щипок — масштаб', cancel: 'Отмена', apply: 'Применить', zoom: 'Масштаб', nothing_export: 'Нечего экспортировать',
+      download: 'Скачать файл', download_t: 'Скачать копию дерева файлом', import_file: 'Импортировать файл…', library: 'Сохранённые деревья', file_menu: 'Файл', delete_tree: 'Удалить это дерево с устройства?', saved_local: 'Сохранено на устройстве', recent: 'Недавние файлы', continue_draft: 'Продолжить несохранённую работу', open_file: 'Открыть файл…', new_tree: 'Новое дерево', no_recent: 'Недавних файлов пока нет', perm_denied: 'Доступ к файлу не предоставлен', file_missing: 'Файл не найден и удалён из списка', forget: 'Убрать из списка', last_opened: 'открыт', link: 'Связать…', link_hint: 'Нажмите на человека, с которым связать', link_t: 'Связать с существующим человеком (L)', as_spouse: 'Сделать супругом', as_child: 'Сделать ребёнком', as_parent: 'Сделать родителем', rel_arrow: 'Стрелка отношений', rel_close: 'Близкие', rel_conflict: 'Конфликт', rel_distant: 'Отдалённые', rel_cutoff: 'Разрыв', rel_custom: 'Своя подпись…', relation: 'Отношения', label: 'Подпись', already_linked: 'Эти люди уже связаны так', cycle: 'Так человек станет собственным предком', two_parents_t: 'уже имеет двух родителей', status: 'Статус', st_married: 'В браке', st_divorced: 'Разведены', st_partners: 'Партнёры (без брака)', st_separated: 'Расстались', fate: 'Тип', fate_none: 'Человек', fate_miscarriage: 'Выкидыш', fate_abortion: 'Аборт', fate_stillborn: 'Мертворождённый', line_ended: 'Род не продлён (нет потомков)', linked: 'Связано', sheet_title: 'Редактирование', export_pdf: 'Экспорт в PDF', export_t: 'Экспорт в PDF (диалог печати)', change_photo: 'Заменить фото', adjust_crop: 'Изменить обрезку', rotate_l: 'Повернуть влево', rotate_r: 'Повернуть вправо', straighten: 'Выровнять', crop_title: 'Обрезка фото', crop_hint: 'Перетащите для сдвига, колесо или щипок — масштаб', cancel: 'Отмена', apply: 'Применить', zoom: 'Масштаб', nothing_export: 'Нечего экспортировать',
       help: [
         ['Горячие клавиши'],
         ['Навигация', [['Выбрать родителя / ребёнка', '↑ ↓'], ['Выбрать брата-сестру / супруга', '← →'], ['Снять выделение / закрыть', 'Esc'], ['Вписать дерево в экран', 'F'], ['Приблизить / отдалить / сброс', '+ − 0'], ['Перемещение', 'Space+мышь, колесо'], ['Масштаб у курсора', 'щипок, ⌘+колесо']]],
         ['Редактирование', [['Редактировать карточку', 'Enter / F2'], ['Следующее / предыдущее поле', 'Tab / ⇧Tab'], ['Завершить', 'Enter / Esc'], ['Фото', 'клик по кругу'], ['Даты брака', 'клик по значку ♥']]],
-        ['Создание и удаление', [['Добавить родителя', 'P / ⇧↑'], ['Добавить ребёнка', 'C / ⇧↓'], ['Брат/сестра справа / слева', 'S ⇧→ / ⇧←'], ['Добавить супруга', 'M'], ['Удалить', '⌫ / Del'], ['Отменить / повторить', '⌘Z / ⇧⌘Z']]],
+        ['Создание и удаление', [['Добавить родителя', 'P / ⇧↑'], ['Добавить ребёнка', 'C / ⇧↓'], ['Брат/сестра справа / слева', 'S ⇧→ / ⇧←'], ['Добавить супруга', 'M'], ['Связать с существующим', 'L'], ['Удалить', '⌫ / Del'], ['Отменить / повторить', '⌘Z / ⇧⌘Z']]],
         ['Файл', [['Новое / Открыть / Сохранить', '⌘N ⌘O ⌘S'], ['Сохранить как', '⇧⌘S']]],
       ],
     },
@@ -470,12 +511,12 @@
       autosave_failed: 'Automatisches Speichern fehlgeschlagen', saved: 'Gespeichert', opened: 'Geöffnet', save_failed: 'Speichern fehlgeschlagen', open_failed: 'Öffnen fehlgeschlagen', not_tree: 'Keine Stammbaum-Datei',
       discard: 'Ungespeicherte Änderungen verwerfen?', file_name: 'Dateiname', unlink_confirm: 'Dieses Paar trennen? Die Kinder bleiben beim ersten Elternteil.',
       restored: 'Ungespeicherten Entwurf wiederhergestellt',
-      download: 'Datei herunterladen', download_t: 'Kopie dieses Stammbaums als Datei herunterladen', import_file: 'Datei importieren…', library: 'Gespeicherte Stammbäume', file_menu: 'Datei', delete_tree: 'Diesen Stammbaum von diesem Gerät löschen?', saved_local: 'Auf diesem Gerät gespeichert', recent: 'Zuletzt geöffnet', continue_draft: 'Ungespeicherte Arbeit fortsetzen', open_file: 'Datei öffnen…', new_tree: 'Neuer Stammbaum', no_recent: 'Noch keine zuletzt geöffneten Dateien', perm_denied: 'Zugriff auf die Datei wurde nicht gewährt', file_missing: 'Datei nicht gefunden, aus der Liste entfernt', forget: 'Aus Liste entfernen', last_opened: 'geöffnet', sheet_title: 'Person bearbeiten', export_pdf: 'PDF exportieren', export_t: 'Als PDF exportieren (Druckdialog)', change_photo: 'Foto ändern', adjust_crop: 'Ausschnitt anpassen', rotate_l: 'Nach links drehen', rotate_r: 'Nach rechts drehen', straighten: 'Begradigen', crop_title: 'Foto zuschneiden', crop_hint: 'Ziehen zum Verschieben, Scrollen oder Pinch zum Zoomen', cancel: 'Abbrechen', apply: 'Übernehmen', zoom: 'Zoom', nothing_export: 'Nichts zu exportieren',
+      download: 'Datei herunterladen', download_t: 'Kopie dieses Stammbaums als Datei herunterladen', import_file: 'Datei importieren…', library: 'Gespeicherte Stammbäume', file_menu: 'Datei', delete_tree: 'Diesen Stammbaum von diesem Gerät löschen?', saved_local: 'Auf diesem Gerät gespeichert', recent: 'Zuletzt geöffnet', continue_draft: 'Ungespeicherte Arbeit fortsetzen', open_file: 'Datei öffnen…', new_tree: 'Neuer Stammbaum', no_recent: 'Noch keine zuletzt geöffneten Dateien', perm_denied: 'Zugriff auf die Datei wurde nicht gewährt', file_missing: 'Datei nicht gefunden, aus der Liste entfernt', forget: 'Aus Liste entfernen', last_opened: 'geöffnet', link: 'Verknüpfen…', link_hint: 'Person anklicken, mit der verknüpft werden soll', link_t: 'Mit vorhandener Person verknüpfen (L)', as_spouse: 'Als Partner festlegen', as_child: 'Als Kind festlegen', as_parent: 'Als Elternteil festlegen', rel_arrow: 'Beziehungspfeil', rel_close: 'Eng', rel_conflict: 'Konflikt', rel_distant: 'Distanziert', rel_cutoff: 'Abgebrochen', rel_custom: 'Eigene Beschriftung…', relation: 'Beziehung', label: 'Beschriftung', already_linked: 'Diese Personen sind bereits so verknüpft', cycle: 'Dann wäre jemand sein eigener Vorfahre', two_parents_t: 'hat bereits zwei Eltern', status: 'Status', st_married: 'Verheiratet', st_divorced: 'Geschieden', st_partners: 'Partner (unverheiratet)', st_separated: 'Getrennt', fate: 'Typ', fate_none: 'Person', fate_miscarriage: 'Fehlgeburt', fate_abortion: 'Abtreibung', fate_stillborn: 'Totgeburt', line_ended: 'Linie endet (keine Nachkommen)', linked: 'Verknüpft', sheet_title: 'Person bearbeiten', export_pdf: 'PDF exportieren', export_t: 'Als PDF exportieren (Druckdialog)', change_photo: 'Foto ändern', adjust_crop: 'Ausschnitt anpassen', rotate_l: 'Nach links drehen', rotate_r: 'Nach rechts drehen', straighten: 'Begradigen', crop_title: 'Foto zuschneiden', crop_hint: 'Ziehen zum Verschieben, Scrollen oder Pinch zum Zoomen', cancel: 'Abbrechen', apply: 'Übernehmen', zoom: 'Zoom', nothing_export: 'Nichts zu exportieren',
       help: [
         ['Tastenkürzel'],
         ['Navigation', [['Elternteil / Kind wählen', '↑ ↓'], ['Geschwister / Partner wählen', '← →'], ['Auswahl aufheben / schließen', 'Esc'], ['Baum einpassen', 'F'], ['Vergrößern / verkleinern / zurücksetzen', '+ − 0'], ['Verschieben', 'Leertaste+Ziehen, Mausrad'], ['Zoom am Cursor', 'Pinch, ⌘+Mausrad']]],
         ['Bearbeiten', [['Karte bearbeiten', 'Enter / F2'], ['Nächstes / vorheriges Feld', 'Tab / ⇧Tab'], ['Bearbeitung beenden', 'Enter / Esc'], ['Foto setzen', 'Kreis anklicken'], ['Ehedaten', '♥-Symbol anklicken']]],
-        ['Erstellen & löschen', [['Elternteil hinzufügen', 'P / ⇧↑'], ['Kind hinzufügen', 'C / ⇧↓'], ['Geschwister rechts / links', 'S ⇧→ / ⇧←'], ['Partner hinzufügen', 'M'], ['Auswahl löschen', '⌫ / Del'], ['Rückgängig / wiederholen', '⌘Z / ⇧⌘Z']]],
+        ['Erstellen & löschen', [['Elternteil hinzufügen', 'P / ⇧↑'], ['Kind hinzufügen', 'C / ⇧↓'], ['Geschwister rechts / links', 'S ⇧→ / ⇧←'], ['Partner hinzufügen', 'M'], ['Mit vorhandener Person verknüpfen', 'L'], ['Auswahl löschen', '⌫ / Del'], ['Rückgängig / wiederholen', '⌘Z / ⇧⌘Z']]],
         ['Datei', [['Neu / Öffnen / Speichern', '⌘N ⌘O ⌘S'], ['Speichern unter', '⇧⌘S']]],
       ],
     },
@@ -517,7 +558,7 @@
   let fileHandle = null, fileName = null, dirty = false;
   let view = { x: 0, y: 0, s: 1 };
 
-  function emptyState() { return { version: 1, people: {}, families: {} }; }
+  function emptyState() { return { version: 1, people: {}, families: {}, relations: [] }; }
   function uid(p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
   const $ = (s) => document.querySelector(s);
@@ -534,12 +575,12 @@
   function siblingsOf(pid) { const f = childFamily(pid); return f ? f.children : [pid]; }
 
   function newPerson() {
-    const p = { id: uid('p'), name: '', birthName: '', birth: '', death: '', alive: true, photo: null, photoSrc: null, crop: null };
+    const p = { id: uid('p'), name: '', birthName: '', birth: '', death: '', alive: true, photo: null, photoSrc: null, crop: null, fate: '', lineEnded: false };
     state.people[p.id] = p;
     return p;
   }
   function newFamily(parents, children) {
-    const f = { id: uid('f'), parents, children, married: '', ended: '' };
+    const f = { id: uid('f'), parents, children, married: '', ended: '', status: 'married' };
     state.families[f.id] = f;
     return f;
   }
@@ -573,6 +614,7 @@
   }
   function deletePerson(pid) {
     delete state.people[pid];
+    state.relations = state.relations.filter(r => r.from !== pid && r.to !== pid);
     for (const f of Object.values(state.families)) {
       f.parents = f.parents.filter(x => x !== pid);
       f.children = f.children.filter(x => x !== pid);
@@ -580,6 +622,34 @@
       if (f.parents.length === 0 && f.children.length === 0) delete state.families[f.id];
       if (meaningless) delete state.families[f.id];
     }
+  }
+  function ancestorsOf(pid) {
+    const seen = new Set(); const q = [pid];
+    while (q.length) { const x = q.shift(); for (const a of parentsOf(x)) if (!seen.has(a)) { seen.add(a); q.push(a); } }
+    return seen;
+  }
+  function linkSpouse(a, b) {
+    if (a === b || spousesOf(a).includes(b)) return t('already_linked');
+    const single = parentFamilies(a).find(f => f.parents.length === 1);
+    if (single) single.parents.push(b); else newFamily([a, b], []);
+    return null;
+  }
+  function linkChild(parent, child, familyId) {
+    if (parent === child || parentsOf(child).includes(parent)) return t('already_linked');
+    if (ancestorsOf(parent).has(child)) return t('cycle');
+    const cf = childFamily(child);
+    if (cf) {
+      if (cf.parents.length >= 2) return (state.people[child].name || t('unnamed')) + ' ' + t('two_parents_t');
+      cf.parents.push(parent); return null;
+    }
+    const f = familyId ? fam(familyId) : parentFamilies(parent)[0];
+    if (f) f.children.push(child); else newFamily([parent], [child]);
+    return null;
+  }
+  function addRelation(a, b, type) {
+    if (a === b || state.relations.some(r => (r.from === a && r.to === b) || (r.from === b && r.to === a))) return t('already_linked');
+    state.relations.push({ id: uid('r'), from: a, to: b, type, label: '' });
+    return null;
   }
   function nearestRelative(pid) {
     return spousesOf(pid)[0] || parentsOf(pid)[0] || siblingsOf(pid).find(x => x !== pid) || childrenOf(pid)[0] || null;
@@ -895,7 +965,7 @@
       if (el && el.classList.contains('leave')) { el.remove(); el = null; }
       const fresh = !el;
       if (fresh) { el = document.createElement('div'); el.dataset.id = p.id; cardsEl.appendChild(el); }
-      el.className = 'card' + (p.id === selectedId ? ' selected' : '') + (p.id === editingId ? ' editing' : '') + (fresh ? ' enter' : '');
+      el.className = 'card' + (p.id === selectedId ? ' selected' : '') + (p.id === editingId ? ' editing' : '') + (fresh ? ' enter' : '') + (p.fate ? ' unborn' : '') + (linkFrom === p.id ? ' link-source' : '');
       if (fresh) el.addEventListener('animationend', () => el.classList.remove('enter'), { once: true });
       el.innerHTML = cardHTML(p);
       seen.add(p.id);
@@ -911,19 +981,21 @@
     const dt = datesText(p);
     return `
         <div class="photo" title="${t('set_photo')}">
-          ${p.photo ? `<img src="${p.photo}" alt="">` : `<span>${initials(p.name)}</span>`}
+          ${p.photo ? `<img src="${p.photo}" alt="">` : `<span>${p.fate ? '✕' : initials(p.name)}</span>`}
           <div class="cam">📷</div>
           <button class="photo-x ${p.photo ? 'has-photo' : ''}" title="${t('remove_photo')}">×</button>
         </div>
         <div class="info">
           <div class="name ${p.name ? '' : 'empty'}" title="${esc(fullName(p))}">${esc(p.name) || t('unnamed')}${p.birthName ? ` <span class="nee">${t('nee')} ${esc(p.birthName)}</span>` : ''}</div>
-          <div class="dates ${dt ? '' : 'empty'}">${esc(dt) || t('add_dates')}</div>
+          <div class="dates ${dt ? '' : 'empty'}">${esc(dt) || t('add_dates')}${p.fate ? `<span class="fate-chip">${t('fate_' + p.fate)}</span>` : ''}</div>
           <div class="edit">
             <input type="text" class="f-name" placeholder="${t('full_name')}" value="${esc(p.name)}" autocomplete="off" autocapitalize="words" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other">
             <div class="row"><label>${t('nee')}</label><input type="text" class="f-bname" placeholder="${t('birth_name')}" value="${esc(p.birthName)}" autocomplete="off" autocapitalize="words" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other"></div>
             <div class="row"><label>${t('born')}</label><input type="date" class="f-birth" value="${esc(p.birth)}"></div>
             <div class="row"><label>${t('died')}</label><input type="date" class="f-death" value="${esc(p.death)}" ${p.alive ? 'hidden' : ''}>
               <span class="alive"><input type="checkbox" class="f-alive" ${p.alive ? 'checked' : ''}> ${t('living')}</span></div>
+            <div class="row"><label>${t('fate')}</label><select class="f-fate">${['', 'miscarriage', 'abortion', 'stillborn'].map(v => `<option value="${v}" ${p.fate === v ? 'selected' : ''}>${t(v ? 'fate_' + v : 'fate_none')}</option>`).join('')}</select>
+              <span class="ended" title="${t('line_ended')}"><input type="checkbox" class="f-ended" ${p.lineEnded ? 'checked' : ''}> ⊥</span></div>
           </div>
         </div>
         ${canAddParent ? `<button class="plus top" data-add="parent" data-tip="${t('tip_parent')}">+</button>` : ''}
@@ -961,7 +1033,7 @@
   function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
   function renderEdges(pos = positions) {
-    const d = [];
+    const d = [], dPartners = [], dSlash = [], dEnded = [], rels = [];
     marriages = [];
     const mid = (id) => { const p = pos.get(id); return { id, x: p.x, cx: p.x + CARD_W / 2, cy: p.y + CARD_H / 2, top: p.y, bottom: p.y + CARD_H }; };
     const lanes = [];
@@ -979,16 +1051,27 @@
       if (ps.length === 2) {
         const [a, b] = ps;
         const adjacent = Math.abs(a.top - b.top) < 1 && b.x - (a.x + CARD_W) <= COUPLE_GAP + 1;
+        const bucket = f.status === 'partners' ? dPartners : d;
         if (adjacent) {
-          d.push(`M${a.cx + CARD_W / 2} ${a.cy} L${b.cx - CARD_W / 2} ${b.cy}`);
+          bucket.push(`M${a.cx + CARD_W / 2} ${a.cy} L${b.cx - CARD_W / 2} ${b.cy}`);
           origin = { x: (a.cx + b.cx) / 2, y: a.cy };
           marriages.push({ f, x: origin.x, y: a.cy + 27 });
+          if (f.status === 'divorced' || f.status === 'separated') {
+            const mx = origin.x, my = a.cy;
+            dSlash.push(`M${mx - 9} ${my + 8} L${mx - 1} ${my - 8}`);
+            if (f.status === 'divorced') dSlash.push(`M${mx + 1} ${my + 8} L${mx + 9} ${my - 8}`);
+          }
         } else {
           const gap = Math.round((b.cx - a.cx) / (CARD_W + COUPLE_GAP));
           const archY = Math.min(a.top, b.top) - 18 - 14 * Math.max(0, gap - 2);
-          d.push(`M${a.cx} ${a.top} L${a.cx} ${archY} L${b.cx} ${archY} L${b.cx} ${b.top}`);
+          bucket.push(`M${a.cx} ${a.top} L${a.cx} ${archY} L${b.cx} ${archY} L${b.cx} ${b.top}`);
           origin = { x: b.cx, y: b.bottom };
           marriages.push({ f, x: (a.cx + b.cx) / 2, y: archY });
+          if (f.status === 'divorced' || f.status === 'separated') {
+            const mx = (a.cx + b.cx) / 2;
+            dSlash.push(`M${mx - 9} ${archY + 8} L${mx - 1} ${archY - 8}`);
+            if (f.status === 'divorced') dSlash.push(`M${mx + 1} ${archY + 8} L${mx + 9} ${archY - 8}`);
+          }
         }
       } else if (ps.length === 1) origin = { x: ps[0].cx, y: ps[0].bottom };
       if (!cs.length) continue;
@@ -1000,8 +1083,41 @@
       d.push(`M${Math.min(...xs)} ${busY} L${Math.max(...xs)} ${busY}`);
       for (const c of cs) d.push(`M${c.cx} ${busY} L${c.cx} ${c.top}`);
     }
-    edgesSvg.innerHTML = `<path d="${d.join(' ')}"/>`;
+    for (const p of people()) {
+      if (!p.lineEnded || childrenOf(p.id).length || !pos.has(p.id)) continue;
+      const q = pos.get(p.id), cx = q.x + CARD_W / 2, y = q.y + CARD_H;
+      dEnded.push(`M${cx} ${y} L${cx} ${y + 16} M${cx - 14} ${y + 16} L${cx + 14} ${y + 16}`);
+    }
+    const anchorPt = (from, to) => {
+      const dx = to.cx - from.cx, dy = to.cy - from.cy;
+      const hw = CARD_W / 2 + 6, hh = CARD_H / 2 + 6;
+      const k = Math.min(hw / Math.max(Math.abs(dx), 1e-6), hh / Math.max(Math.abs(dy), 1e-6));
+      return { x: from.cx + dx * k, y: from.cy + dy * k };
+    };
+    const relBadges = [];
+    for (const r of state.relations) {
+      if (!pos.has(r.from) || !pos.has(r.to)) continue;
+      const a = mid(r.from), b = mid(r.to);
+      const p1 = anchorPt(a, b), p2 = anchorPt(b, a);
+      const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
+      const len = Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1;
+      const nx = -(p2.y - p1.y) / len, ny = (p2.x - p1.x) / len;
+      const bow = Math.min(90, len * 0.22);
+      const cx = mx + nx * bow, cy = my + ny * bow;
+      rels.push(`<path class="rel ${esc(r.type)}" marker-end="url(#arrow-${esc(r.type)})" marker-start="url(#arrow-${esc(r.type)})" d="M${p1.x} ${p1.y} Q${cx} ${cy} ${p2.x} ${p2.y}"/>`);
+      relBadges.push({ r, x: (p1.x + 2 * cx + p2.x) / 4, y: (p1.y + 2 * cy + p2.y) / 4 });
+    }
+    const colors = { close: '#2aa871', conflict: '#e5484d', distant: '#9aa2b8', cutoff: '#1f2430' };
+    const defs = `<defs>${Object.entries(colors).map(([k, c]) => `<marker id="arrow-${k}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${c}"/></marker>`).join('')}</defs>`;
+    edgesSvg.innerHTML = defs + `<path d="${d.join(' ')}"/><path class="partners" d="${dPartners.join(' ')}"/><path class="slash" d="${dSlash.join(' ')}"/><path class="ended" d="${dEnded.join(' ')}"/>` + rels.join('');
     badgesEl.innerHTML = '';
+    for (const { r, x, y } of relBadges) {
+      const el = document.createElement('div');
+      el.className = 'relbadge'; el.dataset.rid = r.id; el.title = t('relation');
+      el.style.left = x + 'px'; el.style.top = y + 'px';
+      el.textContent = r.label || t('rel_' + r.type);
+      badgesEl.appendChild(el);
+    }
     for (const m of marriages) {
       const el = document.createElement('div');
       const txt = marriageText(m.f);
@@ -1014,8 +1130,9 @@
   }
   function year(s) { return s ? s.slice(0, 4) : ''; }
   function marriageText(f) {
-    if (!f.married && !f.ended) return '';
-    return `${year(f.married) || '?'} – ${f.ended ? year(f.ended) : t('present')}`;
+    const mark = f.status === 'divorced' ? '⚡ ' : f.status === 'separated' ? '⁄ ' : '';
+    if (!f.married && !f.ended) return mark.trim();
+    return mark + `${year(f.married) || '?'} – ${f.ended ? year(f.ended) : (f.status === 'divorced' || f.status === 'separated' ? '?' : t('present'))}`;
   }
 
   const mpop = $('#mpop');
@@ -1026,7 +1143,7 @@
     mpopFamily = fid; mpopSnapshot = snapshot();
     const names = f.parents.map(id => state.people[id]?.name || t('unnamed'));
     $('#mpop-title').textContent = names.join(' & ');
-    $('#m-from').value = f.married || ''; $('#m-to').value = f.ended || '';
+    $('#m-from').value = f.married || ''; $('#m-to').value = f.ended || ''; $('#m-status').value = f.status || 'married';
     const r = anchor.getBoundingClientRect();
     mpop.classList.add('show');
     const w = mpop.offsetWidth, h = mpop.offsetHeight;
@@ -1045,6 +1162,7 @@
     const f = fam(mpopFamily); if (!f) return;
     if (e.target.id === 'm-from') f.married = e.target.value;
     if (e.target.id === 'm-to') f.ended = e.target.value;
+    if (e.target.id === 'm-status') f.status = e.target.value;
   });
   mpop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); closeMarriage(); } e.stopPropagation(); });
   $('#m-close').addEventListener('click', closeMarriage);
@@ -1053,6 +1171,38 @@
     if (f.children.length && !confirm(t('unlink_confirm'))) return;
     mpopFamily = null; mpop.classList.remove('show'); mpopSnapshot = null;
     mutate(() => { f.parents = f.parents.slice(0, 1); if (!f.children.length) delete state.families[fid]; });
+  });
+
+  const rpop = $('#rpop');
+  let rpopId = null, rpopSnapshot = null;
+  function openRelation(rid, anchor) {
+    const r = state.relations.find(x => x.id === rid); if (!r) return;
+    stopEditing(); if (mpopFamily) closeMarriage();
+    rpopId = rid; rpopSnapshot = snapshot();
+    $('#r-type').value = r.type; $('#r-label').value = r.label || ''; $('#r-label').placeholder = t('rel_' + r.type);
+    const b = anchor.getBoundingClientRect();
+    rpop.classList.add('show');
+    const w = rpop.offsetWidth, h = rpop.offsetHeight;
+    rpop.style.left = Math.max(8, Math.min(innerWidth - w - 8, b.left + b.width / 2 - w / 2)) + 'px';
+    rpop.style.top = (b.bottom + 8 + h > innerHeight ? b.top - h - 8 : b.bottom + 8) + 'px';
+    $('#r-label').focus();
+  }
+  function closeRelation() {
+    if (!rpopId) return;
+    rpopId = null; rpop.classList.remove('show');
+    if (rpopSnapshot && rpopSnapshot !== snapshot()) { undoStack.push(rpopSnapshot); redoStack = []; dirty = true; scheduleDraft(); render(); }
+    rpopSnapshot = null;
+  }
+  rpop.addEventListener('input', (e) => {
+    const r = state.relations.find(x => x.id === rpopId); if (!r) return;
+    if (e.target.id === 'r-type') { r.type = e.target.value; $('#r-label').placeholder = t('rel_' + r.type); }
+    if (e.target.id === 'r-label') r.label = e.target.value;
+  });
+  rpop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); closeRelation(); } e.stopPropagation(); });
+  $('#r-close').addEventListener('click', closeRelation);
+  $('#r-delete').addEventListener('click', () => {
+    const rid = rpopId; rpopId = null; rpop.classList.remove('show'); rpopSnapshot = null;
+    mutate(() => { state.relations = state.relations.filter(x => x.id !== rid); });
   });
 
   const menu = $('#menu');
@@ -1078,6 +1228,7 @@
   document.addEventListener('pointerdown', (e) => {
     if (menu.classList.contains('show') && !menu.contains(e.target)) closeMenu();
     if (mpop.classList.contains('show') && !mpop.contains(e.target) && !e.target.closest('.marriage')) closeMarriage();
+    if (rpop.classList.contains('show') && !rpop.contains(e.target) && !e.target.closest('.relbadge')) closeRelation();
   }, true);
 
   function applyView() {
@@ -1175,7 +1326,9 @@
     if (moved || e.type === 'pointercancel') return;
     const badge = e.target.closest('.marriage');
     if (badge) { openMarriage(badge.dataset.fid, badge); return; }
-    if (!onCard && !e.target.closest('#empty')) { stopEditing(); select(null); }
+    const rb = e.target.closest('.relbadge');
+    if (rb) { openRelation(rb.dataset.rid, rb); return; }
+    if (!onCard && !e.target.closest('#empty')) { if (linkFrom) cancelLink(); stopEditing(); select(null); }
   }
   viewport.addEventListener('pointerup', endPointer);
   viewport.addEventListener('pointercancel', endPointer);
@@ -1204,6 +1357,34 @@
     }
   }
   const cardEl = (id) => cardsEl.querySelector(`.card[data-id="${id}"]`);
+  let linkFrom = null;
+  function startLink(id) {
+    if (!id || people().length < 2) return;
+    stopEditing(); linkFrom = id;
+    document.body.classList.add('linking'); cardEl(id)?.classList.add('link-source');
+    toast(t('link_hint'));
+  }
+  function cancelLink() {
+    linkFrom = null; document.body.classList.remove('linking');
+    cardsEl.querySelectorAll('.link-source').forEach(el => el.classList.remove('link-source'));
+  }
+  function finishLink(targetId, anchor) {
+    const a = linkFrom, b = targetId; cancelLink();
+    if (!a || a === b || !state.people[a] || !state.people[b]) return;
+    const apply = (fn) => { let err = null; mutate(() => { err = fn(); }); if (err) { undoStack.pop(); toast(err); } else { toast(t('linked')); select(a); } };
+    const relItems = ['close', 'conflict', 'distant', 'cutoff'].map(type => ({ label: '↔ ' + t('rel_' + type), run: () => apply(() => addRelation(a, b, type)) }));
+    const childOpts = () => {
+      const fams = parentFamilies(a);
+      if (fams.length > 1) return openMenu(anchor, t('add_child_menu'), fams.map(f => ({ label: t('with') + ' ' + (f.parents.filter(x => x !== a).map(x => state.people[x]?.name || t('unnamed')).join(', ') || t('no_partner')), run: () => apply(() => linkChild(a, b, f.id)) })));
+      apply(() => linkChild(a, b));
+    };
+    openMenu(anchor, `${state.people[a].name || t('unnamed')} → ${state.people[b].name || t('unnamed')}`, [
+      { label: t('as_spouse'), run: () => apply(() => linkSpouse(a, b)) },
+      { label: t('as_child'), run: childOpts },
+      { label: t('as_parent'), run: () => apply(() => linkChild(b, a)) },
+      ...relItems,
+    ]);
+  }
   const isCoarse = matchMedia('(pointer: coarse)').matches;
 
   function startEditing(id, field = '.f-name', fresh = false) {
@@ -1232,12 +1413,13 @@
   cardsEl.addEventListener('pointerdown', (e) => {
     const card = e.target.closest('.card'); if (!card || spaceDown) return;
     const id = card.dataset.id;
-    if (e.target.closest('.plus') || e.target.closest('.photo')) return;
+    if (linkFrom || e.target.closest('.plus') || e.target.closest('.photo')) return;
     if (editingId !== id && e.pointerType === 'mouse' && !isCoarse) { e.preventDefault(); select(id, { scroll: false }); }
   });
   cardsEl.addEventListener('click', (e) => {
     const card = e.target.closest('.card'); if (!card) return;
     const id = card.dataset.id;
+    if (linkFrom) { e.preventDefault(); if (id !== linkFrom) finishLink(id, card); return; }
     const plus = e.target.closest('.plus');
     if (plus) { createRelative(id, plus.dataset.add, plus); return; }
     const wasSelected = selectedId === id;
@@ -1252,6 +1434,8 @@
     const p = state.people[card.dataset.id]; if (!p) return;
     if (e.target.classList.contains('f-name')) p.name = e.target.value;
     else if (e.target.classList.contains('f-bname')) p.birthName = e.target.value;
+    else if (e.target.classList.contains('f-fate')) p.fate = e.target.value;
+    else if (e.target.classList.contains('f-ended')) p.lineEnded = e.target.checked;
     else if (e.target.classList.contains('f-birth')) p.birth = e.target.value;
     else if (e.target.classList.contains('f-death')) p.death = e.target.value;
     else if (e.target.classList.contains('f-alive')) {
@@ -1263,10 +1447,10 @@
   });
   cardsEl.addEventListener('keydown', (e) => {
     if (!editingId) return;
-    if (e.key === 'Enter' && !e.target.matches('input[type=checkbox]')) { e.preventDefault(); const id = stopEditing(); select(id); }
+    if (e.key === 'Enter') { e.preventDefault(); const id = stopEditing(); select(id); }
     else if (e.key === 'Escape') { e.preventDefault(); const id = stopEditing(); select(id); }
     else if (e.key === 'Tab') {
-      const fields = [...e.target.closest('.card').querySelectorAll('.edit input:not([hidden])')];
+      const fields = [...e.target.closest('.card').querySelectorAll('.edit input:not([hidden]), .edit select')];
       const i = fields.indexOf(e.target);
       const next = fields[i + (e.shiftKey ? -1 : 1)];
       if (next) { e.preventDefault(); next.focus(); next.select?.(); }
@@ -1288,6 +1472,7 @@
     sh('sh-birth').value = p.birth; sh('sh-death').value = p.death; sh('sh-alive').checked = p.alive;
     sh('sh-name').placeholder = t('full_name'); sh('sh-bname').placeholder = t('birth_name');
     sh('sh-death-row').hidden = p.alive;
+    sh('sh-fate').value = p.fate || ''; sh('sh-ended').checked = !!p.lineEnded;
     refreshSheetPhoto();
     sheet.classList.add('show');
     if (fresh) sh('sh-name').focus();
@@ -1314,6 +1499,8 @@
       case 'sh-bname': p.birthName = e.target.value; break;
       case 'sh-birth': p.birth = e.target.value; break;
       case 'sh-death': p.death = e.target.value; break;
+      case 'sh-fate': p.fate = e.target.value; break;
+      case 'sh-ended': p.lineEnded = e.target.checked; break;
       case 'sh-alive': p.alive = e.target.checked; sh('sh-death-row').hidden = p.alive; if (p.alive) { p.death = ''; sh('sh-death').value = ''; } break;
     }
   });
@@ -1466,6 +1653,7 @@
       .card.leave { display: none; }
       .card, .card.selected { box-shadow: none; border-color: var(--border); cursor: default; break-inside: avoid; }
       .marriage.empty { display: none; }
+      .relbadge { cursor: default; }
       .pdf-title { position: absolute; left: ${M}px; top: 12px; font-size: 14px; font-weight: 600; color: #5b6377; }
     </style></head><body><div id="viewport"><div class="pdf-title">${esc(fileName)}</div><div id="world">${edgesSvg.outerHTML}${badgesEl.outerHTML}<div id="cards">${cardsEl.innerHTML}</div></div></div>
     <script>window.onload = () => setTimeout(() => { window.print(); }, 150);<\/script></body></html>`;
@@ -1556,6 +1744,8 @@
       if ($('#help').classList.contains('show')) return $('#help').classList.remove('show');
       if (welcome.classList.contains('show') && people().length) return hideWelcome();
       if (mpopFamily) return closeMarriage();
+      if (linkFrom) return cancelLink();
+      if (rpopId) return closeRelation();
       return select(null);
     }
     if (e.key === ' ') { e.preventDefault(); spaceDown = true; viewport.classList.add('panning'); return; }
@@ -1580,6 +1770,7 @@
     if (e.key === 'Tab') { e.preventDefault(); return navigate(e.shiftKey ? 'left' : 'right'); }
     if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); return removeSelected(); }
     const k = e.key.toLowerCase();
+    if (k === 'l') { e.preventDefault(); return startLink(selectedId); }
     if (k === 'p' || k === 'c' || k === 's' || k === 'm') {
       e.preventDefault();
       createRelative(selectedId, { p: 'parent', c: 'child', s: 'sibling-right', m: 'spouse' }[k]);
@@ -1605,6 +1796,7 @@
     const b = e.target.closest('[data-sel]'); if (!b || !selectedId) return;
     const a = b.dataset.sel;
     if (a === 'edit') startEditing(selectedId);
+    else if (a === 'link') startLink(selectedId);
     else if (a === 'photo') photoAction(selectedId, b);
     else if (a === 'delete') removeSelected();
     else createRelative(selectedId, a, b);
@@ -1634,7 +1826,7 @@
       const { photo, photoSrc, ...rest } = p;
       people[p.id] = { ...rest, thumbRef: ref(photo), photoRef: ref(photoSrc) };
     }
-    const meta = new TextEncoder().encode(JSON.stringify({ version: 1, people, families: state.families, blobs: blobs.map(b => b.mime) }));
+    const meta = new TextEncoder().encode(JSON.stringify({ version: 1, people, families: state.families, relations: state.relations, blobs: blobs.map(b => b.mime) }));
     const head = new Uint8Array(MAGIC.length + 4); head.set(MAGIC);
     new DataView(head.buffer).setUint32(MAGIC.length, meta.length, true);
     const parts = [head, meta];
@@ -1662,7 +1854,7 @@
       const { thumbRef, photoRef, ...rest } = p;
       people[p.id] = { ...rest, photo: thumbRef == null ? null : blobs[thumbRef], photoSrc: photoRef == null ? null : blobs[photoRef] };
     }
-    return { version: 1, people, families: meta.families || {} };
+    return { version: 1, people, families: meta.families || {}, relations: meta.relations || [] };
   }
 
   async function save(as) {
@@ -1712,9 +1904,9 @@
   function loadData(buf, name) {
     const data = deserialize(buf);
     if (!data || typeof data.people !== 'object' || typeof data.families !== 'object') throw new Error(t('not_tree'));
-    state = { version: 1, people: data.people, families: data.families };
-    for (const p of Object.values(state.people)) { p.alive = p.alive ?? !p.death; p.name ??= ''; p.birthName ??= ''; p.birth ??= ''; p.death ??= ''; p.photo ??= null; p.photoSrc ??= null; p.crop ??= null; }
-    for (const f of Object.values(state.families)) { f.married ??= ''; f.ended ??= ''; f.parents ??= []; f.children ??= []; }
+    state = { version: 1, people: data.people, families: data.families, relations: Array.isArray(data.relations) ? data.relations : [] };
+    for (const p of Object.values(state.people)) { p.alive = p.alive ?? !p.death; p.name ??= ''; p.birthName ??= ''; p.birth ??= ''; p.death ??= ''; p.photo ??= null; p.photoSrc ??= null; p.crop ??= null; p.fate ??= ''; p.lineEnded ??= false; }
+    for (const f of Object.values(state.families)) { f.married ??= ''; f.ended ??= ''; f.status ??= 'married'; f.parents ??= []; f.children ??= []; }
     fileName = name.replace(/\.json$/, EXT); fileHandle = null; libraryId = null; dirty = name.endsWith('.json'); undoStack = []; redoStack = []; selectedId = null; editingId = null;
     render(); fitView(); scheduleDraft(); toast(t('opened') + ' ' + name);
   }
@@ -1853,7 +2045,7 @@
   function restoreDraft() {
     try {
       const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
-      if (d && d.state && Object.keys(d.state.people).length) { state = d.state; fileName = d.fileName || fileName; dirty = !!d.dirty; libraryId = d.libraryId || null; return true; }
+      if (d && d.state && Object.keys(d.state.people).length) { state = d.state; state.relations ??= []; fileName = d.fileName || fileName; dirty = !!d.dirty; libraryId = d.libraryId || null; return true; }
     } catch (_) {}
     return false;
   }
