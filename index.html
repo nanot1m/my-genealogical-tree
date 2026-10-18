@@ -620,21 +620,7 @@
     positions = new Map();
     marriages = [];
     const claimed = new Set();
-    const roots = people().filter(p => !childFamily(p.id));
-
-    function buildNode(pid) {
-      const unit = [pid]; claimed.add(pid);
-      for (let i = 0; i < unit.length; i++) {
-        for (const f of parentFamilies(unit[i])) for (const sp of f.parents) {
-          if (!claimed.has(sp)) { claimed.add(sp); unit.push(sp); }
-        }
-      }
-      const fams = [...new Set(unit.flatMap(parentFamilies))];
-      const groups = fams.map(f => ({ f, children: f.children.filter(id => !claimed.has(id)).map(buildNode).filter(Boolean) }))
-        .filter(g => g.children.length);
-      for (const g of groups) g.children = spreadMarried(g.children);
-      return { own: pid, unit, groups };
-    }
+    const STEP = CARD_W + COUPLE_GAP;
 
     function spreadMarried(kids) {
       const married = kids.map((c, i) => [c, i]).filter(([c]) => c.unit.length > 1);
@@ -649,92 +635,118 @@
       return [firstC, ...rest, lastC];
     }
 
-    const forest = [], attached = [];
-    const cluster = (pid) => { const seen = new Set([pid]); for (const a of seen) for (const sp of spousesOf(a)) seen.add(sp); return [...seen]; };
-    const topRoots = roots.filter(p => cluster(p.id).every(id => !childFamily(id)));
-    for (const list of [topRoots, roots, people()]) {
-      for (const p of list) {
-        if (claimed.has(p.id)) continue;
-        const anchors = [...new Set(cluster(p.id).flatMap(parentFamilies).flatMap(f => f.children))].filter(id => claimed.has(id));
-        const node = buildNode(p.id);
-        if (anchors.length) attached.push({ node, anchors }); else forest.push(node);
+    function buildNode(pid) {
+      const unit = [pid]; claimed.add(pid);
+      for (let i = 0; i < unit.length; i++) {
+        for (const f of parentFamilies(unit[i])) for (const sp of f.parents) if (!claimed.has(sp)) { claimed.add(sp); unit.push(sp); }
       }
+      const n = { own: pid, unit, groups: [], ancestors: [] };
+      for (const m of unit) {
+        const f = childFamily(m); if (!f) continue;
+        const top = f.parents.find(id => !claimed.has(id)); if (!top) continue;
+        n.ancestors.push({ node: buildNode(top), anchor: m });
+      }
+      for (const f of [...new Set(unit.flatMap(parentFamilies))]) {
+        const kids = f.children.filter(id => !claimed.has(id)).map(buildNode);
+        if (kids.length) n.groups.push({ f, children: spreadMarried(kids) });
+      }
+      return n;
     }
+
+    const shift = (ext, dx, dr) => { const m = new Map(); for (const [r, segs] of ext) m.set(r + dr, segs.map(([l, rt]) => [l + dx, rt + dx])); return m; };
+    const union = (a, b) => {
+      const m = new Map(a || []);
+      for (const [r, segs] of b) {
+        const all = [...(m.get(r) || []), ...segs].sort((x, y) => x[0] - y[0]);
+        const out = [];
+        for (const sg of all) { const last = out[out.length - 1]; if (last && sg[0] <= last[1]) last[1] = Math.max(last[1], sg[1]); else out.push([sg[0], sg[1]]); }
+        m.set(r, out);
+      }
+      return m;
+    };
+    const pushNeeded = (base, e, dir) => {
+      let need = 0;
+      for (const [r, segs] of e) {
+        for (const b of base.get(r) || []) for (const sg of segs) {
+          if (sg[0] >= b[1] + H_GAP || b[0] >= sg[1] + H_GAP) continue;
+          need = Math.max(need, dir > 0 ? b[1] + H_GAP - sg[0] : sg[1] + H_GAP - b[0]);
+        }
+      }
+      return need;
+    };
+    const settle = (base, e, dir) => {
+      let dx = 0;
+      for (let i = 0; i < 100; i++) { const need = pushNeeded(base, shift(e, dx, 0), dir); if (!need) break; dx += dir * need; }
+      return dx;
+    };
+    const freeSlot = (segs, want, w) => {
+      const fits = (l) => segs.every(([a, b]) => l >= b + H_GAP || a >= l + w + H_GAP);
+      if (fits(want)) return want;
+      const cands = segs.flatMap(([a, b]) => [b + H_GAP, a - H_GAP - w]).filter(fits);
+      return cands.length ? cands.reduce((best, c) => Math.abs(c - want) < Math.abs(best - want) ? c : best) : want;
+    };
 
     function measure(n) {
       n.uw = n.unit.length * CARD_W + Math.max(0, n.unit.length - 1) * COUPLE_GAP;
+      const ownIdx = n.unit.indexOf(n.own);
+      n.ownCenter = ownIdx * STEP + CARD_W / 2;
       const order = (g) => { const other = g.f.parents.find(id => id !== n.own) ?? g.f.parents[0]; const k = n.unit.indexOf(other); return k < 0 ? 99 : k; };
       n.groups.sort((a, b) => order(a) - order(b));
-      let cw = 0; const own = [];
-      for (const g of n.groups) {
-        for (const c of g.children) { measure(c); c.rel = cw; own.push(cw + c.ownCenter); cw += c.w + H_GAP; }
+      let comp = null; n.kids = [];
+      for (const g of n.groups) for (const c of g.children) {
+        measure(c);
+        const e = shift(c.ext, 0, 1);
+        const dx = comp ? settle(comp, e, 1) : 0;
+        comp = union(comp, shift(e, dx, 0));
+        n.kids.push({ c, dx });
       }
-      n.cw = Math.max(0, cw - H_GAP);
-      const unitRel = own.length ? own.reduce((a, b) => a + b, 0) / own.length - n.uw / 2 : 0;
-      const left = Math.min(0, unitRel), right = Math.max(n.cw, unitRel + n.uw);
-      n.childRel = -left; n.unitRel = unitRel - left; n.w = right - left;
-      n.ownCenter = n.unitRel + n.unit.indexOf(n.own) * (CARD_W + COUPLE_GAP) + CARD_W / 2;
-      return n.w;
+      let unitLeft = 0;
+      if (n.kids.length) {
+        const avg = n.kids.reduce((a, k) => a + k.dx + k.c.ownCenter, 0) / n.kids.length;
+        unitLeft = freeSlot(comp.get(0) || [], avg - n.uw / 2, n.uw);
+        for (const k of n.kids) k.dx -= unitLeft;
+        comp = shift(comp, -unitLeft, 0);
+      }
+      n.ext = union(comp, new Map([[0, [[0, n.uw]]]]));
+      n.ancs = [];
+      for (const { node: a, anchor } of n.ancestors) {
+        measure(a);
+        const k = n.unit.indexOf(anchor);
+        const dir = k < ownIdx ? -1 : k > ownIdx ? 1 : (k === 0 ? -1 : 1);
+        let dx = k * STEP + CARD_W / 2 - a.uw / 2;
+        const e = shift(a.ext, dx, -1);
+        dx += settle(n.ext, e, dir);
+        n.ext = union(n.ext, shift(a.ext, dx, -1));
+        n.ancs.push({ a, dx });
+      }
+      return n;
     }
-    function place(n, x, depth, out = positions) {
-      const y = depth * (CARD_H + V_GAP);
-      let ux = x + n.unitRel;
-      for (const id of n.unit) { out.set(id, { x: ux, y }); ux += CARD_W + COUPLE_GAP; }
-      for (const g of n.groups) for (const c of g.children) place(c, x + n.childRel + c.rel, depth + 1, out);
+    function place(n, x, row) {
+      const y = row * (CARD_H + V_GAP);
+      n.unit.forEach((id, i) => positions.set(id, { x: x + i * STEP, y }));
+      for (const { c, dx } of n.kids) place(c, x + dx, row + 1);
+      for (const { a, dx } of n.ancs) place(a, x + dx, row - 1);
     }
-    const owner = new Map();
-    let total = 0;
-    forest.forEach((n, i) => { total += measure(n) + (i ? TREE_GAP : 0); });
-    let x = -total / 2;
-    forest.forEach((n, i) => {
-      const m = new Map(); place(n, x, 0, m);
-      for (const [id, p] of m) { positions.set(id, p); owner.set(id, i); }
-      x += n.w + TREE_GAP;
-    });
 
-    const rowH = CARD_H + V_GAP;
-    for (const { node, anchors } of attached) {
-      measure(node);
-      const ap = anchors.map(id => positions.get(id)).filter(Boolean);
-      if (!ap.length) { place(node, x, 0); x += node.w + TREE_GAP; continue; }
-      const anchorY = Math.min(...ap.map(p => p.y));
-      const depth = Math.round(anchorY / rowH) - 1;
-      const want = ap.reduce((a, p) => a + p.x + CARD_W / 2, 0) / ap.length - (node.unitRel + node.uw / 2);
-      const tryAt = (sx) => { const m = new Map(); place(node, sx, depth, m); return m; };
-      const overlap = (m) => {
-        let right = 0, left = 0; const hit = new Set();
-        for (const a of m.values()) for (const [id, b] of positions) {
-          if (Math.abs(a.y - b.y) >= CARD_H || a.x >= b.x + CARD_W + H_GAP || b.x >= a.x + CARD_W + H_GAP) continue;
-          right = Math.max(right, b.x + CARD_W + H_GAP - a.x);
-          left = Math.max(left, a.x + CARD_W + H_GAP - b.x);
-          hit.add(id);
-        }
-        return { right, left, hit };
-      };
-      let sx = want, m = tryAt(sx);
-      const tree = owner.get(anchors[0]);
-      const first = overlap(m);
-      if (first.right && [...first.hit].every(id => positions.get(id).y < anchorY && owner.get(id) === tree)) {
-        const half = Math.min(first.right, first.left) / 2;
-        const dir = first.right <= first.left ? 1 : -1;
-        for (const [id, p] of positions) if (owner.get(id) === tree && p.y < anchorY) p.x -= dir * half;
-        sx += dir * half; m = tryAt(sx);
+    const roots = people().filter(p => !childFamily(p.id));
+    const cluster = (pid) => { const seen = new Set([pid]); for (const a of seen) for (const sp of spousesOf(a)) seen.add(sp); return [...seen]; };
+    const topRoots = roots.filter(p => cluster(p.id).every(id => !childFamily(id)));
+    let x = 0;
+    for (const list of [topRoots, roots, people()]) {
+      for (const p of list) {
+        if (claimed.has(p.id)) continue;
+        const n = measure(buildNode(p.id));
+        let L = Infinity, R = -Infinity;
+        for (const segs of n.ext.values()) for (const [l, r] of segs) { L = Math.min(L, l); R = Math.max(R, r); }
+        place(n, x - L, 0);
+        x += R - L + TREE_GAP;
       }
-      const settle = (start, dir) => {
-        let x = start, mm = tryAt(x);
-        for (let i = 0; i < 60; i++) {
-          const o = overlap(mm);
-          const step = dir > 0 ? o.right : o.left;
-          if (!step) return { x, m: mm };
-          x += dir * step; mm = tryAt(x);
-        }
-        return { x, m: mm };
-      };
-      if (overlap(m).right) {
-        const r = settle(sx, 1), l = settle(sx, -1);
-        ({ x: sx, m } = Math.abs(r.x - sx) <= Math.abs(l.x - sx) ? r : l);
-      }
-      for (const [id, p] of m) positions.set(id, p);
+    }
+    if (positions.size) {
+      let L = Infinity, R = -Infinity, T = Infinity;
+      for (const p of positions.values()) { L = Math.min(L, p.x); R = Math.max(R, p.x + CARD_W); T = Math.min(T, p.y); }
+      const cx = (L + R) / 2;
+      for (const p of positions.values()) { p.x -= cx; p.y -= T; }
     }
   }
 
