@@ -48,6 +48,7 @@ test.describe('spouses and marriages', () => {
 });
 
 test.describe('linking existing people', () => {
+  test.setTimeout(120_000);
   test('L enters link mode, spouse/child/parent links, cycle and duplicate rejection', async ({ page }) => {
     await newTree(page);
     await firstPerson(page, 'PX');

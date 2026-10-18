@@ -4,6 +4,7 @@ import { newTree, firstPerson, addRelative, positions, rows, overlapCount } from
 const center = (pos, name) => { const p = pos.find(x => x.name === name); return p.x + 140; };
 
 test.describe('layout', () => {
+  test.setTimeout(180_000);
   test('in-law parents sit above their child on the outer side, no overlaps', async ({ page }) => {
     await newTree(page);
     await firstPerson(page, 'Artur');

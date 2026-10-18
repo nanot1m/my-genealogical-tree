@@ -32,6 +32,8 @@ export async function deselect(page) {
 
 export async function select(page, name) {
   await deselect(page);
+  await page.keyboard.press('f');
+  await page.waitForTimeout(400);
   await cardOf(page, name).click();
   await expect(cardOf(page, name)).toHaveClass(/selected/);
 }
