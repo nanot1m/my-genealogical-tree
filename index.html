@@ -720,11 +720,19 @@
         for (const [id, p] of positions) if (owner.get(id) === tree && p.y < anchorY) p.x -= dir * half;
         sx += dir * half; m = tryAt(sx);
       }
-      for (let i = 0; i < 20; i++) {
-        const o = overlap(m);
-        if (!o.right && !o.left) break;
-        sx += o.right <= o.left ? o.right : -o.left;
-        m = tryAt(sx);
+      const settle = (start, dir) => {
+        let x = start, mm = tryAt(x);
+        for (let i = 0; i < 60; i++) {
+          const o = overlap(mm);
+          const step = dir > 0 ? o.right : o.left;
+          if (!step) return { x, m: mm };
+          x += dir * step; mm = tryAt(x);
+        }
+        return { x, m: mm };
+      };
+      if (overlap(m).right) {
+        const r = settle(sx, 1), l = settle(sx, -1);
+        ({ x: sx, m } = Math.abs(r.x - sx) <= Math.abs(l.x - sx) ? r : l);
       }
       for (const [id, p] of m) positions.set(id, p);
     }
