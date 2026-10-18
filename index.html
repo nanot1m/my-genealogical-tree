@@ -634,8 +634,8 @@
           <div class="name ${p.name ? '' : 'empty'}" title="${esc(fullName(p))}">${esc(p.name) || t('unnamed')}${p.birthName ? ` <span class="nee">${t('nee')} ${esc(p.birthName)}</span>` : ''}</div>
           <div class="dates ${dt ? '' : 'empty'}">${esc(dt) || t('add_dates')}</div>
           <div class="edit">
-            <input type="text" class="f-name" placeholder="${t('full_name')}" value="${esc(p.name)}">
-            <div class="row"><label>${t('nee')}</label><input type="text" class="f-bname" placeholder="${t('birth_name')}" value="${esc(p.birthName)}"></div>
+            <input type="text" class="f-name" placeholder="${t('full_name')}" value="${esc(p.name)}" autocomplete="off" autocapitalize="words" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other">
+            <div class="row"><label>${t('nee')}</label><input type="text" class="f-bname" placeholder="${t('birth_name')}" value="${esc(p.birthName)}" autocomplete="off" autocapitalize="words" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other"></div>
             <div class="row"><label>${t('born')}</label><input type="date" class="f-birth" value="${esc(p.birth)}"></div>
             <div class="row"><label>${t('died')}</label><input type="date" class="f-death" value="${esc(p.death)}" ${p.alive ? 'hidden' : ''}>
               <span class="alive"><input type="checkbox" class="f-alive" ${p.alive ? 'checked' : ''}> ${t('living')}</span></div>
