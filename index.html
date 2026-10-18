@@ -1,0 +1,1340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Family Tree</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --grid: #d9dce3;
+    --card: #ffffff;
+    --border: #e1e4ea;
+    --text: #1f2430;
+    --muted: #8a92a6;
+    --accent: #4262ff;
+    --accent-soft: #e8ecff;
+    --line: #b8bfd0;
+    --danger: #e5484d;
+    --shadow: 0 1px 2px rgba(20,24,40,.06), 0 6px 18px rgba(20,24,40,.08);
+    --card-w: 280px;
+    --card-h: 112px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif; color: var(--text); background: var(--bg); }
+  button { font: inherit; color: inherit; }
+
+  #viewport {
+    position: absolute; inset: 0; overflow: hidden; cursor: default;
+    background-color: var(--bg);
+    background-image: radial-gradient(circle, var(--grid) 1px, transparent 1.2px);
+    touch-action: none; user-select: none; -webkit-user-select: none;
+  }
+  #viewport.panning, #viewport.space { cursor: grab; }
+  #viewport.panning.dragging { cursor: grabbing; }
+  #world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+  #world.anim { transition: transform .28s cubic-bezier(.2,.8,.2,1); }
+  #edges { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+  #edges path { fill: none; stroke: var(--line); stroke-width: 2; stroke-linecap: round; }
+
+  .card {
+    position: absolute; width: var(--card-w); height: var(--card-h);
+    background: var(--card); border: 1.5px solid var(--border); border-radius: 14px;
+    box-shadow: var(--shadow); display: flex; align-items: center; gap: 12px; padding: 12px;
+    cursor: pointer; transition: box-shadow .15s, border-color .15s; -webkit-tap-highlight-color: transparent;
+  }
+  .edit input { user-select: text; -webkit-user-select: text; }
+  .card:hover { box-shadow: 0 2px 4px rgba(20,24,40,.08), 0 10px 28px rgba(20,24,40,.12); }
+  .card.selected { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow); }
+  .card.editing { cursor: default; }
+  .photo {
+    position: relative; flex: 0 0 64px; width: 64px; height: 64px; border-radius: 50%;
+    background: linear-gradient(135deg, #dfe4ff, #f3e8ff); overflow: hidden;
+    display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 20px; color: #5a63a8;
+    cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--border);
+  }
+  .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo .cam {
+    position: absolute; inset: 0; background: rgba(20,24,40,.45); color: #fff; display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity .15s; font-size: 18px;
+  }
+  .photo:hover .cam { opacity: 1; }
+  .photo-x {
+    position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; border-radius: 50%; border: none;
+    background: var(--danger); color: #fff; font-size: 12px; line-height: 18px; padding: 0; cursor: pointer; display: none;
+  }
+  .card.editing .photo-x.has-photo { display: block; }
+  .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .name { font-weight: 600; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .name.empty, .dates.empty { color: var(--muted); font-weight: 400; }
+  .dates { font-size: 13px; color: #5b6377; }
+  .card.editing .name, .card.editing .dates { display: none; }
+  .edit { display: none; flex-direction: column; gap: 4px; }
+  .card.editing .edit { display: flex; }
+  .edit input[type=text] {
+    width: 100%; font: inherit; font-weight: 600; font-size: 15px; padding: 3px 6px; border: 1px solid var(--border); border-radius: 6px; outline: none;
+  }
+  .edit input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .edit .row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); height: 22px; }
+  .edit .row label { width: 40px; flex: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .edit input.f-bname { font-weight: 400; font-size: 12px; padding: 1px 6px; flex: 1; width: auto; }
+  .card.editing { height: auto; min-height: var(--card-h); z-index: 2; }
+  .edit input[type=date] { font: inherit; font-size: 12px; padding: 1px 4px; border: 1px solid var(--border); border-radius: 6px; outline: none; flex: 1; min-width: 0; color: var(--text); }
+  .edit .alive { display: flex; align-items: center; gap: 4px; width: auto; cursor: pointer; white-space: nowrap; color: var(--text); }
+  .edit .alive input { margin: 0; }
+
+  .plus {
+    position: absolute; width: 26px; height: 26px; border-radius: 50%; border: none; padding: 0;
+    background: var(--accent); color: #fff; font-size: 18px; line-height: 26px; text-align: center; cursor: pointer;
+    box-shadow: 0 2px 6px rgba(66,98,255,.4); opacity: 0; transform: scale(.6); transition: opacity .12s, transform .12s;
+    pointer-events: none;
+  }
+  .card:hover .plus, .card.selected .plus { opacity: 1; transform: scale(1); pointer-events: auto; }
+  .card.editing .plus { opacity: 0; pointer-events: none; }
+  .plus:hover { background: #2f4de0; transform: scale(1.12) !important; }
+  .plus.top { left: 50%; top: -13px; margin-left: -13px; }
+  .plus.bottom { left: 50%; bottom: -13px; margin-left: -13px; }
+  .plus.left { top: 50%; left: -13px; margin-top: -13px; }
+  .plus.right { top: 50%; right: -13px; margin-top: -13px; }
+  .plus::after {
+    content: attr(data-tip); position: absolute; white-space: nowrap; font-size: 11px; line-height: 1; padding: 4px 7px; border-radius: 5px;
+    background: #1f2430; color: #fff; opacity: 0; transition: opacity .12s; pointer-events: none;
+  }
+  .plus:hover::after { opacity: 1; }
+  .plus.top::after { bottom: 30px; left: 50%; transform: translateX(-50%); }
+  .plus.bottom::after { top: 30px; left: 50%; transform: translateX(-50%); }
+  .plus.left::after { right: 30px; top: 50%; transform: translateY(-50%); }
+  .plus.right::after { left: 30px; top: 50%; transform: translateY(-50%); }
+  .plus.spouse { right: -13px; top: -13px; background: #e5488f; box-shadow: 0 2px 6px rgba(229,72,143,.4); font-size: 13px; }
+  .plus.spouse:hover { background: #c93579; }
+  .plus.spouse::after { left: 30px; top: 50%; transform: translateY(-50%); }
+
+  .marriage {
+    position: absolute; transform: translate(-50%, -50%); padding: 2px 8px; border-radius: 999px; background: #fff; border: 1.5px solid var(--line);
+    color: #5b6377; font-size: 11px; white-space: nowrap; cursor: pointer; display: flex; align-items: center; gap: 4px; line-height: 16px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .marriage:hover { border-color: #e5488f; box-shadow: 0 2px 8px rgba(229,72,143,.25); }
+  .marriage .h { color: #e5488f; font-size: 10px; }
+  .marriage.empty { padding: 2px 6px; }
+
+  #mpop { position: absolute; z-index: 25; background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(20,24,40,.2); padding: 12px 14px; width: 250px; display: none; font-size: 13px; }
+  #mpop.show { display: block; }
+  #mpop h4 { margin: 0 0 8px; font-size: 13px; }
+  #mpop .row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  #mpop label { width: 54px; color: var(--muted); font-size: 12px; }
+  #mpop input[type=date] { flex: 1; font: inherit; font-size: 13px; padding: 3px 6px; border: 1px solid var(--border); border-radius: 6px; outline: none; min-width: 0; }
+  #mpop input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  #mpop .foot { display: flex; justify-content: space-between; margin-top: 10px; }
+  #mpop button { border: none; background: #f0f2f7; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 12px; }
+  #mpop button.danger { color: var(--danger); background: transparent; }
+
+  #crop { position: absolute; inset: 0; background: rgba(20,24,40,.45); display: none; align-items: center; justify-content: center; z-index: 40; }
+  #crop.show { display: flex; }
+  #crop .panel { background: #fff; border-radius: 16px; padding: 18px 20px; width: 340px; max-width: calc(100vw - 24px); box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+  #crop h4 { margin: 0 0 12px; font-size: 15px; }
+  #crop .stage { position: relative; width: 300px; height: 300px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: #eef0f5; touch-action: none; cursor: grab; }
+  #crop .stage:active { cursor: grabbing; }
+  #crop canvas { width: 300px; height: 300px; display: block; }
+  #crop .mask { position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 400px rgba(255,255,255,.6); pointer-events: none; border: 1px solid rgba(0,0,0,.15); }
+  #crop .zoomrow { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 12px; color: var(--muted); }
+  #crop .zoomrow input { flex: 1; }
+  #crop .hint { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+  #crop .foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+  #crop button { border: none; background: #f0f2f7; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px; }
+  #crop button.primary { background: var(--accent); color: #fff; }
+  #menu { position: absolute; z-index: 25; background: #fff; border-radius: 10px; box-shadow: 0 10px 30px rgba(20,24,40,.2); padding: 6px; display: none; min-width: 180px; }
+  #menu.show { display: block; }
+  #menu .t { font-size: 11px; color: var(--muted); padding: 4px 8px; }
+  #menu button { display: block; width: 100%; text-align: left; border: none; background: transparent; padding: 7px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  #menu button:hover, #menu button:focus { background: #f0f2f7; outline: none; }
+
+  #empty {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 14px; color: var(--muted);
+  }
+  #empty .big {
+    width: 64px; height: 64px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 36px; line-height: 60px;
+    box-shadow: 0 6px 20px rgba(66,98,255,.35); transition: transform .15s;
+  }
+  #empty:hover .big { transform: scale(1.08); }
+  #empty[hidden] { display: none; }
+  #empty p { margin: 0; font-size: 15px; }
+
+  .bar {
+    position: absolute; display: flex; align-items: center; gap: 4px; padding: 6px; background: #fff; border-radius: 12px; box-shadow: var(--shadow);
+    z-index: 10; user-select: none;
+  }
+  #topleft { left: 16px; top: 16px; }
+  #topright { right: 16px; top: 16px; }
+  #bottom { left: 50%; bottom: 16px; transform: translateX(-50%); font-size: 12px; color: var(--muted); padding: 8px 14px; gap: 14px; }
+  .bar button {
+    border: none; background: transparent; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 13px; color: var(--text);
+  }
+  .bar button:hover { background: #f0f2f7; }
+  .bar .sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+  #filename { font-weight: 600; font-size: 13px; padding: 0 8px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #filename.dirty::after { content: " •"; color: var(--accent); }
+  #lang { font: inherit; font-size: 12px; border: 1px solid var(--border); border-radius: 8px; padding: 4px 4px; background: #fff; color: var(--text); margin: 0 4px; }
+  .name .nee { font-weight: 400; color: var(--muted); font-size: 13px; }
+  #zoomlvl { min-width: 48px; text-align: center; font-variant-numeric: tabular-nums; }
+  kbd { display: inline-block; padding: 1px 5px; border-radius: 4px; background: #f0f2f7; border: 1px solid var(--border); font-family: inherit; font-size: 11px; color: var(--text); }
+
+  #toast {
+    position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%) translateY(10px); background: #1f2430; color: #fff; padding: 8px 14px;
+    border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 20;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  #help { position: absolute; inset: 0; background: rgba(20,24,40,.35); display: none; align-items: center; justify-content: center; z-index: 30; }
+  #help.show { display: flex; }
+  #help .panel { background: #fff; border-radius: 16px; padding: 24px 28px; width: 560px; max-height: 80vh; overflow: auto; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+  #help h2 { margin: 0 0 14px; font-size: 18px; }
+  #help h3 { margin: 16px 0 6px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  #help .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; font-size: 13px; }
+  #help .grid div { display: flex; justify-content: space-between; gap: 12px; }
+  #help .grid span:last-child { white-space: nowrap; }
+  input[type=file] { display: none; }
+
+  #actions { left: 50%; bottom: 16px; transform: translateX(-50%); display: none; }
+  #actions.show { display: flex; }
+  #actions button { padding: 8px 12px; white-space: nowrap; }
+  #actions button.danger { color: var(--danger); }
+  body.has-selection #bottom { display: none; }
+
+  @media (pointer: coarse) {
+    .plus { width: 34px; height: 34px; line-height: 34px; font-size: 22px; opacity: 0; }
+    .plus.top { top: -17px; margin-left: -17px; } .plus.bottom { bottom: -17px; margin-left: -17px; }
+    .plus.left { left: -17px; margin-top: -17px; } .plus.right { right: -17px; margin-top: -17px; }
+    .plus.spouse { right: -17px; top: -17px; }
+    .marriage { font-size: 12px; padding: 4px 10px; }
+    .card:hover .plus { opacity: 0; pointer-events: none; }
+    .card.selected .plus { opacity: 1; pointer-events: auto; transform: scale(1); }
+    .card.editing .plus { opacity: 0; pointer-events: none; }
+    .photo .cam { display: none; }
+    .edit input[type=text], .edit input[type=date] { font-size: 16px; }
+    #bottom { display: none; }
+  }
+  @media (max-width: 640px) {
+    #topleft { left: 8px; top: calc(8px + env(safe-area-inset-top)); }
+    #topright { left: 8px; right: auto; top: calc(56px + env(safe-area-inset-top)); }
+    #filename { max-width: 110px; }
+    .bar button { padding: 6px 8px; }
+    #topright [data-act=fit], #topright [data-act=help], #topright #zoomlvl, #topright .sep { display: none; }
+    #topright #lang { display: inline-block; }
+    #topleft [data-act=saveas], #topleft [data-act=pdf], #topleft .sep:has(+ [data-act=pdf]) { display: none; }
+    #actions { bottom: calc(12px + env(safe-area-inset-bottom)); flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 16px); }
+    #help .panel { width: calc(100vw - 24px); padding: 18px; }
+    #help .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div id="viewport">
+  <div id="world">
+    <svg id="edges"></svg>
+    <div id="cards"></div>
+  </div>
+  <div id="empty" hidden>
+    <div class="big">+</div>
+    <p data-i18n="empty"></p>
+  </div>
+</div>
+
+<div class="bar" id="topleft">
+  <span id="filename">Untitled tree</span>
+  <span class="sep"></span>
+  <button data-act="new" data-i18n="new" data-i18n-title="new_t"></button>
+  <button data-act="open" data-i18n="open" data-i18n-title="open_t"></button>
+  <button data-act="save" data-i18n="save" data-i18n-title="save_t"></button>
+  <button data-act="saveas" data-i18n="saveas" data-i18n-title="saveas_t"></button>
+  <span class="sep"></span>
+  <button data-act="pdf" data-i18n="export_pdf" data-i18n-title="export_t"></button>
+</div>
+<div class="bar" id="topright">
+  <button data-act="undo" title="Undo (⌘Z)">↶</button>
+  <button data-act="redo" title="Redo (⇧⌘Z)">↷</button>
+  <span class="sep"></span>
+  <button data-act="zoomout" title="Zoom out (−)">−</button>
+  <span id="zoomlvl">100%</span>
+  <button data-act="zoomin" title="Zoom in (+)">+</button>
+  <button data-act="fit" data-i18n="fit" data-i18n-title="fit_t"></button>
+  <span class="sep"></span>
+  <select id="lang" title="Language"><option value="en">EN</option><option value="ru">RU</option><option value="de">DE</option></select>
+  <button data-act="help" data-i18n-title="help_t">?</button>
+</div>
+<div class="bar" id="bottom">
+  <span><kbd>↑↓←→</kbd> <span data-i18n="hint_nav"></span></span>
+  <span><kbd>Enter</kbd> <span data-i18n="hint_edit"></span></span>
+  <span><kbd>P</kbd> <kbd>C</kbd> <kbd>S</kbd> <kbd>M</kbd> <span data-i18n="hint_add"></span></span>
+  <span><kbd>⌫</kbd> <span data-i18n="hint_del"></span></span>
+  <span><kbd>?</kbd> <span data-i18n="hint_help"></span></span>
+</div>
+<div class="bar" id="actions">
+  <button data-sel="edit" data-i18n="edit"></button>
+  <button data-sel="photo" data-i18n="photo"></button>
+  <span class="sep"></span>
+  <button data-sel="parent" data-i18n="add_parent"></button>
+  <button data-sel="sibling-right" data-i18n="add_sibling"></button>
+  <button data-sel="child" data-i18n="add_child"></button>
+  <button data-sel="spouse" data-i18n="add_spouse"></button>
+  <span class="sep"></span>
+  <button data-sel="delete" class="danger" data-i18n="delete"></button>
+</div>
+<div id="toast"></div>
+<div id="mpop">
+  <h4 id="mpop-title">Marriage</h4>
+  <div class="row"><label data-i18n="married"></label><input type="date" id="m-from"></div>
+  <div class="row"><label data-i18n="until"></label><input type="date" id="m-to"></div>
+  <div class="foot"><button class="danger" id="m-unlink" data-i18n="unlink"></button><button id="m-close" data-i18n="done"></button></div>
+</div>
+<div id="menu"></div>
+<div id="crop">
+  <div class="panel">
+    <h4 data-i18n="crop_title"></h4>
+    <div class="stage"><canvas id="crop-canvas" width="600" height="600"></canvas><div class="mask"></div></div>
+    <div class="zoomrow"><span data-i18n="zoom"></span><input type="range" id="crop-zoom" min="0" max="1000" value="0"></div>
+    <p class="hint" data-i18n="crop_hint"></p>
+    <div class="foot"><button id="crop-cancel" data-i18n="cancel"></button><button id="crop-ok" class="primary" data-i18n="apply"></button></div>
+  </div>
+</div>
+
+<div id="help"><div class="panel"></div></div>
+
+<input type="file" id="photoInput" accept="image/*">
+<input type="file" id="fileInput" accept=".ftree,.json">
+
+<script>
+(() => {
+  'use strict';
+
+  const I18N = {
+    en: {
+      new: 'New', open: 'Open', save: 'Save', saveas: 'Save as', fit: 'Fit',
+      new_t: 'New (⌘N)', open_t: 'Open (⌘O)', save_t: 'Save (⌘S)', saveas_t: 'Save as (⇧⌘S)', fit_t: 'Fit to screen (F)', help_t: 'Shortcuts (?)',
+      undo_t: 'Undo (⌘Z)', redo_t: 'Redo (⇧⌘Z)', zoomin_t: 'Zoom in (+)', zoomout_t: 'Zoom out (−)',
+      hint_nav: 'navigate', hint_edit: 'edit', hint_add: 'add parent / child / sibling / spouse', hint_del: 'delete', hint_help: 'all shortcuts',
+      edit: 'Edit', photo: 'Photo', add_parent: '+ Parent', add_sibling: '+ Sibling', add_child: '+ Child', add_spouse: '+ Spouse', delete: 'Delete',
+      married: 'Married', until: 'Until', unlink: 'Unlink', done: 'Done', empty: 'Click to add the first person',
+      untitled: 'Untitled tree', app: 'Family Tree',
+      unnamed: 'Unnamed', add_dates: 'Add dates', full_name: 'Full name', birth_name: 'Birth surname', nee: 'née', born: 'Born', died: 'Died', living: 'Living',
+      set_photo: 'Set photo', remove_photo: 'Remove photo',
+      tip_parent: 'Add parent (P)', tip_sibling_l: 'Add sibling (⇧←)', tip_sibling_r: 'Add sibling (S)', tip_child: 'Add child (C)', tip_spouse: 'Add spouse (M)',
+      marriage_dates: 'Marriage dates', present: 'present', b: 'b.', years: 'y',
+      add_child_menu: 'Add child…', with: 'With', no_partner: 'no partner',
+      two_parents: 'This person already has two parents', deleted: 'Deleted · ⌘Z to undo', nothing_undo: 'Nothing to undo', nothing_redo: 'Nothing to redo',
+      saved: 'Saved', opened: 'Opened', save_failed: 'Save failed', open_failed: 'Open failed', not_tree: 'Not a family tree file',
+      discard: 'Discard unsaved changes?', file_name: 'File name', unlink_confirm: 'Unlink this couple? Their children stay attached to the first parent.',
+      restored: 'Restored unsaved draft',
+      export_pdf: 'Export PDF', export_t: 'Export as PDF (print dialog)', change_photo: 'Change photo', adjust_crop: 'Adjust crop', crop_title: 'Crop photo', crop_hint: 'Drag to move, scroll or pinch to zoom', cancel: 'Cancel', apply: 'Apply', zoom: 'Zoom', nothing_export: 'Nothing to export',
+      help: [
+        ['Keyboard shortcuts'],
+        ['Navigate', [['Select parent / child', '↑ ↓'], ['Select sibling / spouse', '← →'], ['Deselect / close', 'Esc'], ['Fit tree to screen', 'F'], ['Zoom in / out / reset', '+ − 0'], ['Pan', 'Space+drag, wheel'], ['Zoom at cursor', 'pinch, ⌘+wheel']]],
+        ['Edit', [['Edit selected card', 'Enter / F2'], ['Next / previous field', 'Tab / ⇧Tab'], ['Finish editing', 'Enter / Esc'], ['Set photo', 'click the circle'], ['Marriage dates', 'click the ♥ badge']]],
+        ['Create & delete', [['Add parent', 'P / ⇧↑'], ['Add child', 'C / ⇧↓'], ['Add sibling right / left', 'S ⇧→ / ⇧←'], ['Add spouse', 'M'], ['Delete selected', '⌫ / Del'], ['Undo / redo', '⌘Z / ⇧⌘Z']]],
+        ['File', [['New / Open / Save', '⌘N ⌘O ⌘S'], ['Save as', '⇧⌘S']]],
+      ],
+    },
+    ru: {
+      new: 'Новое', open: 'Открыть', save: 'Сохранить', saveas: 'Сохранить как', fit: 'Вписать',
+      new_t: 'Новое дерево (⌘N)', open_t: 'Открыть (⌘O)', save_t: 'Сохранить (⌘S)', saveas_t: 'Сохранить как (⇧⌘S)', fit_t: 'Вписать в экран (F)', help_t: 'Горячие клавиши (?)',
+      undo_t: 'Отменить (⌘Z)', redo_t: 'Повторить (⇧⌘Z)', zoomin_t: 'Приблизить (+)', zoomout_t: 'Отдалить (−)',
+      hint_nav: 'навигация', hint_edit: 'редактировать', hint_add: 'родитель / ребёнок / брат-сестра / супруг', hint_del: 'удалить', hint_help: 'все клавиши',
+      edit: 'Изменить', photo: 'Фото', add_parent: '+ Родитель', add_sibling: '+ Брат/сестра', add_child: '+ Ребёнок', add_spouse: '+ Супруг', delete: 'Удалить',
+      married: 'Брак с', until: 'До', unlink: 'Разорвать', done: 'Готово', empty: 'Нажмите, чтобы добавить первого человека',
+      untitled: 'Новое дерево', app: 'Семейное древо',
+      unnamed: 'Без имени', add_dates: 'Добавить даты', full_name: 'Имя и фамилия', birth_name: 'Девичья фамилия', nee: 'урожд.', born: 'Род.', died: 'Ум.', living: 'Жив(а)',
+      set_photo: 'Выбрать фото', remove_photo: 'Удалить фото',
+      tip_parent: 'Добавить родителя (P)', tip_sibling_l: 'Добавить брата/сестру (⇧←)', tip_sibling_r: 'Добавить брата/сестру (S)', tip_child: 'Добавить ребёнка (C)', tip_spouse: 'Добавить супруга (M)',
+      marriage_dates: 'Даты брака', present: 'н. в.', b: 'р.', years: 'л.',
+      add_child_menu: 'Добавить ребёнка…', with: 'С', no_partner: 'без партнёра',
+      two_parents: 'У этого человека уже два родителя', deleted: 'Удалено · ⌘Z — отменить', nothing_undo: 'Нечего отменять', nothing_redo: 'Нечего повторять',
+      saved: 'Сохранено', opened: 'Открыто', save_failed: 'Ошибка сохранения', open_failed: 'Ошибка открытия', not_tree: 'Это не файл семейного древа',
+      discard: 'Отменить несохранённые изменения?', file_name: 'Имя файла', unlink_confirm: 'Разорвать связь пары? Дети останутся у первого родителя.',
+      restored: 'Восстановлен несохранённый черновик',
+      export_pdf: 'Экспорт в PDF', export_t: 'Экспорт в PDF (диалог печати)', change_photo: 'Заменить фото', adjust_crop: 'Изменить обрезку', crop_title: 'Обрезка фото', crop_hint: 'Перетащите для сдвига, колесо или щипок — масштаб', cancel: 'Отмена', apply: 'Применить', zoom: 'Масштаб', nothing_export: 'Нечего экспортировать',
+      help: [
+        ['Горячие клавиши'],
+        ['Навигация', [['Выбрать родителя / ребёнка', '↑ ↓'], ['Выбрать брата-сестру / супруга', '← →'], ['Снять выделение / закрыть', 'Esc'], ['Вписать дерево в экран', 'F'], ['Приблизить / отдалить / сброс', '+ − 0'], ['Перемещение', 'Space+мышь, колесо'], ['Масштаб у курсора', 'щипок, ⌘+колесо']]],
+        ['Редактирование', [['Редактировать карточку', 'Enter / F2'], ['Следующее / предыдущее поле', 'Tab / ⇧Tab'], ['Завершить', 'Enter / Esc'], ['Фото', 'клик по кругу'], ['Даты брака', 'клик по значку ♥']]],
+        ['Создание и удаление', [['Добавить родителя', 'P / ⇧↑'], ['Добавить ребёнка', 'C / ⇧↓'], ['Брат/сестра справа / слева', 'S ⇧→ / ⇧←'], ['Добавить супруга', 'M'], ['Удалить', '⌫ / Del'], ['Отменить / повторить', '⌘Z / ⇧⌘Z']]],
+        ['Файл', [['Новое / Открыть / Сохранить', '⌘N ⌘O ⌘S'], ['Сохранить как', '⇧⌘S']]],
+      ],
+    },
+    de: {
+      new: 'Neu', open: 'Öffnen', save: 'Speichern', saveas: 'Speichern unter', fit: 'Einpassen',
+      new_t: 'Neu (⌘N)', open_t: 'Öffnen (⌘O)', save_t: 'Speichern (⌘S)', saveas_t: 'Speichern unter (⇧⌘S)', fit_t: 'An Bildschirm anpassen (F)', help_t: 'Tastenkürzel (?)',
+      undo_t: 'Rückgängig (⌘Z)', redo_t: 'Wiederholen (⇧⌘Z)', zoomin_t: 'Vergrößern (+)', zoomout_t: 'Verkleinern (−)',
+      hint_nav: 'navigieren', hint_edit: 'bearbeiten', hint_add: 'Elternteil / Kind / Geschwister / Partner', hint_del: 'löschen', hint_help: 'alle Kürzel',
+      edit: 'Bearbeiten', photo: 'Foto', add_parent: '+ Elternteil', add_sibling: '+ Geschwister', add_child: '+ Kind', add_spouse: '+ Partner', delete: 'Löschen',
+      married: 'Heirat', until: 'Bis', unlink: 'Trennen', done: 'Fertig', empty: 'Klicken, um die erste Person hinzuzufügen',
+      untitled: 'Unbenannter Stammbaum', app: 'Stammbaum',
+      unnamed: 'Ohne Namen', add_dates: 'Daten hinzufügen', full_name: 'Vollständiger Name', birth_name: 'Geburtsname', nee: 'geb.', born: 'Geb.', died: 'Gest.', living: 'Lebt',
+      set_photo: 'Foto wählen', remove_photo: 'Foto entfernen',
+      tip_parent: 'Elternteil hinzufügen (P)', tip_sibling_l: 'Geschwister hinzufügen (⇧←)', tip_sibling_r: 'Geschwister hinzufügen (S)', tip_child: 'Kind hinzufügen (C)', tip_spouse: 'Partner hinzufügen (M)',
+      marriage_dates: 'Ehedaten', present: 'heute', b: 'geb.', years: 'J.',
+      add_child_menu: 'Kind hinzufügen…', with: 'Mit', no_partner: 'ohne Partner',
+      two_parents: 'Diese Person hat bereits zwei Eltern', deleted: 'Gelöscht · ⌘Z zum Rückgängigmachen', nothing_undo: 'Nichts rückgängig zu machen', nothing_redo: 'Nichts zu wiederholen',
+      saved: 'Gespeichert', opened: 'Geöffnet', save_failed: 'Speichern fehlgeschlagen', open_failed: 'Öffnen fehlgeschlagen', not_tree: 'Keine Stammbaum-Datei',
+      discard: 'Ungespeicherte Änderungen verwerfen?', file_name: 'Dateiname', unlink_confirm: 'Dieses Paar trennen? Die Kinder bleiben beim ersten Elternteil.',
+      restored: 'Ungespeicherten Entwurf wiederhergestellt',
+      export_pdf: 'PDF exportieren', export_t: 'Als PDF exportieren (Druckdialog)', change_photo: 'Foto ändern', adjust_crop: 'Ausschnitt anpassen', crop_title: 'Foto zuschneiden', crop_hint: 'Ziehen zum Verschieben, Scrollen oder Pinch zum Zoomen', cancel: 'Abbrechen', apply: 'Übernehmen', zoom: 'Zoom', nothing_export: 'Nichts zu exportieren',
+      help: [
+        ['Tastenkürzel'],
+        ['Navigation', [['Elternteil / Kind wählen', '↑ ↓'], ['Geschwister / Partner wählen', '← →'], ['Auswahl aufheben / schließen', 'Esc'], ['Baum einpassen', 'F'], ['Vergrößern / verkleinern / zurücksetzen', '+ − 0'], ['Verschieben', 'Leertaste+Ziehen, Mausrad'], ['Zoom am Cursor', 'Pinch, ⌘+Mausrad']]],
+        ['Bearbeiten', [['Karte bearbeiten', 'Enter / F2'], ['Nächstes / vorheriges Feld', 'Tab / ⇧Tab'], ['Bearbeitung beenden', 'Enter / Esc'], ['Foto setzen', 'Kreis anklicken'], ['Ehedaten', '♥-Symbol anklicken']]],
+        ['Erstellen & löschen', [['Elternteil hinzufügen', 'P / ⇧↑'], ['Kind hinzufügen', 'C / ⇧↓'], ['Geschwister rechts / links', 'S ⇧→ / ⇧←'], ['Partner hinzufügen', 'M'], ['Auswahl löschen', '⌫ / Del'], ['Rückgängig / wiederholen', '⌘Z / ⇧⌘Z']]],
+        ['Datei', [['Neu / Öffnen / Speichern', '⌘N ⌘O ⌘S'], ['Speichern unter', '⇧⌘S']]],
+      ],
+    },
+  };
+  const LANG_KEY = 'familytree.lang';
+  let lang = localStorage.getItem(LANG_KEY) || (navigator.language || 'en').slice(0, 2);
+  if (!I18N[lang]) lang = 'en';
+  const t = (k) => I18N[lang][k] ?? I18N.en[k] ?? k;
+  function applyI18n() {
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.dataset.i18nTitle); });
+    for (const [act, k] of [['undo', 'undo_t'], ['redo', 'redo_t'], ['zoomin', 'zoomin_t'], ['zoomout', 'zoomout_t']]) document.querySelector(`[data-act=${act}]`).title = t(k);
+    const [[title], ...sections] = t('help');
+    document.querySelector('#help .panel').innerHTML = `<h2>${esc(title)}</h2>` + sections.map(([h, rows]) =>
+      `<h3>${esc(h)}</h3><div class="grid">` + rows.map(([a, b]) => `<div><span>${esc(a)}</span><span>${b.split(' ').map(x => /^(?:[⌘⇧]*[A-Z0-9]{1,2}|[↑↓←→⌫+−?0]+|Enter|Esc|Tab|Del|Space|Leertaste)$/.test(x) ? `<kbd>${esc(x)}</kbd>` : esc(x)).join(' ')}</span></div>`).join('') + '</div>').join('');
+    document.getElementById('lang').value = lang;
+  }
+  function setLang(l) {
+    lang = l; localStorage.setItem(LANG_KEY, l);
+    if (fileName === I18N.en.untitled || Object.values(I18N).some(d => d.untitled === fileName)) fileName = t('untitled');
+    applyI18n(); render();
+  }
+
+  const CARD_W = 280, CARD_H = 112, H_GAP = 36, V_GAP = 96, COUPLE_GAP = 76, TREE_GAP = 100;
+  const GRID = 24, MIN_ZOOM = 0.15, MAX_ZOOM = 3;
+  const DRAFT_KEY = 'familytree.draft';
+
+  let state = emptyState();
+  let positions = new Map();
+  let marriages = [];
+  let selectedId = null;
+  let editingId = null;
+  let editSnapshot = null;
+  let undoStack = [], redoStack = [];
+  let fileHandle = null, fileName = null, dirty = false;
+  let view = { x: 0, y: 0, s: 1 };
+
+  function emptyState() { return { version: 1, people: {}, families: {} }; }
+  function uid(p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  const $ = (s) => document.querySelector(s);
+  const viewport = $('#viewport'), world = $('#world'), edgesSvg = $('#edges'), cardsEl = $('#cards'), emptyEl = $('#empty');
+  const photoInput = $('#photoInput'), fileInput = $('#fileInput');
+
+  const people = () => Object.values(state.people);
+  const fam = (id) => state.families[id];
+  function childFamily(pid) { return Object.values(state.families).find(f => f.children.includes(pid)); }
+  function parentFamilies(pid) { return Object.values(state.families).filter(f => f.parents.includes(pid)); }
+  function parentsOf(pid) { const f = childFamily(pid); return f ? f.parents : []; }
+  function childrenOf(pid) { return parentFamilies(pid).flatMap(f => f.children); }
+  function spousesOf(pid) { return parentFamilies(pid).flatMap(f => f.parents.filter(x => x !== pid)); }
+  function siblingsOf(pid) { const f = childFamily(pid); return f ? f.children : [pid]; }
+
+  function newPerson() {
+    const p = { id: uid('p'), name: '', birthName: '', birth: '', death: '', alive: true, photo: null, photoSrc: null, crop: null };
+    state.people[p.id] = p;
+    return p;
+  }
+  function newFamily(parents, children) {
+    const f = { id: uid('f'), parents, children, married: '', ended: '' };
+    state.families[f.id] = f;
+    return f;
+  }
+
+  function addParent(pid) {
+    const f = childFamily(pid);
+    if (f && f.parents.length >= 2) return null;
+    const p = newPerson();
+    if (f) f.parents.push(p.id); else newFamily([p.id], [pid]);
+    return p;
+  }
+  function addChild(pid, familyId) {
+    const p = newPerson();
+    const f = familyId ? fam(familyId) : parentFamilies(pid)[0];
+    if (f) f.children.push(p.id); else newFamily([pid], [p.id]);
+    return p;
+  }
+  function addSpouse(pid) {
+    const p = newPerson();
+    const single = parentFamilies(pid).find(f => f.parents.length === 1);
+    if (single) single.parents.push(p.id); else newFamily([pid, p.id], []);
+    return p;
+  }
+  function addSibling(pid, side) {
+    const p = newPerson();
+    let f = childFamily(pid);
+    if (!f) f = newFamily([], [pid]);
+    const i = f.children.indexOf(pid) + (side === 'left' ? 0 : 1);
+    f.children.splice(i, 0, p.id);
+    return p;
+  }
+  function deletePerson(pid) {
+    delete state.people[pid];
+    for (const f of Object.values(state.families)) {
+      f.parents = f.parents.filter(x => x !== pid);
+      f.children = f.children.filter(x => x !== pid);
+      const meaningless = (f.parents.length === 0 && f.children.length <= 1) || (f.children.length === 0 && f.parents.length <= 1);
+      if (f.parents.length === 0 && f.children.length === 0) delete state.families[f.id];
+      if (meaningless) delete state.families[f.id];
+    }
+  }
+  function nearestRelative(pid) {
+    return spousesOf(pid)[0] || parentsOf(pid)[0] || siblingsOf(pid).find(x => x !== pid) || childrenOf(pid)[0] || null;
+  }
+
+  function snapshot() { return JSON.stringify(state); }
+  function mutate(fn) {
+    undoStack.push(snapshot()); redoStack = [];
+    if (undoStack.length > 200) undoStack.shift();
+    const r = fn();
+    afterChange();
+    return r;
+  }
+  function undo() {
+    if (editingId) stopEditing();
+    if (!undoStack.length) return toast(t('nothing_undo'));
+    redoStack.push(snapshot());
+    state = JSON.parse(undoStack.pop());
+    if (!state.people[selectedId]) selectedId = null;
+    afterChange();
+  }
+  function redo() {
+    if (editingId) stopEditing();
+    if (!redoStack.length) return toast(t('nothing_redo'));
+    undoStack.push(snapshot());
+    state = JSON.parse(redoStack.pop());
+    if (!state.people[selectedId]) selectedId = null;
+    afterChange();
+  }
+  function afterChange() {
+    dirty = true;
+    render();
+    scheduleDraft();
+  }
+
+  function layout() {
+    positions = new Map();
+    marriages = [];
+    const claimed = new Set();
+    const roots = people().filter(p => !childFamily(p.id));
+
+    function buildNode(pid) {
+      const unit = [pid]; claimed.add(pid);
+      for (let i = 0; i < unit.length; i++) {
+        for (const f of parentFamilies(unit[i])) for (const sp of f.parents) {
+          if (!claimed.has(sp)) { claimed.add(sp); unit.push(sp); }
+        }
+      }
+      const fams = [...new Set(unit.flatMap(parentFamilies))];
+      const groups = fams.map(f => ({ f, children: f.children.filter(id => !claimed.has(id)).map(buildNode).filter(Boolean) }))
+        .filter(g => g.children.length);
+      return { unit, groups };
+    }
+
+    const forest = [];
+    const cluster = (pid) => { const seen = new Set([pid]); for (const a of seen) for (const sp of spousesOf(a)) seen.add(sp); return [...seen]; };
+    const topRoots = roots.filter(p => cluster(p.id).every(id => !childFamily(id)));
+    for (const list of [topRoots, roots, people()]) {
+      for (const p of list) if (!claimed.has(p.id)) forest.push(buildNode(p.id));
+    }
+
+    function measure(n) {
+      n.uw = n.unit.length * CARD_W + Math.max(0, n.unit.length - 1) * COUPLE_GAP;
+      n.cw = 0;
+      for (const g of n.groups) {
+        g.w = 0;
+        g.children.forEach((c, i) => { g.w += measure(c) + (i ? H_GAP : 0); });
+        n.cw += g.w + (n.cw ? H_GAP : 0);
+      }
+      n.w = Math.max(n.uw, n.cw);
+      return n.w;
+    }
+    function place(n, x, depth) {
+      const y = depth * (CARD_H + V_GAP);
+      let ux = x + (n.w - n.uw) / 2;
+      for (const id of n.unit) { positions.set(id, { x: ux, y }); ux += CARD_W + COUPLE_GAP; }
+      const originX = (g) => g.f.parents.filter(id => positions.has(id)).reduce((a, id, _, arr) => a + (positions.get(id).x + CARD_W / 2) / arr.length, 0);
+      const ordered = [...n.groups].sort((a, b) => originX(a) - originX(b));
+      let cx = x + (n.w - n.cw) / 2;
+      for (const g of ordered) {
+        let gx = cx;
+        for (const c of g.children) { place(c, gx, depth + 1); gx += c.w + H_GAP; }
+        cx += g.w + H_GAP;
+      }
+    }
+    let total = 0;
+    forest.forEach((n, i) => { total += measure(n) + (i ? TREE_GAP : 0); });
+    let x = -total / 2;
+    for (const n of forest) { place(n, x, 0); x += n.w + TREE_GAP; }
+  }
+
+  function render() {
+    layout();
+    renderCards();
+    renderEdges();
+    emptyEl.hidden = people().length > 0;
+    $('#actions').classList.toggle('show', !!selectedId && !editingId);
+    document.body.classList.toggle('has-selection', !!selectedId);
+    $('#filename').textContent = fileName;
+    $('#filename').classList.toggle('dirty', dirty);
+    document.title = (dirty ? '• ' : '') + fileName + ' — ' + t('app');
+  }
+
+  function initials(name) {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    return parts.length ? parts.slice(0, 2).map(s => s[0].toUpperCase()).join('') : '';
+  }
+  function fmtDate(s) {
+    if (!s) return '';
+    const d = new Date(s + 'T00:00:00');
+    return isNaN(d) ? s : d.toLocaleDateString(lang, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+  function ageOf(birth, ref) {
+    const b = new Date(birth + 'T00:00:00'), r = ref ? new Date(ref + 'T00:00:00') : new Date();
+    if (isNaN(b) || isNaN(r)) return null;
+    let a = r.getFullYear() - b.getFullYear();
+    if (r.getMonth() < b.getMonth() || (r.getMonth() === b.getMonth() && r.getDate() < b.getDate())) a--;
+    return a >= 0 ? a : null;
+  }
+  function datesText(p) {
+    if (!p.birth && (p.alive || !p.death)) return '';
+    const born = p.birth ? fmtDate(p.birth) : '?';
+    if (p.alive) { const a = ageOf(p.birth); return `${t('b')} ${born}` + (a !== null ? ` · ${a} ${t('years')}` : ''); }
+    const died = p.death ? fmtDate(p.death) : '?';
+    const a = p.birth && p.death ? ageOf(p.birth, p.death) : null;
+    return `${born} – ${died}` + (a !== null ? ` (${a})` : '');
+  }
+
+  function renderCards() {
+    cardsEl.innerHTML = '';
+    for (const p of people()) {
+      const pos = positions.get(p.id);
+      const el = document.createElement('div');
+      el.className = 'card' + (p.id === selectedId ? ' selected' : '') + (p.id === editingId ? ' editing' : '');
+      el.dataset.id = p.id;
+      el.style.left = pos.x + 'px'; el.style.top = pos.y + 'px';
+      const canAddParent = parentsOf(p.id).length < 2;
+      const dt = datesText(p);
+      el.innerHTML = `
+        <div class="photo" title="${t('set_photo')}">
+          ${p.photo ? `<img src="${p.photo}" alt="">` : `<span>${initials(p.name)}</span>`}
+          <div class="cam">📷</div>
+          <button class="photo-x ${p.photo ? 'has-photo' : ''}" title="${t('remove_photo')}">×</button>
+        </div>
+        <div class="info">
+          <div class="name ${p.name ? '' : 'empty'}" title="${esc(fullName(p))}">${esc(p.name) || t('unnamed')}${p.birthName ? ` <span class="nee">${t('nee')} ${esc(p.birthName)}</span>` : ''}</div>
+          <div class="dates ${dt ? '' : 'empty'}">${esc(dt) || t('add_dates')}</div>
+          <div class="edit">
+            <input type="text" class="f-name" placeholder="${t('full_name')}" value="${esc(p.name)}">
+            <div class="row"><label>${t('nee')}</label><input type="text" class="f-bname" placeholder="${t('birth_name')}" value="${esc(p.birthName)}"></div>
+            <div class="row"><label>${t('born')}</label><input type="date" class="f-birth" value="${esc(p.birth)}"></div>
+            <div class="row"><label>${t('died')}</label><input type="date" class="f-death" value="${esc(p.death)}" ${p.alive ? 'hidden' : ''}>
+              <span class="alive"><input type="checkbox" class="f-alive" ${p.alive ? 'checked' : ''}> ${t('living')}</span></div>
+          </div>
+        </div>
+        ${canAddParent ? `<button class="plus top" data-add="parent" data-tip="${t('tip_parent')}">+</button>` : ''}
+        <button class="plus left" data-add="sibling-left" data-tip="${t('tip_sibling_l')}">+</button>
+        <button class="plus right" data-add="sibling-right" data-tip="${t('tip_sibling_r')}">+</button>
+        <button class="plus bottom" data-add="child" data-tip="${t('tip_child')}">+</button>
+        <button class="plus spouse" data-add="spouse" data-tip="${t('tip_spouse')}">♥</button>`;
+      cardsEl.appendChild(el);
+    }
+  }
+  function fullName(p) { return p.birthName ? `${p.name || t('unnamed')} (${t('nee')} ${p.birthName})` : (p.name || t('unnamed')); }
+  function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+  function renderEdges() {
+    const d = [];
+    marriages = [];
+    const mid = (id) => { const p = positions.get(id); return { id, x: p.x, cx: p.x + CARD_W / 2, cy: p.y + CARD_H / 2, top: p.y, bottom: p.y + CARD_H }; };
+    for (const f of Object.values(state.families)) {
+      const ps = f.parents.filter(id => positions.has(id)).map(mid).sort((a, b) => a.cx - b.cx);
+      const cs = f.children.filter(id => positions.has(id)).map(mid);
+      let origin = null;
+      if (ps.length === 2) {
+        const [a, b] = ps;
+        const adjacent = Math.abs(a.top - b.top) < 1 && b.x - (a.x + CARD_W) <= COUPLE_GAP + 1;
+        if (adjacent) {
+          d.push(`M${a.cx + CARD_W / 2} ${a.cy} L${b.cx - CARD_W / 2} ${b.cy}`);
+          origin = { x: (a.cx + b.cx) / 2, y: a.cy };
+          marriages.push({ f, x: origin.x, y: a.cy + 27 });
+        } else {
+          const gap = Math.round((b.cx - a.cx) / (CARD_W + COUPLE_GAP));
+          const archY = Math.min(a.top, b.top) - 18 - 14 * Math.max(0, gap - 2);
+          d.push(`M${a.cx} ${a.top} L${a.cx} ${archY} L${b.cx} ${archY} L${b.cx} ${b.top}`);
+          origin = { x: b.cx, y: b.bottom };
+          marriages.push({ f, x: (a.cx + b.cx) / 2, y: archY });
+        }
+      } else if (ps.length === 1) origin = { x: ps[0].cx, y: ps[0].bottom };
+      if (!cs.length) continue;
+      const busY = Math.min(...cs.map(c => c.top)) - V_GAP / 2;
+      const xs = cs.map(c => c.cx);
+      if (origin) { xs.push(origin.x); d.push(`M${origin.x} ${origin.y} L${origin.x} ${busY}`); }
+      d.push(`M${Math.min(...xs)} ${busY} L${Math.max(...xs)} ${busY}`);
+      for (const c of cs) d.push(`M${c.cx} ${busY} L${c.cx} ${c.top}`);
+    }
+    edgesSvg.innerHTML = `<path d="${d.join(' ')}"/>`;
+    for (const m of marriages) {
+      const el = document.createElement('div');
+      const txt = marriageText(m.f);
+      el.className = 'marriage' + (txt ? '' : ' empty');
+      el.dataset.fid = m.f.id; el.title = t('marriage_dates');
+      el.style.left = m.x + 'px'; el.style.top = m.y + 'px';
+      el.innerHTML = `<span class="h">♥</span>${esc(txt)}`;
+      cardsEl.appendChild(el);
+    }
+  }
+  function year(s) { return s ? s.slice(0, 4) : ''; }
+  function marriageText(f) {
+    if (!f.married && !f.ended) return '';
+    return `${year(f.married) || '?'} – ${f.ended ? year(f.ended) : t('present')}`;
+  }
+
+  const mpop = $('#mpop');
+  let mpopFamily = null;
+  function openMarriage(fid, anchor) {
+    const f = fam(fid); if (!f) return;
+    stopEditing();
+    mpopFamily = fid; mpopSnapshot = snapshot();
+    const names = f.parents.map(id => state.people[id]?.name || t('unnamed'));
+    $('#mpop-title').textContent = names.join(' & ');
+    $('#m-from').value = f.married || ''; $('#m-to').value = f.ended || '';
+    const r = anchor.getBoundingClientRect();
+    mpop.classList.add('show');
+    const w = mpop.offsetWidth, h = mpop.offsetHeight;
+    mpop.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px';
+    mpop.style.top = (r.bottom + 8 + h > innerHeight ? r.top - h - 8 : r.bottom + 8) + 'px';
+    $('#m-from').focus();
+  }
+  let mpopSnapshot = null;
+  function closeMarriage() {
+    if (!mpopFamily) return;
+    mpopFamily = null; mpop.classList.remove('show');
+    if (mpopSnapshot && mpopSnapshot !== snapshot()) { undoStack.push(mpopSnapshot); redoStack = []; dirty = true; scheduleDraft(); render(); }
+    mpopSnapshot = null;
+  }
+  mpop.addEventListener('input', (e) => {
+    const f = fam(mpopFamily); if (!f) return;
+    if (e.target.id === 'm-from') f.married = e.target.value;
+    if (e.target.id === 'm-to') f.ended = e.target.value;
+  });
+  mpop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); closeMarriage(); } e.stopPropagation(); });
+  $('#m-close').addEventListener('click', closeMarriage);
+  $('#m-unlink').addEventListener('click', () => {
+    const fid = mpopFamily; const f = fam(fid); if (!f) return;
+    if (f.children.length && !confirm(t('unlink_confirm'))) return;
+    mpopFamily = null; mpop.classList.remove('show'); mpopSnapshot = null;
+    mutate(() => { f.parents = f.parents.slice(0, 1); if (!f.children.length) delete state.families[fid]; });
+  });
+
+  const menu = $('#menu');
+  function openMenu(anchor, title, items) {
+    menu.innerHTML = `<div class="t">${esc(title)}</div>` + items.map((it, i) => `<button data-i="${i}">${esc(it.label)}</button>`).join('');
+    menu.onclick = (e) => { const b = e.target.closest('button'); if (!b) return; closeMenu(); items[b.dataset.i].run(); };
+    const r = anchor.getBoundingClientRect();
+    menu.classList.add('show');
+    const w = menu.offsetWidth, h = menu.offsetHeight;
+    menu.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px';
+    menu.style.top = (r.bottom + 6 + h > innerHeight ? r.top - h - 6 : r.bottom + 6) + 'px';
+    menu.querySelector('button').focus();
+  }
+  function closeMenu() { menu.classList.remove('show'); menu.innerHTML = ''; }
+  menu.addEventListener('keydown', (e) => {
+    const bs = [...menu.querySelectorAll('button')]; const i = bs.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') { e.preventDefault(); bs[(i + 1) % bs.length].focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); bs[(i - 1 + bs.length) % bs.length].focus(); }
+    else if (e.key === 'Escape') { e.preventDefault(); closeMenu(); }
+    else if (/^[1-9]$/.test(e.key) && bs[e.key - 1]) { e.preventDefault(); bs[e.key - 1].click(); }
+    e.stopPropagation();
+  });
+  document.addEventListener('pointerdown', (e) => {
+    if (menu.classList.contains('show') && !menu.contains(e.target)) closeMenu();
+    if (mpop.classList.contains('show') && !mpop.contains(e.target) && !e.target.closest('.marriage')) closeMarriage();
+  }, true);
+
+  function applyView() {
+    world.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.s})`;
+    viewport.style.backgroundSize = `${GRID * view.s}px ${GRID * view.s}px`;
+    viewport.style.backgroundPosition = `${view.x}px ${view.y}px`;
+    $('#zoomlvl').textContent = Math.round(view.s * 100) + '%';
+  }
+  function zoomAt(factor, mx, my, anim) {
+    const ns = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, view.s * factor));
+    const k = ns / view.s;
+    view = { x: mx - (mx - view.x) * k, y: my - (my - view.y) * k, s: ns };
+    if (anim) animateView();
+    applyView();
+  }
+  function animateView() {
+    world.classList.add('anim');
+    clearTimeout(animateView.t);
+    animateView.t = setTimeout(() => world.classList.remove('anim'), 300);
+  }
+  function resetView() {
+    view = { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 - CARD_H / 2 - 40, s: 1 };
+    applyView();
+  }
+  function fitView() {
+    if (!positions.size) return resetView();
+    const b = bbox();
+    const vw = viewport.clientWidth, vh = viewport.clientHeight;
+    const s = Math.min(MAX_ZOOM, 1.4, (vw - 120) / (b.w), (vh - 160) / (b.h));
+    view = { s, x: vw / 2 - (b.x + b.w / 2) * s, y: vh / 2 - (b.y + b.h / 2) * s };
+    animateView(); applyView();
+  }
+  function bbox() {
+    const xs = [...positions.values()];
+    const x = Math.min(...xs.map(p => p.x)), y = Math.min(...xs.map(p => p.y));
+    return { x, y, w: Math.max(...xs.map(p => p.x)) + CARD_W - x, h: Math.max(...xs.map(p => p.y)) + CARD_H - y };
+  }
+  function ensureVisible(id) {
+    const p = positions.get(id); if (!p) return;
+    const sx = p.x * view.s + view.x, sy = p.y * view.s + view.y, sw = CARD_W * view.s, sh = CARD_H * view.s;
+    const m = 40, vw = viewport.clientWidth, vh = viewport.clientHeight;
+    let dx = 0, dy = 0;
+    if (sx < m) dx = m - sx; else if (sx + sw > vw - m) dx = vw - m - sx - sw;
+    if (sy < 80) dy = 80 - sy; else if (sy + sh > vh - 80) dy = vh - 80 - sy - sh;
+    if (dx || dy) { view.x += dx; view.y += dy; animateView(); applyView(); }
+  }
+
+  let pan = null, spaceDown = false;
+  const pointers = new Map();
+  let pinch = null;
+  function pinchGeom() {
+    const [a, b] = [...pointers.values()];
+    return { d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+  }
+  viewport.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0 && e.button !== 1) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 2) {
+      pointers.forEach((_, id) => { try { viewport.setPointerCapture(id); } catch (_) {} });
+      pan = null; pinch = { ...pinchGeom(), v: { ...view } };
+      viewport.classList.add('panning', 'dragging');
+      return;
+    }
+    const onCard = e.target.closest('.card');
+    if (onCard && !spaceDown && e.pointerType === 'mouse' && e.button === 0) return;
+    pan = { sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false, onCard: !!onCard, target: e.target };
+    if (!onCard || spaceDown) viewport.classList.add('panning', 'dragging');
+  });
+  viewport.addEventListener('pointermove', (e) => {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && pointers.size >= 2) {
+      const g = pinchGeom();
+      const s = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, pinch.v.s * g.d / pinch.d));
+      const k = s / pinch.v.s;
+      view = { s, x: g.mx - (pinch.mx - pinch.v.x) * k, y: g.my - (pinch.my - pinch.v.y) * k };
+      applyView(); return;
+    }
+    if (!pan) return;
+    const dx = e.clientX - pan.sx, dy = e.clientY - pan.sy;
+    if (!pan.moved && Math.abs(dx) + Math.abs(dy) > (e.pointerType === 'touch' ? 8 : 3)) {
+      pan.moved = true;
+      try { viewport.setPointerCapture(e.pointerId); } catch (_) {}
+    }
+    if (pan.onCard && !spaceDown && !pan.moved) return;
+    if (pan.onCard && !spaceDown && pan.moved && e.pointerType !== 'touch') return;
+    view.x = pan.vx + dx; view.y = pan.vy + dy; applyView();
+  });
+  function endPointer(e) {
+    pointers.delete(e.pointerId);
+    if (pinch) { if (pointers.size < 2) { pinch = null; viewport.classList.remove('dragging'); if (!spaceDown) viewport.classList.remove('panning'); } return; }
+    if (!pan) return;
+    const { moved, onCard } = pan; pan = null;
+    viewport.classList.remove('dragging'); if (!spaceDown) viewport.classList.remove('panning');
+    if (moved || e.type === 'pointercancel') return;
+    const badge = e.target.closest('.marriage');
+    if (badge) { openMarriage(badge.dataset.fid, badge); return; }
+    if (!onCard && !e.target.closest('#empty')) { stopEditing(); select(null); }
+  }
+  viewport.addEventListener('pointerup', endPointer);
+  viewport.addEventListener('pointercancel', endPointer);
+  viewport.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if (e.ctrlKey || e.metaKey) zoomAt(Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY);
+    else { view.x -= e.deltaX; view.y -= e.deltaY; applyView(); }
+  }, { passive: false });
+  viewport.addEventListener('dblclick', (e) => {
+    if (e.target.closest('.card') || e.target.closest('#empty')) return;
+    zoomAt(1.5, e.clientX, e.clientY, true);
+  });
+  window.addEventListener('resize', applyView);
+
+  function select(id, opts = {}) {
+    if (editingId && editingId !== id) stopEditing();
+    if (mpopFamily) closeMarriage();
+    selectedId = id;
+    $('#actions').classList.toggle('show', !!id);
+    document.body.classList.toggle('has-selection', !!id);
+    cardsEl.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected'));
+    if (id) {
+      cardEl(id)?.classList.add('selected');
+      if (opts.scroll !== false) ensureVisible(id);
+    }
+  }
+  const cardEl = (id) => cardsEl.querySelector(`.card[data-id="${id}"]`);
+  const isCoarse = matchMedia('(pointer: coarse)').matches;
+
+  function startEditing(id, field = '.f-name', fresh = false) {
+    if (editingId === id) { cardEl(id)?.querySelector(field)?.focus(); return; }
+    stopEditing();
+    editingId = id; editSnapshot = fresh ? null : snapshot();
+    select(id);
+    const el = cardEl(id); el.classList.add('editing');
+    $('#actions').classList.remove('show');
+    const inp = el.querySelector(field); inp.focus(); inp.select?.();
+  }
+  function stopEditing() {
+    if (!editingId) return;
+    const id = editingId; editingId = null;
+    if (editSnapshot && editSnapshot !== snapshot()) {
+      undoStack.push(editSnapshot); redoStack = []; dirty = true; scheduleDraft();
+    }
+    editSnapshot = null;
+    render();
+    if (document.activeElement && document.activeElement.closest?.('.card')) document.activeElement.blur();
+    return id;
+  }
+
+  cardsEl.addEventListener('pointerdown', (e) => {
+    const card = e.target.closest('.card'); if (!card || spaceDown) return;
+    const id = card.dataset.id;
+    if (e.target.closest('.plus') || e.target.closest('.photo')) return;
+    if (editingId !== id && e.pointerType === 'mouse') { e.preventDefault(); select(id, { scroll: false }); }
+  });
+  cardsEl.addEventListener('click', (e) => {
+    const card = e.target.closest('.card'); if (!card) return;
+    const id = card.dataset.id;
+    const plus = e.target.closest('.plus');
+    if (plus) { createRelative(id, plus.dataset.add, plus); return; }
+    const wasSelected = selectedId === id;
+    if (!wasSelected) select(id, { scroll: false });
+    if (e.target.closest('.photo-x')) { mutate(() => { removePhoto(state.people[id]); }); startEditing(id); return; }
+    if (e.target.closest('.photo')) { photoAction(id, e.target.closest('.photo')); return; }
+    if (editingId === id) return;
+    if (e.detail >= 2 || (wasSelected && isCoarse)) startEditing(id);
+  });
+  cardsEl.addEventListener('input', (e) => {
+    const card = e.target.closest('.card'); if (!card) return;
+    const p = state.people[card.dataset.id]; if (!p) return;
+    if (e.target.classList.contains('f-name')) p.name = e.target.value;
+    else if (e.target.classList.contains('f-bname')) p.birthName = e.target.value;
+    else if (e.target.classList.contains('f-birth')) p.birth = e.target.value;
+    else if (e.target.classList.contains('f-death')) p.death = e.target.value;
+    else if (e.target.classList.contains('f-alive')) {
+      p.alive = e.target.checked;
+      const d = card.querySelector('.f-death'); d.hidden = p.alive;
+      if (p.alive) { p.death = ''; d.value = ''; } else d.focus();
+    }
+    const ph = card.querySelector('.photo span'); if (ph) ph.textContent = initials(p.name);
+  });
+  cardsEl.addEventListener('keydown', (e) => {
+    if (!editingId) return;
+    if (e.key === 'Enter' && !e.target.matches('input[type=checkbox]')) { e.preventDefault(); const id = stopEditing(); select(id); }
+    else if (e.key === 'Escape') { e.preventDefault(); const id = stopEditing(); select(id); }
+    else if (e.key === 'Tab') {
+      const fields = [...e.target.closest('.card').querySelectorAll('.edit input:not([hidden])')];
+      const i = fields.indexOf(e.target);
+      const next = fields[i + (e.shiftKey ? -1 : 1)];
+      if (next) { e.preventDefault(); next.focus(); next.select?.(); }
+      else { e.preventDefault(); const id = stopEditing(); select(id); }
+    }
+    e.stopPropagation();
+  });
+
+  function removePhoto(p) { p.photo = null; p.photoSrc = null; p.crop = null; }
+  function pickPhoto(id) { photoInput.dataset.target = id; photoInput.click(); }
+  function photoAction(id, anchor) {
+    const p = state.people[id];
+    if (!p.photo) return pickPhoto(id);
+    openMenu(anchor, t('photo'), [
+      { label: t('adjust_crop'), run: () => openCropper(id, p.photoSrc || p.photo, p.crop) },
+      { label: t('change_photo'), run: () => pickPhoto(id) },
+      { label: t('remove_photo'), run: () => mutate(() => removePhoto(p)) },
+    ]);
+  }
+  photoInput.addEventListener('change', async () => {
+    const file = photoInput.files[0]; const id = photoInput.dataset.target; photoInput.value = '';
+    if (!file || !state.people[id]) return;
+    try { openCropper(id, await loadScaled(file, 1024), null); } catch (_) { toast(t('open_failed')); }
+  });
+  function loadScaled(file, max) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => {
+        const k = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(img.src);
+        res(c.toDataURL('image/jpeg', 0.88));
+      };
+      img.onerror = rej;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  const cropEl = $('#crop'), cropCanvas = $('#crop-canvas'), cropZoom = $('#crop-zoom');
+  const cropCtx = cropCanvas.getContext('2d');
+  let cr = null;
+  function openCropper(pid, src, crop) {
+    const img = new Image();
+    img.onload = () => {
+      const minS = Math.max(16, Math.min(img.width, img.height) * 0.1), maxS = Math.min(img.width, img.height);
+      cr = { pid, src, img, minS, maxS, s: maxS, cx: img.width / 2, cy: img.height / 2 };
+      if (crop && crop.s) { cr.s = crop.s; cr.cx = crop.x + crop.s / 2; cr.cy = crop.y + crop.s / 2; }
+      clampCrop(); cropEl.classList.add('show'); drawCrop();
+    };
+    img.src = src;
+  }
+  function clampCrop() {
+    cr.s = Math.min(cr.maxS, Math.max(cr.minS, cr.s));
+    cr.cx = Math.min(cr.img.width - cr.s / 2, Math.max(cr.s / 2, cr.cx));
+    cr.cy = Math.min(cr.img.height - cr.s / 2, Math.max(cr.s / 2, cr.cy));
+  }
+  function drawCrop() {
+    const W = cropCanvas.width;
+    cropCtx.fillStyle = '#fff'; cropCtx.fillRect(0, 0, W, W);
+    cropCtx.drawImage(cr.img, cr.cx - cr.s / 2, cr.cy - cr.s / 2, cr.s, cr.s, 0, 0, W, W);
+    cropZoom.value = Math.round(1000 * (cr.maxS - cr.s) / Math.max(1, cr.maxS - cr.minS));
+  }
+  function zoomCrop(factor, fx = 0.5, fy = 0.5) {
+    const ns = Math.min(cr.maxS, Math.max(cr.minS, cr.s * factor));
+    cr.cx += (fx - 0.5) * (cr.s - ns); cr.cy += (fy - 0.5) * (cr.s - ns); cr.s = ns;
+    clampCrop(); drawCrop();
+  }
+  cropZoom.addEventListener('input', () => { cr.s = cr.maxS - (cropZoom.value / 1000) * (cr.maxS - cr.minS); clampCrop(); drawCrop(); });
+  const cps = new Map(); let cpinch = null;
+  const stage = cropCanvas.parentElement;
+  stage.addEventListener('pointerdown', (e) => { cps.set(e.pointerId, { x: e.clientX, y: e.clientY }); stage.setPointerCapture(e.pointerId); if (cps.size === 2) { const [a, b] = [...cps.values()]; cpinch = { d: Math.hypot(a.x - b.x, a.y - b.y), s: cr.s }; } });
+  stage.addEventListener('pointermove', (e) => {
+    if (!cps.has(e.pointerId) || !cr) return;
+    const prev = cps.get(e.pointerId); cps.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const k = cr.s / stage.clientWidth;
+    if (cps.size === 2 && cpinch) { const [a, b] = [...cps.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); cr.s = cpinch.s * cpinch.d / d; clampCrop(); drawCrop(); return; }
+    cr.cx -= (e.clientX - prev.x) * k; cr.cy -= (e.clientY - prev.y) * k; clampCrop(); drawCrop();
+  });
+  const cropUp = (e) => { cps.delete(e.pointerId); if (cps.size < 2) cpinch = null; };
+  stage.addEventListener('pointerup', cropUp); stage.addEventListener('pointercancel', cropUp);
+  stage.addEventListener('wheel', (e) => { e.preventDefault(); const r = stage.getBoundingClientRect(); zoomCrop(Math.exp(e.deltaY * 0.002), (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height); }, { passive: false });
+  function closeCropper() { cropEl.classList.remove('show'); cr = null; }
+  $('#crop-cancel').addEventListener('click', closeCropper);
+  cropEl.addEventListener('pointerdown', (e) => { if (e.target === cropEl) closeCropper(); });
+  $('#crop-ok').addEventListener('click', () => {
+    const { pid, src, img, s: size, cx, cy } = cr;
+    const c = document.createElement('canvas'); c.width = c.height = 256;
+    c.getContext('2d').drawImage(img, cx - size / 2, cy - size / 2, size, size, 0, 0, 256, 256);
+    const thumb = c.toDataURL('image/jpeg', 0.85);
+    closeCropper();
+    const p = state.people[pid]; if (!p) return;
+    mutate(() => { p.photo = thumb; p.photoSrc = src; p.crop = { x: Math.round(cx - size / 2), y: Math.round(cy - size / 2), s: Math.round(size) }; });
+    select(pid, { scroll: false });
+  });
+  document.addEventListener('keydown', (e) => {
+    if (!cropEl.classList.contains('show')) return;
+    if (e.key === 'Escape') closeCropper(); else if (e.key === 'Enter') $('#crop-ok').click(); else return;
+    e.preventDefault(); e.stopPropagation();
+  }, true);
+
+  function exportPdf() {
+    stopEditing();
+    if (!positions.size) return toast(t('nothing_export'));
+    const b = bbox(), M = 40;
+    const w = b.w + 2 * M, h = b.h + 2 * M + 36;
+    const mm = (px) => (px * 0.264583).toFixed(2) + 'mm';
+    const css = document.querySelector('style').textContent;
+    const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><title>${esc(fileName)}</title><style>${css}
+      @page { size: ${mm(w)} ${mm(h)}; margin: 0; }
+      html, body { overflow: visible; background: #fff; width: ${w}px; height: ${h}px; }
+      #viewport { position: relative; width: ${w}px; height: ${h}px; background: #fff; overflow: visible; }
+      #world { transform: translate(${M - b.x}px, ${M + 36 - b.y}px); }
+      .plus, .photo .cam, .photo-x, .edit { display: none !important; }
+      .card, .card.selected { box-shadow: none; border-color: var(--border); cursor: default; break-inside: avoid; }
+      .marriage.empty { display: none; }
+      .pdf-title { position: absolute; left: ${M}px; top: 12px; font-size: 14px; font-weight: 600; color: #5b6377; }
+    </style></head><body><div id="viewport"><div class="pdf-title">${esc(fileName)}</div><div id="world">${edgesSvg.outerHTML}<div id="cards">${cardsEl.innerHTML}</div></div></div>
+    <script>window.onload = () => setTimeout(() => { window.print(); }, 150);<\/script></body></html>`;
+    const win = window.open('', '_blank');
+    if (!win) return toast(t('save_failed'));
+    win.document.open(); win.document.write(html); win.document.close();
+  }
+
+  function createRelative(id, kind, anchor, familyId) {
+    if (kind === 'child' && !familyId) {
+      const fams = parentFamilies(id);
+      if (fams.length > 1) {
+        const items = fams.map(f => ({
+          label: t('with') + ' ' + (f.parents.filter(x => x !== id).map(x => state.people[x]?.name || t('unnamed')).join(', ') || t('no_partner')),
+          run: () => createRelative(id, 'child', null, f.id),
+        }));
+        return openMenu(anchor || cardEl(id), t('add_child_menu'), items);
+      }
+    }
+    const p = mutate(() => {
+      if (kind === 'parent') return addParent(id);
+      if (kind === 'child') return addChild(id, familyId);
+      if (kind === 'spouse') return addSpouse(id);
+      return addSibling(id, kind === 'sibling-left' ? 'left' : 'right');
+    });
+    if (!p) return toast(t('two_parents'));
+    startEditing(p.id, '.f-name', true);
+    ensureVisible(p.id);
+  }
+  function createFirst() {
+    const p = mutate(() => newPerson());
+    resetView();
+    startEditing(p.id, '.f-name', true);
+  }
+  emptyEl.addEventListener('click', createFirst);
+
+  function removeSelected() {
+    if (!selectedId) return;
+    const id = selectedId;
+    const next = nearestRelative(id);
+    stopEditing();
+    mutate(() => deletePerson(id));
+    select(next);
+    toast(t('deleted'));
+  }
+
+  function navigate(dir) {
+    if (!selectedId) { const first = people()[0]; if (first) select(first.id); return; }
+    const id = selectedId;
+    let target = null;
+    if (dir === 'up') target = parentsOf(id)[0];
+    else if (dir === 'down') target = childrenOf(id)[0];
+    else {
+      const sibs = siblingsOf(id); const i = sibs.indexOf(id);
+      target = sibs[i + (dir === 'left' ? -1 : 1)];
+      if (!target) target = spousesOf(id).find(sp => (positions.get(sp).x - positions.get(id).x) * (dir === 'left' ? -1 : 1) > 0);
+    }
+    if (!target) target = spatialNeighbour(id, dir);
+    if (target) select(target);
+  }
+  function spatialNeighbour(id, dir) {
+    const a = positions.get(id); let best = null, bestD = Infinity;
+    for (const [oid, b] of positions) {
+      if (oid === id) continue;
+      const dx = b.x - a.x, dy = b.y - a.y;
+      let ok;
+      if (dir === 'up') ok = dy < 0 && Math.abs(dx) <= Math.abs(dy) * 2 + CARD_W;
+      else if (dir === 'down') ok = dy > 0 && Math.abs(dx) <= Math.abs(dy) * 2 + CARD_W;
+      else if (dir === 'left') ok = dx < 0 && Math.abs(dy) <= Math.abs(dx);
+      else ok = dx > 0 && Math.abs(dy) <= Math.abs(dx);
+      if (!ok) continue;
+      const d = (dir === 'up' || dir === 'down') ? Math.abs(dy) * 2 + Math.abs(dx) : Math.abs(dx) * 2 + Math.abs(dy);
+      if (d < bestD) { bestD = d; best = oid; }
+    }
+    return best;
+  }
+
+  document.addEventListener('keydown', (e) => {
+    const inField = e.target.matches('input, textarea, [contenteditable]');
+    const mod = e.metaKey || e.ctrlKey;
+    if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); save(e.shiftKey); return; }
+    if (mod && e.key.toLowerCase() === 'o') { e.preventDefault(); open(); return; }
+    if (mod && e.key.toLowerCase() === 'n') { e.preventDefault(); newTree(); return; }
+    if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+    if (inField) return;
+    if (e.key === 'Escape') {
+      if ($('#help').classList.contains('show')) return $('#help').classList.remove('show');
+      if (mpopFamily) return closeMarriage();
+      return select(null);
+    }
+    if (e.key === ' ') { e.preventDefault(); spaceDown = true; viewport.classList.add('panning'); return; }
+    if (e.key === '?') return $('#help').classList.toggle('show');
+    if (e.key === 'f' || e.key === 'F') return fitView();
+    if (e.key === '0') return resetView();
+    if (e.key === '+' || e.key === '=') return zoomAt(1.2, viewport.clientWidth / 2, viewport.clientHeight / 2, true);
+    if (e.key === '-' || e.key === '_') return zoomAt(1 / 1.2, viewport.clientWidth / 2, viewport.clientHeight / 2, true);
+
+    if (!people().length && (e.key === 'Enter' || e.key.toLowerCase() === 'n')) { e.preventDefault(); return createFirst(); }
+    const dirs = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+    if (dirs[e.key]) {
+      e.preventDefault();
+      if (e.shiftKey && selectedId) {
+        const kind = { up: 'parent', down: 'child', left: 'sibling-left', right: 'sibling-right' }[dirs[e.key]];
+        return createRelative(selectedId, kind);
+      }
+      return navigate(dirs[e.key]);
+    }
+    if (!selectedId) { if (e.key === 'Tab') { e.preventDefault(); navigate('right'); } return; }
+    if (e.key === 'Enter' || e.key === 'F2') { e.preventDefault(); return startEditing(selectedId); }
+    if (e.key === 'Tab') { e.preventDefault(); return navigate(e.shiftKey ? 'left' : 'right'); }
+    if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); return removeSelected(); }
+    const k = e.key.toLowerCase();
+    if (k === 'p' || k === 'c' || k === 's' || k === 'm') {
+      e.preventDefault();
+      createRelative(selectedId, { p: 'parent', c: 'child', s: 'sibling-right', m: 'spouse' }[k]);
+    }
+  });
+  document.addEventListener('keyup', (e) => {
+    if (e.key === ' ') { spaceDown = false; if (!pan) viewport.classList.remove('panning'); }
+  });
+
+  document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
+    const c = viewport.clientWidth / 2, m = viewport.clientHeight / 2;
+    ({
+      new: newTree, open, save: () => save(false), saveas: () => save(true), undo, redo, pdf: exportPdf,
+      zoomin: () => zoomAt(1.2, c, m, true), zoomout: () => zoomAt(1 / 1.2, c, m, true), fit: fitView,
+      help: () => $('#help').classList.toggle('show'),
+    })[b.dataset.act]();
+  }));
+  $('#actions').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-sel]'); if (!b || !selectedId) return;
+    const a = b.dataset.sel;
+    if (a === 'edit') startEditing(selectedId);
+    else if (a === 'photo') photoAction(selectedId, b);
+    else if (a === 'delete') removeSelected();
+    else createRelative(selectedId, a, b);
+  });
+  $('#help').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('show'); });
+
+  const hasFS = 'showSaveFilePicker' in window;
+  const EXT = '.ftree';
+  const pickerOpts = { suggestedName: 'family-tree' + EXT, types: [{ description: 'Family tree', accept: { 'application/octet-stream': [EXT] } }] };
+  const openTypes = [{ description: 'Family tree', accept: { 'application/octet-stream': [EXT], 'application/json': ['.json'] } }];
+  const MAGIC = [0x46, 0x54, 0x52, 0x45, 0x45, 0x01];
+
+  function dataUrlToBytes(url) {
+    const i = url.indexOf(','); const mime = url.slice(5, url.indexOf(';')); const bin = atob(url.slice(i + 1));
+    const out = new Uint8Array(bin.length); for (let k = 0; k < bin.length; k++) out[k] = bin.charCodeAt(k);
+    return { mime, bytes: out };
+  }
+  function bytesToDataUrl(bytes, mime) {
+    let bin = ''; for (let k = 0; k < bytes.length; k += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(k, k + 0x8000));
+    return `data:${mime};base64,` + btoa(bin);
+  }
+  function serialize() {
+    const blobs = [];
+    const ref = (url) => { if (!url) return null; const { mime, bytes } = dataUrlToBytes(url); blobs.push({ mime, bytes }); return blobs.length - 1; };
+    const people = {};
+    for (const p of Object.values(state.people)) {
+      const { photo, photoSrc, ...rest } = p;
+      people[p.id] = { ...rest, thumbRef: ref(photo), photoRef: ref(photoSrc) };
+    }
+    const meta = new TextEncoder().encode(JSON.stringify({ version: 1, people, families: state.families, blobs: blobs.map(b => b.mime) }));
+    const head = new Uint8Array(MAGIC.length + 4); head.set(MAGIC);
+    new DataView(head.buffer).setUint32(MAGIC.length, meta.length, true);
+    const parts = [head, meta];
+    for (const b of blobs) { const len = new Uint8Array(4); new DataView(len.buffer).setUint32(0, b.bytes.length, true); parts.push(len, b.bytes); }
+    return new Blob(parts, { type: 'application/octet-stream' });
+  }
+  function deserialize(buf) {
+    const u8 = new Uint8Array(buf);
+    if (!MAGIC.slice(0, 5).every((b, i) => u8[i] === b)) {
+      const text = new TextDecoder().decode(u8).trim();
+      if (!text.startsWith('{')) throw new Error(t('not_tree'));
+      return JSON.parse(text);
+    }
+    const dv = new DataView(buf);
+    let off = MAGIC.length;
+    const metaLen = dv.getUint32(off, true); off += 4;
+    const meta = JSON.parse(new TextDecoder().decode(u8.subarray(off, off + metaLen))); off += metaLen;
+    const blobs = [];
+    for (const mime of meta.blobs || []) {
+      const len = dv.getUint32(off, true); off += 4;
+      blobs.push(bytesToDataUrl(u8.subarray(off, off + len), mime)); off += len;
+    }
+    const people = {};
+    for (const p of Object.values(meta.people || {})) {
+      const { thumbRef, photoRef, ...rest } = p;
+      people[p.id] = { ...rest, photo: thumbRef == null ? null : blobs[thumbRef], photoSrc: photoRef == null ? null : blobs[photoRef] };
+    }
+    return { version: 1, people, families: meta.families || {} };
+  }
+
+  async function save(as) {
+    stopEditing();
+    const blob = serialize();
+    try {
+      if (hasFS) {
+        if (!fileHandle || as) {
+          fileHandle = await window.showSaveFilePicker({ ...pickerOpts, suggestedName: fileHandle?.name || pickerOpts.suggestedName });
+          fileName = fileHandle.name;
+        }
+        const w = await fileHandle.createWritable(); await w.write(blob); await w.close();
+      } else {
+        if (isUntitled() || as) {
+          const n = prompt(t('file_name'), isUntitled() ? 'family-tree' + EXT : fileName.replace(/\.json$/, EXT));
+          if (!n) return; fileName = n.endsWith(EXT) ? n : n + EXT;
+        }
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = fileName; a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      }
+      dirty = false; render(); toast(t('saved') + ' ' + fileName);
+    } catch (err) { if (err.name !== 'AbortError') toast(t('save_failed') + ': ' + err.message); }
+  }
+
+  async function open() {
+    if (dirty && !confirm(t('discard'))) return;
+    try {
+      if (hasFS) {
+        const [h] = await window.showOpenFilePicker({ types: openTypes, multiple: false });
+        const buf = await (await h.getFile()).arrayBuffer();
+        loadData(buf, h.name); fileHandle = h.name.endsWith(EXT) ? h : null;
+      } else fileInput.click();
+    } catch (err) { if (err.name !== 'AbortError') toast(t('open_failed') + ': ' + err.message); }
+  }
+  fileInput.addEventListener('change', async () => {
+    const f = fileInput.files[0]; fileInput.value = ''; if (!f) return;
+    try { loadData(await f.arrayBuffer(), f.name); } catch (err) { toast(t('open_failed') + ': ' + err.message); }
+  });
+  function loadData(buf, name) {
+    const data = deserialize(buf);
+    if (!data || typeof data.people !== 'object' || typeof data.families !== 'object') throw new Error(t('not_tree'));
+    state = { version: 1, people: data.people, families: data.families };
+    for (const p of Object.values(state.people)) { p.alive = p.alive ?? !p.death; p.name ??= ''; p.birthName ??= ''; p.birth ??= ''; p.death ??= ''; p.photo ??= null; p.photoSrc ??= null; p.crop ??= null; }
+    for (const f of Object.values(state.families)) { f.married ??= ''; f.ended ??= ''; f.parents ??= []; f.children ??= []; }
+    fileName = name.replace(/\.json$/, EXT); fileHandle = null; dirty = name.endsWith('.json'); undoStack = []; redoStack = []; selectedId = null; editingId = null;
+    render(); fitView(); scheduleDraft(); toast(t('opened') + ' ' + name);
+  }
+  function newTree() {
+    if (dirty && !confirm(t('discard'))) return;
+    state = emptyState(); fileHandle = null; fileName = t('untitled'); dirty = false;
+    undoStack = []; redoStack = []; selectedId = null; editingId = null;
+    render(); resetView(); scheduleDraft();
+  }
+
+  function isUntitled() { return Object.values(I18N).some(d => d.untitled === fileName); }
+  function scheduleDraft() {
+    clearTimeout(scheduleDraft.t);
+    scheduleDraft.t = setTimeout(() => {
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ state, fileName, dirty })); } catch (_) {}
+    }, 400);
+  }
+  function restoreDraft() {
+    try {
+      const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
+      if (d && d.state && Object.keys(d.state.people).length) { state = d.state; fileName = d.fileName || fileName; dirty = !!d.dirty; return true; }
+    } catch (_) {}
+    return false;
+  }
+  window.addEventListener('beforeunload', (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+  function toast(msg) {
+    const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  fileName = t('untitled');
+  const restored = restoreDraft();
+  applyI18n();
+  render();
+  document.getElementById('lang').addEventListener('change', (e) => setLang(e.target.value));
+  if (restored) { fitView(); toast(t('restored')); } else resetView();
+})();
+</script>
+</body>
+</html>
