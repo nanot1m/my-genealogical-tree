@@ -45,6 +45,12 @@
     cursor: pointer; transition: box-shadow .15s, border-color .15s; -webkit-tap-highlight-color: transparent;
   }
   .edit input { user-select: text; -webkit-user-select: text; }
+  @keyframes card-in { from { transform: scale(.5); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes card-out { to { transform: scale(.6); opacity: 0; } }
+  .card.enter { animation: card-in .32s cubic-bezier(.2,.8,.2,1); }
+  .card.leave { animation: card-out .2s ease-in forwards; pointer-events: none; }
+  .marriage { transition: none; }
+  @media (prefers-reduced-motion: reduce) { .card.enter, .card.leave { animation-duration: .01s; } }
   .card:hover { box-shadow: 0 2px 4px rgba(20,24,40,.08), 0 10px 28px rgba(20,24,40,.12); }
   .card.selected { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow); }
   .card.editing { cursor: default; }
@@ -130,6 +136,23 @@
   #mpop button { border: none; background: #f0f2f7; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 12px; }
   #mpop button.danger { color: var(--danger); background: transparent; }
 
+  #welcome { position: absolute; inset: 0; background: rgba(247,248,250,.85); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 30; }
+  #welcome.show { display: flex; }
+  #welcome .panel { background: #fff; border-radius: 18px; padding: 24px 26px; width: 440px; max-width: calc(100vw - 24px); box-shadow: 0 20px 60px rgba(20,24,40,.18); }
+  #welcome h2 { margin: 0 0 14px; font-size: 20px; }
+  #welcome h3 { margin: 18px 0 8px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  #welcome button { font: inherit; border: none; border-radius: 10px; padding: 10px 14px; cursor: pointer; background: #f0f2f7; color: var(--text); font-size: 14px; }
+  #welcome button.primary { background: var(--accent); color: #fff; width: 100%; }
+  #welcome .foot { display: flex; gap: 8px; margin-top: 18px; }
+  #welcome .foot button { flex: 1; }
+  #welcome .recent { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 10px 12px; margin-bottom: 6px; }
+  #welcome .recent:hover { background: #e8ecff; }
+  #welcome .recent .ic { font-size: 18px; }
+  #welcome .recent .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  #welcome .recent .dt { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  #welcome .recent .x { font-size: 16px; color: var(--muted); padding: 0 4px; border-radius: 6px; }
+  #welcome .recent .x:hover { color: var(--danger); background: #fff; }
+  #welcome .none { color: var(--muted); font-size: 13px; padding: 6px 0; }
   #sheet { position: absolute; inset: 0; background: rgba(20,24,40,.35); display: none; align-items: flex-end; justify-content: center; z-index: 35; }
   #sheet.show { display: flex; }
   #sheet .sheet {
@@ -197,6 +220,7 @@
   }
   .bar button:hover { background: #f0f2f7; }
   .bar .sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+  [data-act=filemenu] { display: none; }
   #filename { font-weight: 600; font-size: 13px; padding: 0 8px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #filename.dirty::after { content: " •"; color: var(--accent); }
   #lang { font: inherit; font-size: 12px; border: 1px solid var(--border); border-radius: 8px; padding: 4px 4px; background: #fff; color: var(--text); margin: 0 4px; }
@@ -238,6 +262,7 @@
     .photo .cam { display: none; }
     .edit input[type=text], .edit input[type=date] { font-size: 16px; }
     #bottom { display: none; }
+    #actions [data-sel=edit], #actions [data-sel=photo], #actions [data-sel=delete], #actions .sep { display: none; }
   }
   @media (max-width: 640px) {
     #topleft { left: 8px; top: calc(8px + env(safe-area-inset-top)); }
@@ -246,10 +271,11 @@
     .bar button { padding: 6px 8px; }
     #topright [data-act=fit], #topright [data-act=help], #topright #zoomlvl, #topright .sep { display: none; }
     #topright #lang { display: inline-block; }
-    #topleft [data-act=saveas], #topleft [data-act=pdf], #topleft .sep:has(+ [data-act=pdf]) { display: none; }
-    #actions { bottom: calc(12px + env(safe-area-inset-bottom)); flex-wrap: nowrap; overflow-x: auto; max-width: calc(100vw - 16px); scrollbar-width: none; }
-    #actions::-webkit-scrollbar { display: none; }
-    #actions .sep { flex: none; }
+    #topleft [data-act=new], #topleft [data-act=open], #topleft [data-act=save], #topleft [data-act=saveas], #topleft [data-act=pdf], #topleft [data-act=download], #topleft .sep:has(+ [data-act=pdf]) { display: none; }
+    #topleft [data-act=filemenu] { display: inline-block; font-weight: 600; }
+    #filename { max-width: 180px; }
+    #actions { bottom: calc(12px + env(safe-area-inset-bottom)); flex-wrap: wrap; width: calc(100vw - 16px); max-width: 420px; }
+    #actions button { flex: 1 1 40%; }
     #help .panel { width: calc(100vw - 24px); padding: 18px; }
     #help .grid { grid-template-columns: 1fr; }
   }
@@ -259,6 +285,7 @@
 <div id="viewport">
   <div id="world">
     <svg id="edges"></svg>
+    <div id="badges"></div>
     <div id="cards"></div>
   </div>
   <div id="empty" hidden>
@@ -270,12 +297,14 @@
 <div class="bar" id="topleft">
   <span id="filename">Untitled tree</span>
   <span class="sep"></span>
+  <button data-act="filemenu" data-i18n="file_menu"></button>
   <button data-act="new" data-i18n="new" data-i18n-title="new_t"></button>
   <button data-act="open" data-i18n="open" data-i18n-title="open_t"></button>
   <button data-act="save" data-i18n="save" data-i18n-title="save_t"></button>
   <button data-act="saveas" data-i18n="saveas" data-i18n-title="saveas_t"></button>
   <span class="sep"></span>
   <button data-act="pdf" data-i18n="export_pdf" data-i18n-title="export_t"></button>
+  <button data-act="download" data-i18n="download" data-i18n-title="download_t" hidden></button>
 </div>
 <div class="bar" id="topright">
   <button data-act="undo" title="Undo (⌘Z)">↶</button>
@@ -315,6 +344,18 @@
   <div class="foot"><button class="danger" id="m-unlink" data-i18n="unlink"></button><button id="m-close" data-i18n="done"></button></div>
 </div>
 <div id="menu"></div>
+<div id="welcome">
+  <div class="panel">
+    <h2 data-i18n="app"></h2>
+    <button class="primary" id="w-continue" hidden></button>
+    <h3 id="w-list-title"></h3>
+    <div id="w-recent"></div>
+    <div class="foot">
+      <button id="w-open"></button>
+      <button id="w-new" data-i18n="new_tree"></button>
+    </div>
+  </div>
+</div>
 <div id="sheet">
   <div class="sheet">
     <div class="grab"></div>
@@ -369,7 +410,7 @@
       saved: 'Saved', opened: 'Opened', save_failed: 'Save failed', open_failed: 'Open failed', not_tree: 'Not a family tree file',
       discard: 'Discard unsaved changes?', file_name: 'File name', unlink_confirm: 'Unlink this couple? Their children stay attached to the first parent.',
       restored: 'Restored unsaved draft',
-      sheet_title: 'Edit person', export_pdf: 'Export PDF', export_t: 'Export as PDF (print dialog)', change_photo: 'Change photo', adjust_crop: 'Adjust crop', crop_title: 'Crop photo', crop_hint: 'Drag to move, scroll or pinch to zoom', cancel: 'Cancel', apply: 'Apply', zoom: 'Zoom', nothing_export: 'Nothing to export',
+      download: 'Download file', download_t: 'Download a copy of this tree as a file', import_file: 'Import file…', library: 'Saved trees', file_menu: 'File', delete_tree: 'Delete this tree from this device?', saved_local: 'Saved on this device', recent: 'Recent files', continue_draft: 'Continue unsaved work', open_file: 'Open file…', new_tree: 'New tree', no_recent: 'No recent files yet', perm_denied: 'Access to the file was not granted', file_missing: 'File not found, removed from recent', forget: 'Remove from list', last_opened: 'opened', sheet_title: 'Edit person', export_pdf: 'Export PDF', export_t: 'Export as PDF (print dialog)', change_photo: 'Change photo', adjust_crop: 'Adjust crop', crop_title: 'Crop photo', crop_hint: 'Drag to move, scroll or pinch to zoom', cancel: 'Cancel', apply: 'Apply', zoom: 'Zoom', nothing_export: 'Nothing to export',
       help: [
         ['Keyboard shortcuts'],
         ['Navigate', [['Select parent / child', '↑ ↓'], ['Select sibling / spouse', '← →'], ['Deselect / close', 'Esc'], ['Fit tree to screen', 'F'], ['Zoom in / out / reset', '+ − 0'], ['Pan', 'Space+drag, wheel'], ['Zoom at cursor', 'pinch, ⌘+wheel']]],
@@ -395,7 +436,7 @@
       saved: 'Сохранено', opened: 'Открыто', save_failed: 'Ошибка сохранения', open_failed: 'Ошибка открытия', not_tree: 'Это не файл семейного древа',
       discard: 'Отменить несохранённые изменения?', file_name: 'Имя файла', unlink_confirm: 'Разорвать связь пары? Дети останутся у первого родителя.',
       restored: 'Восстановлен несохранённый черновик',
-      sheet_title: 'Редактирование', export_pdf: 'Экспорт в PDF', export_t: 'Экспорт в PDF (диалог печати)', change_photo: 'Заменить фото', adjust_crop: 'Изменить обрезку', crop_title: 'Обрезка фото', crop_hint: 'Перетащите для сдвига, колесо или щипок — масштаб', cancel: 'Отмена', apply: 'Применить', zoom: 'Масштаб', nothing_export: 'Нечего экспортировать',
+      download: 'Скачать файл', download_t: 'Скачать копию дерева файлом', import_file: 'Импортировать файл…', library: 'Сохранённые деревья', file_menu: 'Файл', delete_tree: 'Удалить это дерево с устройства?', saved_local: 'Сохранено на устройстве', recent: 'Недавние файлы', continue_draft: 'Продолжить несохранённую работу', open_file: 'Открыть файл…', new_tree: 'Новое дерево', no_recent: 'Недавних файлов пока нет', perm_denied: 'Доступ к файлу не предоставлен', file_missing: 'Файл не найден и удалён из списка', forget: 'Убрать из списка', last_opened: 'открыт', sheet_title: 'Редактирование', export_pdf: 'Экспорт в PDF', export_t: 'Экспорт в PDF (диалог печати)', change_photo: 'Заменить фото', adjust_crop: 'Изменить обрезку', crop_title: 'Обрезка фото', crop_hint: 'Перетащите для сдвига, колесо или щипок — масштаб', cancel: 'Отмена', apply: 'Применить', zoom: 'Масштаб', nothing_export: 'Нечего экспортировать',
       help: [
         ['Горячие клавиши'],
         ['Навигация', [['Выбрать родителя / ребёнка', '↑ ↓'], ['Выбрать брата-сестру / супруга', '← →'], ['Снять выделение / закрыть', 'Esc'], ['Вписать дерево в экран', 'F'], ['Приблизить / отдалить / сброс', '+ − 0'], ['Перемещение', 'Space+мышь, колесо'], ['Масштаб у курсора', 'щипок, ⌘+колесо']]],
@@ -421,7 +462,7 @@
       saved: 'Gespeichert', opened: 'Geöffnet', save_failed: 'Speichern fehlgeschlagen', open_failed: 'Öffnen fehlgeschlagen', not_tree: 'Keine Stammbaum-Datei',
       discard: 'Ungespeicherte Änderungen verwerfen?', file_name: 'Dateiname', unlink_confirm: 'Dieses Paar trennen? Die Kinder bleiben beim ersten Elternteil.',
       restored: 'Ungespeicherten Entwurf wiederhergestellt',
-      sheet_title: 'Person bearbeiten', export_pdf: 'PDF exportieren', export_t: 'Als PDF exportieren (Druckdialog)', change_photo: 'Foto ändern', adjust_crop: 'Ausschnitt anpassen', crop_title: 'Foto zuschneiden', crop_hint: 'Ziehen zum Verschieben, Scrollen oder Pinch zum Zoomen', cancel: 'Abbrechen', apply: 'Übernehmen', zoom: 'Zoom', nothing_export: 'Nichts zu exportieren',
+      download: 'Datei herunterladen', download_t: 'Kopie dieses Stammbaums als Datei herunterladen', import_file: 'Datei importieren…', library: 'Gespeicherte Stammbäume', file_menu: 'Datei', delete_tree: 'Diesen Stammbaum von diesem Gerät löschen?', saved_local: 'Auf diesem Gerät gespeichert', recent: 'Zuletzt geöffnet', continue_draft: 'Ungespeicherte Arbeit fortsetzen', open_file: 'Datei öffnen…', new_tree: 'Neuer Stammbaum', no_recent: 'Noch keine zuletzt geöffneten Dateien', perm_denied: 'Zugriff auf die Datei wurde nicht gewährt', file_missing: 'Datei nicht gefunden, aus der Liste entfernt', forget: 'Aus Liste entfernen', last_opened: 'geöffnet', sheet_title: 'Person bearbeiten', export_pdf: 'PDF exportieren', export_t: 'Als PDF exportieren (Druckdialog)', change_photo: 'Foto ändern', adjust_crop: 'Ausschnitt anpassen', crop_title: 'Foto zuschneiden', crop_hint: 'Ziehen zum Verschieben, Scrollen oder Pinch zum Zoomen', cancel: 'Abbrechen', apply: 'Übernehmen', zoom: 'Zoom', nothing_export: 'Nichts zu exportieren',
       help: [
         ['Tastenkürzel'],
         ['Navigation', [['Elternteil / Kind wählen', '↑ ↓'], ['Geschwister / Partner wählen', '← →'], ['Auswahl aufheben / schließen', 'Esc'], ['Baum einpassen', 'F'], ['Vergrößern / verkleinern / zurücksetzen', '+ − 0'], ['Verschieben', 'Leertaste+Ziehen, Mausrad'], ['Zoom am Cursor', 'Pinch, ⌘+Mausrad']]],
@@ -458,6 +499,9 @@
   let state = emptyState();
   let positions = new Map();
   let marriages = [];
+  let displayPos = new Map(), animFrame = 0, spawnFrom = null;
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const badgesEl = document.getElementById('badges');
   let selectedId = null;
   let editingId = null;
   let editSnapshot = null;
@@ -583,47 +627,91 @@
       return { unit, groups };
     }
 
-    const forest = [];
+    const forest = [], attached = [];
     const cluster = (pid) => { const seen = new Set([pid]); for (const a of seen) for (const sp of spousesOf(a)) seen.add(sp); return [...seen]; };
     const topRoots = roots.filter(p => cluster(p.id).every(id => !childFamily(id)));
     for (const list of [topRoots, roots, people()]) {
-      for (const p of list) if (!claimed.has(p.id)) forest.push(buildNode(p.id));
+      for (const p of list) {
+        if (claimed.has(p.id)) continue;
+        const anchors = [...new Set(cluster(p.id).flatMap(parentFamilies).flatMap(f => f.children))].filter(id => claimed.has(id));
+        const node = buildNode(p.id);
+        if (anchors.length) attached.push({ node, anchors }); else forest.push(node);
+      }
     }
 
     function measure(n) {
       n.uw = n.unit.length * CARD_W + Math.max(0, n.unit.length - 1) * COUPLE_GAP;
-      n.cw = 0;
+      const order = (g) => { const other = g.f.parents.find(id => id !== n.unit[0]) ?? g.f.parents[0]; const k = n.unit.indexOf(other); return k < 0 ? 99 : k; };
+      n.groups.sort((a, b) => order(a) - order(b));
+      let cw = 0; const own = [];
       for (const g of n.groups) {
-        g.w = 0;
-        g.children.forEach((c, i) => { g.w += measure(c) + (i ? H_GAP : 0); });
-        n.cw += g.w + (n.cw ? H_GAP : 0);
+        for (const c of g.children) { measure(c); c.rel = cw; own.push(cw + c.ownCenter); cw += c.w + H_GAP; }
       }
-      n.w = Math.max(n.uw, n.cw);
+      n.cw = Math.max(0, cw - H_GAP);
+      const unitRel = own.length ? own.reduce((a, b) => a + b, 0) / own.length - n.uw / 2 : 0;
+      const left = Math.min(0, unitRel), right = Math.max(n.cw, unitRel + n.uw);
+      n.childRel = -left; n.unitRel = unitRel - left; n.w = right - left;
+      n.ownCenter = n.unitRel + CARD_W / 2;
       return n.w;
     }
-    function place(n, x, depth) {
+    function place(n, x, depth, out = positions) {
       const y = depth * (CARD_H + V_GAP);
-      let ux = x + (n.w - n.uw) / 2;
-      for (const id of n.unit) { positions.set(id, { x: ux, y }); ux += CARD_W + COUPLE_GAP; }
-      const originX = (g) => g.f.parents.filter(id => positions.has(id)).reduce((a, id, _, arr) => a + (positions.get(id).x + CARD_W / 2) / arr.length, 0);
-      const ordered = [...n.groups].sort((a, b) => originX(a) - originX(b));
-      let cx = x + (n.w - n.cw) / 2;
-      for (const g of ordered) {
-        let gx = cx;
-        for (const c of g.children) { place(c, gx, depth + 1); gx += c.w + H_GAP; }
-        cx += g.w + H_GAP;
-      }
+      let ux = x + n.unitRel;
+      for (const id of n.unit) { out.set(id, { x: ux, y }); ux += CARD_W + COUPLE_GAP; }
+      for (const g of n.groups) for (const c of g.children) place(c, x + n.childRel + c.rel, depth + 1, out);
     }
+    const owner = new Map();
     let total = 0;
     forest.forEach((n, i) => { total += measure(n) + (i ? TREE_GAP : 0); });
     let x = -total / 2;
-    for (const n of forest) { place(n, x, 0); x += n.w + TREE_GAP; }
+    forest.forEach((n, i) => {
+      const m = new Map(); place(n, x, 0, m);
+      for (const [id, p] of m) { positions.set(id, p); owner.set(id, i); }
+      x += n.w + TREE_GAP;
+    });
+
+    const rowH = CARD_H + V_GAP;
+    for (const { node, anchors } of attached) {
+      measure(node);
+      const ap = anchors.map(id => positions.get(id)).filter(Boolean);
+      if (!ap.length) { place(node, x, 0); x += node.w + TREE_GAP; continue; }
+      const anchorY = Math.min(...ap.map(p => p.y));
+      const depth = Math.round(anchorY / rowH) - 1;
+      const want = ap.reduce((a, p) => a + p.x + CARD_W / 2, 0) / ap.length - (node.unitRel + node.uw / 2);
+      const tryAt = (sx) => { const m = new Map(); place(node, sx, depth, m); return m; };
+      const overlap = (m) => {
+        let right = 0, left = 0; const hit = new Set();
+        for (const a of m.values()) for (const [id, b] of positions) {
+          if (Math.abs(a.y - b.y) >= CARD_H || a.x >= b.x + CARD_W + H_GAP || b.x >= a.x + CARD_W + H_GAP) continue;
+          right = Math.max(right, b.x + CARD_W + H_GAP - a.x);
+          left = Math.max(left, a.x + CARD_W + H_GAP - b.x);
+          hit.add(id);
+        }
+        return { right, left, hit };
+      };
+      let sx = want, m = tryAt(sx);
+      const tree = owner.get(anchors[0]);
+      const first = overlap(m);
+      if (first.right && [...first.hit].every(id => positions.get(id).y < anchorY && owner.get(id) === tree)) {
+        const half = Math.min(first.right, first.left) / 2;
+        const dir = first.right <= first.left ? 1 : -1;
+        for (const [id, p] of positions) if (owner.get(id) === tree && p.y < anchorY) p.x -= dir * half;
+        sx += dir * half; m = tryAt(sx);
+      }
+      for (let i = 0; i < 20; i++) {
+        const o = overlap(m);
+        if (!o.right && !o.left) break;
+        sx += o.right <= o.left ? o.right : -o.left;
+        m = tryAt(sx);
+      }
+      for (const [id, p] of m) positions.set(id, p);
+    }
   }
 
   function render() {
     layout();
     renderCards();
-    renderEdges();
+    animatePositions();
     emptyEl.hidden = people().length > 0;
     $('#actions').classList.toggle('show', !!selectedId && !editingId);
     document.body.classList.toggle('has-selection', !!selectedId);
@@ -658,16 +746,27 @@
   }
 
   function renderCards() {
-    cardsEl.innerHTML = '';
+    const seen = new Set();
     for (const p of people()) {
-      const pos = positions.get(p.id);
-      const el = document.createElement('div');
-      el.className = 'card' + (p.id === selectedId ? ' selected' : '') + (p.id === editingId ? ' editing' : '');
-      el.dataset.id = p.id;
-      el.style.left = pos.x + 'px'; el.style.top = pos.y + 'px';
-      const canAddParent = parentsOf(p.id).length < 2;
-      const dt = datesText(p);
-      el.innerHTML = `
+      let el = cardEl(p.id);
+      if (el && el.classList.contains('leave')) { el.remove(); el = null; }
+      const fresh = !el;
+      if (fresh) { el = document.createElement('div'); el.dataset.id = p.id; cardsEl.appendChild(el); }
+      el.className = 'card' + (p.id === selectedId ? ' selected' : '') + (p.id === editingId ? ' editing' : '') + (fresh ? ' enter' : '');
+      if (fresh) el.addEventListener('animationend', () => el.classList.remove('enter'), { once: true });
+      el.innerHTML = cardHTML(p);
+      seen.add(p.id);
+    }
+    for (const el of cardsEl.querySelectorAll('.card')) {
+      if (seen.has(el.dataset.id) || el.classList.contains('leave')) continue;
+      el.classList.remove('selected', 'editing'); el.classList.add('leave');
+      el.addEventListener('animationend', () => el.remove(), { once: true });
+    }
+  }
+  function cardHTML(p) {
+    const canAddParent = parentsOf(p.id).length < 2;
+    const dt = datesText(p);
+    return `
         <div class="photo" title="${t('set_photo')}">
           ${p.photo ? `<img src="${p.photo}" alt="">` : `<span>${initials(p.name)}</span>`}
           <div class="cam">📷</div>
@@ -689,19 +788,42 @@
         <button class="plus right" data-add="sibling-right" data-tip="${t('tip_sibling_r')}">+</button>
         <button class="plus bottom" data-add="child" data-tip="${t('tip_child')}">+</button>
         <button class="plus spouse" data-add="spouse" data-tip="${t('tip_spouse')}">♥</button>`;
-      cardsEl.appendChild(el);
+  }
+  function applyPositions(map) {
+    for (const [id, p] of map) { const el = cardEl(id); if (el) { el.style.left = p.x + 'px'; el.style.top = p.y + 'px'; } }
+    renderEdges(map);
+  }
+  function animatePositions() {
+    cancelAnimationFrame(animFrame);
+    const from = new Map();
+    for (const [id, p] of positions) {
+      const prev = displayPos.get(id) || (spawnFrom && displayPos.get(spawnFrom)) || p;
+      from.set(id, { x: prev.x, y: prev.y });
     }
+    spawnFrom = null;
+    const moving = [...positions].some(([id, p]) => { const f = from.get(id); return Math.abs(f.x - p.x) > .5 || Math.abs(f.y - p.y) > .5; });
+    if (!moving || reduceMotion) { displayPos = new Map(positions); applyPositions(displayPos); return; }
+    applyPositions(from);
+    const start = performance.now(), dur = 340;
+    const step = (now) => {
+      const k = Math.min(1, (now - start) / dur), e = 1 - Math.pow(1 - k, 3);
+      displayPos = new Map();
+      for (const [id, p] of positions) { const f = from.get(id); displayPos.set(id, { x: f.x + (p.x - f.x) * e, y: f.y + (p.y - f.y) * e }); }
+      applyPositions(displayPos);
+      if (k < 1) animFrame = requestAnimationFrame(step);
+    };
+    animFrame = requestAnimationFrame(step);
   }
   function fullName(p) { return p.birthName ? `${p.name || t('unnamed')} (${t('nee')} ${p.birthName})` : (p.name || t('unnamed')); }
   function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
-  function renderEdges() {
+  function renderEdges(pos = positions) {
     const d = [];
     marriages = [];
-    const mid = (id) => { const p = positions.get(id); return { id, x: p.x, cx: p.x + CARD_W / 2, cy: p.y + CARD_H / 2, top: p.y, bottom: p.y + CARD_H }; };
+    const mid = (id) => { const p = pos.get(id); return { id, x: p.x, cx: p.x + CARD_W / 2, cy: p.y + CARD_H / 2, top: p.y, bottom: p.y + CARD_H }; };
     for (const f of Object.values(state.families)) {
-      const ps = f.parents.filter(id => positions.has(id)).map(mid).sort((a, b) => a.cx - b.cx);
-      const cs = f.children.filter(id => positions.has(id)).map(mid);
+      const ps = f.parents.filter(id => pos.has(id)).map(mid).sort((a, b) => a.cx - b.cx);
+      const cs = f.children.filter(id => pos.has(id)).map(mid);
       let origin = null;
       if (ps.length === 2) {
         const [a, b] = ps;
@@ -726,6 +848,7 @@
       for (const c of cs) d.push(`M${c.cx} ${busY} L${c.cx} ${c.top}`);
     }
     edgesSvg.innerHTML = `<path d="${d.join(' ')}"/>`;
+    badgesEl.innerHTML = '';
     for (const m of marriages) {
       const el = document.createElement('div');
       const txt = marriageText(m.f);
@@ -733,7 +856,7 @@
       el.dataset.fid = m.f.id; el.title = t('marriage_dates');
       el.style.left = m.x + 'px'; el.style.top = m.y + 'px';
       el.innerHTML = `<span class="h">♥</span>${esc(txt)}`;
-      cardsEl.appendChild(el);
+      badgesEl.appendChild(el);
     }
   }
   function year(s) { return s ? s.slice(0, 4) : ''; }
@@ -957,7 +1080,7 @@
     const card = e.target.closest('.card'); if (!card || spaceDown) return;
     const id = card.dataset.id;
     if (e.target.closest('.plus') || e.target.closest('.photo')) return;
-    if (editingId !== id && e.pointerType === 'mouse') { e.preventDefault(); select(id, { scroll: false }); }
+    if (editingId !== id && e.pointerType === 'mouse' && !isCoarse) { e.preventDefault(); select(id, { scroll: false }); }
   });
   cardsEl.addEventListener('click', (e) => {
     const card = e.target.closest('.card'); if (!card) return;
@@ -1157,10 +1280,11 @@
       #viewport { position: relative; width: ${w}px; height: ${h}px; background: #fff; overflow: visible; }
       #world { transform: translate(${M - b.x}px, ${M + 36 - b.y}px); }
       .plus, .photo .cam, .photo-x, .edit { display: none !important; }
+      .card.leave { display: none; }
       .card, .card.selected { box-shadow: none; border-color: var(--border); cursor: default; break-inside: avoid; }
       .marriage.empty { display: none; }
       .pdf-title { position: absolute; left: ${M}px; top: 12px; font-size: 14px; font-weight: 600; color: #5b6377; }
-    </style></head><body><div id="viewport"><div class="pdf-title">${esc(fileName)}</div><div id="world">${edgesSvg.outerHTML}<div id="cards">${cardsEl.innerHTML}</div></div></div>
+    </style></head><body><div id="viewport"><div class="pdf-title">${esc(fileName)}</div><div id="world">${edgesSvg.outerHTML}${badgesEl.outerHTML}<div id="cards">${cardsEl.innerHTML}</div></div></div>
     <script>window.onload = () => setTimeout(() => { window.print(); }, 150);<\/script></body></html>`;
     const win = window.open('', '_blank');
     if (!win) return toast(t('save_failed'));
@@ -1168,6 +1292,7 @@
   }
 
   function createRelative(id, kind, anchor, familyId) {
+    spawnFrom = id;
     if (kind === 'child' && !familyId) {
       const fams = parentFamilies(id);
       if (fams.length > 1) {
@@ -1246,6 +1371,7 @@
     if (inField) return;
     if (e.key === 'Escape') {
       if ($('#help').classList.contains('show')) return $('#help').classList.remove('show');
+      if (welcome.classList.contains('show') && people().length) return hideWelcome();
       if (mpopFamily) return closeMarriage();
       return select(null);
     }
@@ -1283,7 +1409,11 @@
   document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
     const c = viewport.clientWidth / 2, m = viewport.clientHeight / 2;
     ({
-      new: newTree, open, save: () => save(false), saveas: () => save(true), undo, redo, pdf: exportPdf,
+      new: newTree, open, save: () => save(false), saveas: () => save(true), undo, redo, pdf: exportPdf, download,
+      filemenu: () => openMenu(b, fileName, [
+        { label: t('new'), run: newTree }, { label: t('open'), run: open }, { label: t('save'), run: () => save(false) }, { label: t('saveas'), run: () => save(true) },
+        ...(hasFS ? [] : [{ label: t('download'), run: download }]), { label: t('export_pdf'), run: exportPdf },
+      ]),
       zoomin: () => zoomAt(1.2, c, m, true), zoomout: () => zoomAt(1 / 1.2, c, m, true), fit: fitView,
       help: () => $('#help').classList.toggle('show'),
     })[b.dataset.act]();
@@ -1359,35 +1489,41 @@
       if (hasFS) {
         if (!fileHandle || as) {
           fileHandle = await window.showSaveFilePicker({ ...pickerOpts, suggestedName: fileHandle?.name || pickerOpts.suggestedName });
-          fileName = fileHandle.name;
+          fileName = fileHandle.name; recents.remember(fileHandle);
         }
         const w = await fileHandle.createWritable(); await w.write(blob); await w.close();
       } else {
-        if (isUntitled() || as) {
+        if (isUntitled() || as || !libraryId) {
           const n = prompt(t('file_name'), isUntitled() ? 'family-tree' + EXT : fileName.replace(/\.json$/, EXT));
           if (!n) return; fileName = n.endsWith(EXT) ? n : n + EXT;
         }
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob); a.download = fileName; a.click();
-        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        await saveToLibrary(blob, as);
+        dirty = false; render(); scheduleDraft(); toast(t('saved_local'));
+        return;
       }
       dirty = false; render(); toast(t('saved') + ' ' + fileName);
     } catch (err) { if (err.name !== 'AbortError') toast(t('save_failed') + ': ' + err.message); }
   }
 
-  async function open() {
-    if (dirty && !confirm(t('discard'))) return;
+  async function open(fromWelcome) {
+    if (!hasFS) return showWelcome();
+    if (dirty && !fromWelcome && !confirm(t('discard'))) return;
     try {
       if (hasFS) {
         const [h] = await window.showOpenFilePicker({ types: openTypes, multiple: false });
         const buf = await (await h.getFile()).arrayBuffer();
         loadData(buf, h.name); fileHandle = h.name.endsWith(EXT) ? h : null;
+        if (fileHandle) recents.remember(h);
       } else fileInput.click();
     } catch (err) { if (err.name !== 'AbortError') toast(t('open_failed') + ': ' + err.message); }
   }
   fileInput.addEventListener('change', async () => {
     const f = fileInput.files[0]; fileInput.value = ''; if (!f) return;
-    try { loadData(await f.arrayBuffer(), f.name); } catch (err) { toast(t('open_failed') + ': ' + err.message); }
+    try {
+      const buf = await f.arrayBuffer();
+      loadData(buf, f.name); hideWelcome();
+      if (!hasFS) { libraryId = await library.add({ name: fileName, data: buf, time: Date.now() }); dirty = false; render(); scheduleDraft(); }
+    } catch (err) { toast(t('open_failed') + ': ' + err.message); }
   });
   function loadData(buf, name) {
     const data = deserialize(buf);
@@ -1395,27 +1531,119 @@
     state = { version: 1, people: data.people, families: data.families };
     for (const p of Object.values(state.people)) { p.alive = p.alive ?? !p.death; p.name ??= ''; p.birthName ??= ''; p.birth ??= ''; p.death ??= ''; p.photo ??= null; p.photoSrc ??= null; p.crop ??= null; }
     for (const f of Object.values(state.families)) { f.married ??= ''; f.ended ??= ''; f.parents ??= []; f.children ??= []; }
-    fileName = name.replace(/\.json$/, EXT); fileHandle = null; dirty = name.endsWith('.json'); undoStack = []; redoStack = []; selectedId = null; editingId = null;
+    fileName = name.replace(/\.json$/, EXT); fileHandle = null; libraryId = null; dirty = name.endsWith('.json'); undoStack = []; redoStack = []; selectedId = null; editingId = null;
     render(); fitView(); scheduleDraft(); toast(t('opened') + ' ' + name);
   }
   function newTree() {
     if (dirty && !confirm(t('discard'))) return;
-    state = emptyState(); fileHandle = null; fileName = t('untitled'); dirty = false;
+    state = emptyState(); fileHandle = null; libraryId = null; fileName = t('untitled'); dirty = false;
     undoStack = []; redoStack = []; selectedId = null; editingId = null;
     render(); resetView(); scheduleDraft();
   }
 
   function isUntitled() { return Object.values(I18N).some(d => d.untitled === fileName); }
+  let idbPromise = null;
+  function idb() {
+    return idbPromise ??= new Promise((res, rej) => {
+      const r = indexedDB.open('familytree', 2);
+      r.onupgradeneeded = () => { const db = r.result; for (const n of ['recent', 'library']) if (!db.objectStoreNames.contains(n)) db.createObjectStore(n, { keyPath: 'id', autoIncrement: true }); };
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+  }
+  function store(name) {
+    const tx = async (mode, fn) => {
+      const db = await idb();
+      return new Promise((res, rej) => { const req = fn(db.transaction(name, mode).objectStore(name)); req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error); });
+    };
+    return {
+      async all() { try { return (await tx('readonly', st => st.getAll())).sort((a, b) => b.time - a.time); } catch (_) { return []; } },
+      get: (id) => tx('readonly', st => st.get(id)),
+      add: (rec) => tx('readwrite', st => st.add(rec)),
+      put: (rec) => tx('readwrite', st => st.put(rec)),
+      async remove(id) { try { await tx('readwrite', st => st.delete(id)); } catch (_) {} },
+    };
+  }
+  const recents = Object.assign(store('recent'), {
+    async remember(handle) {
+      try {
+        for (const r of await this.all()) if (await r.handle.isSameEntry(handle)) await this.remove(r.id);
+        await this.add({ handle, name: handle.name, time: Date.now() });
+        for (const r of (await this.all()).slice(8)) await this.remove(r.id);
+      } catch (_) {}
+    },
+  });
+  const library = store('library');
+  let libraryId = null;
+  async function saveToLibrary(blob, asNew) {
+    const data = await blob.arrayBuffer();
+    if (libraryId && !asNew) await library.put({ id: libraryId, name: fileName, data, time: Date.now() });
+    else libraryId = await library.add({ name: fileName, data, time: Date.now() });
+  }
+  async function openLibrary(id) {
+    const rec = await library.get(id);
+    if (!rec) return toast(t('file_missing'));
+    loadData(rec.data, rec.name); libraryId = rec.id; hideWelcome();
+  }
+  function download() {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(serialize()); a.download = isUntitled() ? 'family-tree' + EXT : fileName; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  const welcome = $('#welcome');
+  async function openHandle(h, id) {
+    try {
+      let perm = await h.queryPermission({ mode: 'readwrite' });
+      if (perm !== 'granted') perm = await h.requestPermission({ mode: 'readwrite' });
+      if (perm !== 'granted') return toast(t('perm_denied'));
+      const buf = await (await h.getFile()).arrayBuffer();
+      loadData(buf, h.name); fileHandle = h; recents.remember(h);
+      hideWelcome();
+    } catch (err) {
+      if (err.name === 'NotFoundError') { if (id != null) await recents.remove(id); toast(t('file_missing')); showWelcome(); }
+      else toast(t('open_failed') + ': ' + err.message);
+    }
+  }
+  async function showWelcome() {
+    const list = hasFS ? await recents.all() : await library.all();
+    $('#w-list-title').textContent = t(hasFS ? 'recent' : 'library');
+    $('#w-open').textContent = t(hasFS ? 'open_file' : 'import_file');
+    const cont = $('#w-continue');
+    cont.hidden = !(dirty && people().length);
+    cont.textContent = `${t('continue_draft')} · ${fileName}`;
+    const box = $('#w-recent');
+    box.innerHTML = list.length ? '' : `<div class="none">${esc(t('no_recent'))}</div>`;
+    for (const r of list) {
+      const b = document.createElement('button'); b.className = 'recent';
+      b.innerHTML = `<span class="ic">🌳</span><span class="nm">${esc(r.name)}</span><span class="dt">${esc(new Date(r.time).toLocaleDateString(lang))}</span><span class="x" title="${esc(t(hasFS ? 'forget' : 'delete'))}">×</span>`;
+      b.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('x')) {
+          if (!hasFS && !confirm(t('delete_tree'))) return;
+          await (hasFS ? recents : library).remove(r.id); if (libraryId === r.id) libraryId = null;
+          b.remove(); if (!box.children.length) box.innerHTML = `<div class="none">${esc(t('no_recent'))}</div>`; return;
+        }
+        if (hasFS) openHandle(r.handle, r.id); else openLibrary(r.id);
+      });
+      box.appendChild(b);
+    }
+    welcome.classList.add('show');
+  }
+  function hideWelcome() { welcome.classList.remove('show'); }
+  $('#w-continue').addEventListener('click', hideWelcome);
+  $('#w-open').addEventListener('click', async () => { if (hasFS) { hideWelcome(); await open(true); } else fileInput.click(); });
+  $('#w-new').addEventListener('click', () => { if (dirty && people().length && !confirm(t('discard'))) return; dirty = false; newTree(); hideWelcome(); });
+  welcome.addEventListener('pointerdown', (e) => { if (e.target === welcome && (people().length || !hasFS)) hideWelcome(); });
+
   function scheduleDraft() {
     clearTimeout(scheduleDraft.t);
     scheduleDraft.t = setTimeout(() => {
-      try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ state, fileName, dirty })); } catch (_) {}
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ state, fileName, dirty, libraryId })); } catch (_) {}
     }, 400);
   }
   function restoreDraft() {
     try {
       const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
-      if (d && d.state && Object.keys(d.state.people).length) { state = d.state; fileName = d.fileName || fileName; dirty = !!d.dirty; return true; }
+      if (d && d.state && Object.keys(d.state.people).length) { state = d.state; fileName = d.fileName || fileName; dirty = !!d.dirty; libraryId = d.libraryId || null; return true; }
     } catch (_) {}
     return false;
   }
@@ -1431,7 +1659,19 @@
   applyI18n();
   render();
   document.getElementById('lang').addEventListener('change', (e) => setLang(e.target.value));
-  if (restored) { fitView(); toast(t('restored')); } else resetView();
+  if (restored) fitView(); else resetView();
+  $('[data-act=download]').hidden = hasFS;
+  navigator.storage?.persist?.().catch(() => {});
+  (async () => {
+    const last = (hasFS ? await recents.all() : await library.all())[0];
+    if (last && !(restored && dirty)) {
+      try {
+        if (!hasFS) { await openLibrary(last.id); return; }
+        if (await last.handle.queryPermission({ mode: 'readwrite' }) === 'granted') { await openHandle(last.handle, last.id); return; }
+      } catch (_) {}
+    }
+    showWelcome();
+  })();
 })();
 </script>
 </body>
