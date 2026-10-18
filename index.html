@@ -66,7 +66,7 @@
   }
   .card.editing .photo-x.has-photo { display: block; }
   .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-  .name { font-weight: 600; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .name { font-weight: 600; font-size: 16px; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
   .name.empty, .dates.empty { color: var(--muted); font-weight: 400; }
   .dates { font-size: 13px; color: #5b6377; }
   .card.editing .name, .card.editing .dates { display: none; }
@@ -77,9 +77,9 @@
   }
   .edit input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
   .edit .row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); height: 22px; }
-  .edit .row label { width: 40px; flex: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .edit input.f-bname { font-weight: 400; font-size: 12px; padding: 1px 6px; flex: 1; width: auto; }
-  .card.editing { height: auto; min-height: var(--card-h); z-index: 2; }
+  .edit .row label { width: 48px; flex: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .edit input.f-bname { font-weight: 400; font-size: 12px; padding: 1px 6px; flex: 1; width: 0; min-width: 0; }
+  .card.editing { height: auto; min-height: var(--card-h); width: 320px; z-index: 2; }
   .edit input[type=date] { font: inherit; font-size: 12px; padding: 1px 4px; border: 1px solid var(--border); border-radius: 6px; outline: none; flex: 1; min-width: 0; color: var(--text); }
   .edit .alive { display: flex; align-items: center; gap: 4px; width: auto; cursor: pointer; white-space: nowrap; color: var(--text); }
   .edit .alive input { margin: 0; }
@@ -130,7 +130,30 @@
   #mpop button { border: none; background: #f0f2f7; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 12px; }
   #mpop button.danger { color: var(--danger); background: transparent; }
 
-  #crop { position: absolute; inset: 0; background: rgba(20,24,40,.45); display: none; align-items: center; justify-content: center; z-index: 40; }
+  #sheet { position: absolute; inset: 0; background: rgba(20,24,40,.35); display: none; align-items: flex-end; justify-content: center; z-index: 35; }
+  #sheet.show { display: flex; }
+  #sheet .sheet {
+    width: 100%; max-width: 520px; max-height: 90vh; overflow: auto; background: #fff; border-radius: 18px 18px 0 0; padding: 8px 20px calc(16px + env(safe-area-inset-bottom));
+    box-shadow: 0 -10px 40px rgba(20,24,40,.2); animation: sheet-up .22s cubic-bezier(.2,.8,.2,1);
+  }
+  @keyframes sheet-up { from { transform: translateY(40px); opacity: .6; } to { transform: none; opacity: 1; } }
+  #sheet .grab { width: 40px; height: 4px; border-radius: 2px; background: #d7dbe5; margin: 4px auto 10px; }
+  #sheet h4 { margin: 0 0 12px; font-size: 16px; }
+  #sheet .sh-head { display: flex; gap: 14px; align-items: center; margin-bottom: 8px; }
+  #sheet .photo { flex: 0 0 72px; width: 72px; height: 72px; font-size: 24px; }
+  #sheet .photo .cam { opacity: 1; background: rgba(20,24,40,.25); font-size: 20px; display: flex; }
+  #sheet .sh-names { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+  #sheet input[type=text], #sheet input[type=date] { font: inherit; font-size: 16px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; outline: none; width: 100%; min-width: 0; background: #fff; color: var(--text); }
+  #sheet input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  #sheet #sh-name { font-weight: 600; }
+  #sheet .sh-row { display: flex; align-items: center; gap: 12px; margin-top: 10px; font-size: 14px; color: var(--muted); }
+  #sheet .sh-row > span { width: 70px; flex: none; }
+  #sheet .sh-alive input { width: 22px; height: 22px; margin: 0; accent-color: var(--accent); }
+  #sheet .foot { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; }
+  #sheet button { border: none; border-radius: 10px; padding: 12px 18px; font-size: 15px; cursor: pointer; background: #f0f2f7; }
+  #sheet button.primary { background: var(--accent); color: #fff; flex: 1; }
+  #sheet button.danger { color: var(--danger); background: transparent; }
+  #crop { position: absolute; inset: 0; background: rgba(20,24,40,.45); display: none; align-items: center; justify-content: center; z-index: 50; }
   #crop.show { display: flex; }
   #crop .panel { background: #fff; border-radius: 16px; padding: 18px 20px; width: 340px; max-width: calc(100vw - 24px); box-shadow: 0 20px 60px rgba(0,0,0,.3); }
   #crop h4 { margin: 0 0 12px; font-size: 15px; }
@@ -144,7 +167,7 @@
   #crop .foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
   #crop button { border: none; background: #f0f2f7; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px; }
   #crop button.primary { background: var(--accent); color: #fff; }
-  #menu { position: absolute; z-index: 25; background: #fff; border-radius: 10px; box-shadow: 0 10px 30px rgba(20,24,40,.2); padding: 6px; display: none; min-width: 180px; }
+  #menu { position: absolute; z-index: 45; background: #fff; border-radius: 10px; box-shadow: 0 10px 30px rgba(20,24,40,.2); padding: 6px; display: none; min-width: 180px; }
   #menu.show { display: block; }
   #menu .t { font-size: 11px; color: var(--muted); padding: 4px 8px; }
   #menu button { display: block; width: 100%; text-align: left; border: none; background: transparent; padding: 7px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; }
@@ -224,7 +247,9 @@
     #topright [data-act=fit], #topright [data-act=help], #topright #zoomlvl, #topright .sep { display: none; }
     #topright #lang { display: inline-block; }
     #topleft [data-act=saveas], #topleft [data-act=pdf], #topleft .sep:has(+ [data-act=pdf]) { display: none; }
-    #actions { bottom: calc(12px + env(safe-area-inset-bottom)); flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 16px); }
+    #actions { bottom: calc(12px + env(safe-area-inset-bottom)); flex-wrap: nowrap; overflow-x: auto; max-width: calc(100vw - 16px); scrollbar-width: none; }
+    #actions::-webkit-scrollbar { display: none; }
+    #actions .sep { flex: none; }
     #help .panel { width: calc(100vw - 24px); padding: 18px; }
     #help .grid { grid-template-columns: 1fr; }
   }
@@ -290,6 +315,23 @@
   <div class="foot"><button class="danger" id="m-unlink" data-i18n="unlink"></button><button id="m-close" data-i18n="done"></button></div>
 </div>
 <div id="menu"></div>
+<div id="sheet">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h4 data-i18n="sheet_title"></h4>
+    <div class="sh-head">
+      <div class="photo" id="sh-photo"></div>
+      <div class="sh-names">
+        <input type="text" id="sh-name" autocomplete="off" autocapitalize="words" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other">
+        <input type="text" id="sh-bname" autocomplete="off" autocapitalize="words" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other">
+      </div>
+    </div>
+    <label class="sh-row"><span data-i18n="born"></span><input type="date" id="sh-birth"></label>
+    <label class="sh-row sh-alive"><span data-i18n="living"></span><input type="checkbox" id="sh-alive"></label>
+    <label class="sh-row" id="sh-death-row"><span data-i18n="died"></span><input type="date" id="sh-death"></label>
+    <div class="foot"><button id="sh-delete" class="danger" data-i18n="delete"></button><button id="sh-done" class="primary" data-i18n="done"></button></div>
+  </div>
+</div>
 <div id="crop">
   <div class="panel">
     <h4 data-i18n="crop_title"></h4>
@@ -327,7 +369,7 @@
       saved: 'Saved', opened: 'Opened', save_failed: 'Save failed', open_failed: 'Open failed', not_tree: 'Not a family tree file',
       discard: 'Discard unsaved changes?', file_name: 'File name', unlink_confirm: 'Unlink this couple? Their children stay attached to the first parent.',
       restored: 'Restored unsaved draft',
-      export_pdf: 'Export PDF', export_t: 'Export as PDF (print dialog)', change_photo: 'Change photo', adjust_crop: 'Adjust crop', crop_title: 'Crop photo', crop_hint: 'Drag to move, scroll or pinch to zoom', cancel: 'Cancel', apply: 'Apply', zoom: 'Zoom', nothing_export: 'Nothing to export',
+      sheet_title: 'Edit person', export_pdf: 'Export PDF', export_t: 'Export as PDF (print dialog)', change_photo: 'Change photo', adjust_crop: 'Adjust crop', crop_title: 'Crop photo', crop_hint: 'Drag to move, scroll or pinch to zoom', cancel: 'Cancel', apply: 'Apply', zoom: 'Zoom', nothing_export: 'Nothing to export',
       help: [
         ['Keyboard shortcuts'],
         ['Navigate', [['Select parent / child', '↑ ↓'], ['Select sibling / spouse', '← →'], ['Deselect / close', 'Esc'], ['Fit tree to screen', 'F'], ['Zoom in / out / reset', '+ − 0'], ['Pan', 'Space+drag, wheel'], ['Zoom at cursor', 'pinch, ⌘+wheel']]],
@@ -353,7 +395,7 @@
       saved: 'Сохранено', opened: 'Открыто', save_failed: 'Ошибка сохранения', open_failed: 'Ошибка открытия', not_tree: 'Это не файл семейного древа',
       discard: 'Отменить несохранённые изменения?', file_name: 'Имя файла', unlink_confirm: 'Разорвать связь пары? Дети останутся у первого родителя.',
       restored: 'Восстановлен несохранённый черновик',
-      export_pdf: 'Экспорт в PDF', export_t: 'Экспорт в PDF (диалог печати)', change_photo: 'Заменить фото', adjust_crop: 'Изменить обрезку', crop_title: 'Обрезка фото', crop_hint: 'Перетащите для сдвига, колесо или щипок — масштаб', cancel: 'Отмена', apply: 'Применить', zoom: 'Масштаб', nothing_export: 'Нечего экспортировать',
+      sheet_title: 'Редактирование', export_pdf: 'Экспорт в PDF', export_t: 'Экспорт в PDF (диалог печати)', change_photo: 'Заменить фото', adjust_crop: 'Изменить обрезку', crop_title: 'Обрезка фото', crop_hint: 'Перетащите для сдвига, колесо или щипок — масштаб', cancel: 'Отмена', apply: 'Применить', zoom: 'Масштаб', nothing_export: 'Нечего экспортировать',
       help: [
         ['Горячие клавиши'],
         ['Навигация', [['Выбрать родителя / ребёнка', '↑ ↓'], ['Выбрать брата-сестру / супруга', '← →'], ['Снять выделение / закрыть', 'Esc'], ['Вписать дерево в экран', 'F'], ['Приблизить / отдалить / сброс', '+ − 0'], ['Перемещение', 'Space+мышь, колесо'], ['Масштаб у курсора', 'щипок, ⌘+колесо']]],
@@ -379,7 +421,7 @@
       saved: 'Gespeichert', opened: 'Geöffnet', save_failed: 'Speichern fehlgeschlagen', open_failed: 'Öffnen fehlgeschlagen', not_tree: 'Keine Stammbaum-Datei',
       discard: 'Ungespeicherte Änderungen verwerfen?', file_name: 'Dateiname', unlink_confirm: 'Dieses Paar trennen? Die Kinder bleiben beim ersten Elternteil.',
       restored: 'Ungespeicherten Entwurf wiederhergestellt',
-      export_pdf: 'PDF exportieren', export_t: 'Als PDF exportieren (Druckdialog)', change_photo: 'Foto ändern', adjust_crop: 'Ausschnitt anpassen', crop_title: 'Foto zuschneiden', crop_hint: 'Ziehen zum Verschieben, Scrollen oder Pinch zum Zoomen', cancel: 'Abbrechen', apply: 'Übernehmen', zoom: 'Zoom', nothing_export: 'Nichts zu exportieren',
+      sheet_title: 'Person bearbeiten', export_pdf: 'PDF exportieren', export_t: 'Als PDF exportieren (Druckdialog)', change_photo: 'Foto ändern', adjust_crop: 'Ausschnitt anpassen', crop_title: 'Foto zuschneiden', crop_hint: 'Ziehen zum Verschieben, Scrollen oder Pinch zum Zoomen', cancel: 'Abbrechen', apply: 'Übernehmen', zoom: 'Zoom', nothing_export: 'Nichts zu exportieren',
       help: [
         ['Tastenkürzel'],
         ['Navigation', [['Elternteil / Kind wählen', '↑ ↓'], ['Geschwister / Partner wählen', '← →'], ['Auswahl aufheben / schließen', 'Esc'], ['Baum einpassen', 'F'], ['Vergrößern / verkleinern / zurücksetzen', '+ − 0'], ['Verschieben', 'Leertaste+Ziehen, Mausrad'], ['Zoom am Cursor', 'Pinch, ⌘+Mausrad']]],
@@ -518,6 +560,7 @@
   function afterChange() {
     dirty = true;
     render();
+    if (sheetId) refreshSheetPhoto();
     scheduleDraft();
   }
 
@@ -596,7 +639,7 @@
   function fmtDate(s) {
     if (!s) return '';
     const d = new Date(s + 'T00:00:00');
-    return isNaN(d) ? s : d.toLocaleDateString(lang, { year: 'numeric', month: 'short', day: 'numeric' });
+    return isNaN(d) ? s : d.toLocaleDateString(lang, { year: 'numeric', month: 'short', day: 'numeric' }).replace(/\s*г\.$/, '');
   }
   function ageOf(birth, ref) {
     const b = new Date(birth + 'T00:00:00'), r = ref ? new Date(ref + 'T00:00:00') : new Date();
@@ -873,6 +916,7 @@
 
   function select(id, opts = {}) {
     if (editingId && editingId !== id) stopEditing();
+    if (sheetId && sheetId !== id) closeSheet();
     if (mpopFamily) closeMarriage();
     selectedId = id;
     $('#actions').classList.toggle('show', !!id);
@@ -887,6 +931,7 @@
   const isCoarse = matchMedia('(pointer: coarse)').matches;
 
   function startEditing(id, field = '.f-name', fresh = false) {
+    if (isCoarse) return openSheet(id, fresh);
     if (editingId === id) { cardEl(id)?.querySelector(field)?.focus(); return; }
     stopEditing();
     editingId = id; editSnapshot = fresh ? null : snapshot();
@@ -896,6 +941,7 @@
     const inp = el.querySelector(field); inp.focus(); inp.select?.();
   }
   function stopEditing() {
+    if (sheetId) return closeSheet();
     if (!editingId) return;
     const id = editingId; editingId = null;
     if (editSnapshot && editSnapshot !== snapshot()) {
@@ -952,6 +998,58 @@
     }
     e.stopPropagation();
   });
+
+  const sheet = $('#sheet');
+  let sheetId = null, sheetSnapshot = null;
+  const sh = (id) => document.getElementById(id);
+  function openSheet(id, fresh) {
+    if (sheetId && sheetId !== id) closeSheet();
+    if (editingId) stopEditing();
+    const p = state.people[id]; if (!p) return;
+    sheetId = id; sheetSnapshot = fresh ? null : snapshot();
+    select(id, { scroll: false });
+    sh('sh-name').value = p.name; sh('sh-bname').value = p.birthName;
+    sh('sh-birth').value = p.birth; sh('sh-death').value = p.death; sh('sh-alive').checked = p.alive;
+    sh('sh-name').placeholder = t('full_name'); sh('sh-bname').placeholder = t('birth_name');
+    sh('sh-death-row').hidden = p.alive;
+    refreshSheetPhoto();
+    sheet.classList.add('show');
+    if (fresh) sh('sh-name').focus();
+  }
+  function refreshSheetPhoto() {
+    const p = state.people[sheetId]; if (!p) return;
+    sh('sh-photo').innerHTML = (p.photo ? `<img src="${p.photo}" alt="">` : `<span>${initials(p.name)}</span>`) + '<div class="cam">📷</div>';
+  }
+  function closeSheet() {
+    if (!sheetId) return;
+    const id = sheetId; sheetId = null;
+    sheet.classList.remove('show');
+    if (sheetSnapshot && sheetSnapshot !== snapshot()) { undoStack.push(sheetSnapshot); redoStack = []; dirty = true; scheduleDraft(); }
+    sheetSnapshot = null;
+    document.activeElement?.blur?.();
+    render();
+    if (state.people[id]) select(id, { scroll: false });
+    return id;
+  }
+  sheet.addEventListener('input', (e) => {
+    const p = state.people[sheetId]; if (!p) return;
+    switch (e.target.id) {
+      case 'sh-name': p.name = e.target.value; if (!p.photo) refreshSheetPhoto(); break;
+      case 'sh-bname': p.birthName = e.target.value; break;
+      case 'sh-birth': p.birth = e.target.value; break;
+      case 'sh-death': p.death = e.target.value; break;
+      case 'sh-alive': p.alive = e.target.checked; sh('sh-death-row').hidden = p.alive; if (p.alive) { p.death = ''; sh('sh-death').value = ''; } break;
+    }
+  });
+  sheet.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); closeSheet(); }
+    else if (e.key === 'Enter' && e.target.matches('input[type=text]')) { e.preventDefault(); if (e.target.id === 'sh-name') sh('sh-bname').focus(); else closeSheet(); }
+    e.stopPropagation();
+  });
+  sheet.addEventListener('pointerdown', (e) => { if (e.target === sheet) closeSheet(); });
+  sh('sh-done').addEventListener('click', () => closeSheet());
+  sh('sh-delete').addEventListener('click', () => { const id = closeSheet(); if (id) { selectedId = id; removeSelected(); } });
+  sh('sh-photo').addEventListener('click', () => photoAction(sheetId, sh('sh-photo')));
 
   function removePhoto(p) { p.photo = null; p.photoSrc = null; p.crop = null; }
   function pickPhoto(id) { photoInput.dataset.target = id; photoInput.click(); }
