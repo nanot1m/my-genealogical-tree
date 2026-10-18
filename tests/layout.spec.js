@@ -82,7 +82,14 @@ test.describe('layout', () => {
     expect(r[0].sort()).toEqual(['F1', 'F2', 'F3', 'M1', 'M2', 'M3', 'Ma', 'Pa'].sort());
     expect(r[1]).toEqual(['S1', 'K1', 'K2', 'S2', 'K3', 'S3']);
     const d = await page.locator('#edges > path').first().getAttribute('d');
-    const busYs = new Set([...d.matchAll(/M(-?[\d.]+) (-?[\d.]+) L(-?[\d.]+) (-?[\d.]+)/g)].filter(m => m[2] === m[4] && m[1] !== m[3]).map(m => m[2]));
+    const busYs = new Set();
+    let prev = null;
+    for (const m of d.matchAll(/([MLQ])((?:\s*-?[\d.]+){2,4})/g)) {
+      const nums = m[2].trim().split(/\s+/).map(Number);
+      const pt = { x: nums[nums.length - 2], y: nums[nums.length - 1] };
+      if (m[1] === 'L' && prev && prev.y === pt.y && Math.abs(prev.x - pt.x) > 40) busYs.add(pt.y);
+      prev = m[1] === 'M' ? pt : pt;
+    }
     expect(busYs.size).toBeGreaterThan(1);
   });
 });
