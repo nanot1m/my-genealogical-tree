@@ -617,14 +617,75 @@
   }
 
   function layout() {
-    positions = new Map();
     marriages = [];
+    let best = null, pref = new Map();
+    for (let pass = 0; pass < 4; pass++) {
+      const pos = layoutPass(pref);
+      const crossings = countCrossings(pos);
+      if (!best || crossings < best.crossings) best = { pos, crossings };
+      if (crossings === 0) break;
+      const next = barycenterOrder(pos);
+      if ([...next].every(([k, v]) => pref.get(k)?.join() === v.join())) break;
+      pref = next;
+    }
+    positions = best.pos;
+  }
+  function byBirth(ids) {
+    const dated = ids.filter(id => state.people[id]?.birth).sort((a, b) => state.people[a].birth.localeCompare(state.people[b].birth));
+    let k = 0;
+    return ids.map(id => state.people[id]?.birth ? dated[k++] : id);
+  }
+  function barycenterOrder(pos) {
+    const STEP = CARD_W + COUPLE_GAP;
+    const cx = (id) => pos.get(id).x + CARD_W / 2;
+    const pref = new Map();
+    for (const f of Object.values(state.families)) {
+      const kids = f.children.filter(id => pos.has(id));
+      if (kids.length < 2) continue;
+      const key = (id) => {
+        const pts = [];
+        for (const pf of parentFamilies(id)) for (const sp of pf.parents) {
+          if (sp === id || !pos.has(sp)) continue;
+          if (Math.abs(cx(sp) - cx(id)) > STEP + 1) pts.push(cx(sp));
+          for (const gp of parentsOf(sp)) if (pos.has(gp)) pts.push(cx(gp));
+        }
+        return pts.length ? pts.reduce((a, b) => a + b, 0) / pts.length : cx(id);
+      };
+      const order = kids.map(id => [id, key(id)]).sort((a, b) => a[1] - b[1]).map(([id]) => id);
+      if (order.join() !== kids.join()) pref.set(f.id, order);
+    }
+    return pref;
+  }
+  function countCrossings(pos) {
+    const H = [], V = [];
+    for (const f of Object.values(state.families)) {
+      const ps = f.parents.filter(id => pos.has(id)).map(id => pos.get(id)).sort((a, b) => a.x - b.x);
+      const cs = f.children.filter(id => pos.has(id)).map(id => pos.get(id));
+      let ox = null, oy = null;
+      if (ps.length === 2) { ox = (ps[0].x + ps[1].x) / 2 + CARD_W / 2; oy = ps[0].y + CARD_H / 2; }
+      else if (ps.length === 1) { ox = ps[0].x + CARD_W / 2; oy = ps[0].y + CARD_H; }
+      if (!cs.length) continue;
+      const top = Math.min(...cs.map(c => c.y)), busY = top - V_GAP / 2;
+      const xs = cs.map(c => c.x + CARD_W / 2);
+      if (ox !== null) { xs.push(ox); V.push({ f, x: ox, y1: oy, y2: busY }); }
+      H.push({ f, y: busY, x1: Math.min(...xs), x2: Math.max(...xs) });
+      for (const c of cs) V.push({ f, x: c.x + CARD_W / 2, y1: busY, y2: c.y });
+    }
+    let n = 0;
+    for (const h of H) {
+      for (const v of V) if (v.f !== h.f && v.x > h.x1 && v.x < h.x2 && h.y > Math.min(v.y1, v.y2) && h.y < Math.max(v.y1, v.y2)) n++;
+      for (const g of H) if (g !== h && g.f !== h.f && g.y === h.y && g.x1 < h.x2 && h.x1 < g.x2) n += 0.5;
+    }
+    return n;
+  }
+  function layoutPass(pref) {
+    positions = new Map();
     const claimed = new Set();
     const STEP = CARD_W + COUPLE_GAP;
 
     function spreadMarried(kids, side) {
       const married = kids.map((c, i) => [c, i]).filter(([c]) => c.unit.length > 1);
-      if (!married.length || kids.length < 2) return kids;
+      if (!married.length || kids.length < 2 || kids.every(c => c.fixed)) return kids;
       const [firstC, firstI] = married[0], [lastC] = married[married.length - 1];
       const rest = kids.filter(c => c !== firstC && c !== lastC);
       if (married.length === 1) {
@@ -666,7 +727,12 @@
         n.ancestors.push({ node: buildNode(top), anchor: m });
       }
       for (const f of [...new Set(unit.flatMap(parentFamilies))]) {
-        const kids = f.children.filter(id => !claimed.has(id)).map(buildNode);
+        let ids = byBirth(f.children.filter(id => !claimed.has(id)));
+        const p = pref.get(f.id);
+        if (p) ids = [...ids].sort((a, b) => p.indexOf(a) - p.indexOf(b));
+        const fixed = !!p || ids.every(id => state.people[id]?.birth);
+        const kids = ids.map(buildNode);
+        kids.forEach(c => { c.fixed = fixed; });
         if (kids.length) n.groups.push({ f, children: kids });
       }
       return n;
@@ -782,6 +848,7 @@
       const cx = (L + R) / 2;
       for (const p of positions.values()) { p.x -= cx; p.y -= T; }
     }
+    return positions;
   }
 
   function render() {
