@@ -829,7 +829,15 @@
     const d = [];
     marriages = [];
     const mid = (id) => { const p = pos.get(id); return { id, x: p.x, cx: p.x + CARD_W / 2, cy: p.y + CARD_H / 2, top: p.y, bottom: p.y + CARD_H }; };
-    for (const f of Object.values(state.families)) {
+    const lanes = [];
+    const laneFor = (y, x1, x2) => {
+      for (let k = 0; ; k++) {
+        const used = lanes.filter(l => l.y === y && l.k === k).some(l => x1 <= l.x2 + 8 && x2 >= l.x1 - 8);
+        if (!used) { lanes.push({ y, k, x1, x2 }); return k; }
+      }
+    };
+    const fams = Object.values(state.families).sort((a, b) => b.children.length - a.children.length);
+    for (const f of fams) {
       const ps = f.parents.filter(id => pos.has(id)).map(mid).sort((a, b) => a.cx - b.cx);
       const cs = f.children.filter(id => pos.has(id)).map(mid);
       let origin = null;
@@ -849,9 +857,11 @@
         }
       } else if (ps.length === 1) origin = { x: ps[0].cx, y: ps[0].bottom };
       if (!cs.length) continue;
-      const busY = Math.min(...cs.map(c => c.top)) - V_GAP / 2;
+      const rowTop = Math.min(...cs.map(c => c.top));
       const xs = cs.map(c => c.cx);
-      if (origin) { xs.push(origin.x); d.push(`M${origin.x} ${origin.y} L${origin.x} ${busY}`); }
+      if (origin) xs.push(origin.x);
+      const busY = rowTop - V_GAP / 2 - 14 * laneFor(rowTop, Math.min(...xs), Math.max(...xs));
+      if (origin) d.push(`M${origin.x} ${origin.y} L${origin.x} ${busY}`);
       d.push(`M${Math.min(...xs)} ${busY} L${Math.max(...xs)} ${busY}`);
       for (const c of cs) d.push(`M${c.cx} ${busY} L${c.cx} ${c.top}`);
     }
