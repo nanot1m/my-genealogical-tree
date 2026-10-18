@@ -1,0 +1,13 @@
+{
+  "name": "my-genealogical-tree",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node tests/server.mjs",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}
