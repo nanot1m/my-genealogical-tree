@@ -13,7 +13,7 @@ Live: https://nanot1m.github.io/my-genealogical-tree/
 - Genogram notation after McGoldrick and Gerson: gender markers with men on the left of a couple, deceased cross, index person ring, pregnancy / miscarriage / abortion / stillbirth glyphs, adopted and foster connectors, twins (identical or not), marriage ordinals, divorce and separation slashes, relationship lines (close, fused, conflict, distant, cut off, focused on), reconciliation marks, household circles, and illness / substance markers
 - Automatic layout: couples as units, parents centered over children, in-law branches on the outer side, birth-date sibling order, crossing-minimizing passes
 - Photo cropper with zoom, drag, 90° rotation and straightening; crops stay editable
-- Keyboard-first: arrows navigate, Enter edits, P/C/S/M/L create or link, ⌫ deletes, ⌘Z undo, ? shows all shortcuts
+- Keyboard-first: arrows navigate, Enter edits, P/C/S/M/L create or link, ⌫ deletes, ⌘Z undo, ? shows all shortcuts, G opens the in-app symbol guide
 - Touch: tap to select, edit sheet, action bar, pinch zoom
 - English, Russian, German
 - Binary `.ftree` file with all images embedded; legacy `.json` imports

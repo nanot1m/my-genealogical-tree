@@ -61,7 +61,7 @@ test.describe('linking existing people', () => {
     await page.keyboard.press('l');
     await expect(page.locator('body')).toHaveClass(/linking/);
     await cardOf(page, 'Y1').click();
-    await expect(page.locator('#menu button').first()).toHaveText('Set as spouse');
+    await expect(page.locator('#menu button').first()).toContainText('Set as spouse');
     await page.locator('#menu button', { hasText: 'Set as spouse' }).click();
     await expect(page.locator('#toast')).toHaveText('Linked');
     let fams = familiesByName(await draftState(page));

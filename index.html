@@ -243,6 +243,7 @@
   #rpop .row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
   #rpop label { width: 60px; color: var(--muted); font-size: 12px; }
   #rpop select, #rpop input { flex: 1; font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; outline: none; min-width: 0; background: var(--card); color: var(--text); }
+  #rpop .hint, #mpop .hint { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
   #rpop .foot { display: flex; justify-content: space-between; margin-top: 10px; }
   #rpop button { border: none; background: var(--panel-2); color: var(--text); border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 12px; font-weight: 500; }
   #rpop button.danger { color: var(--danger); background: transparent; }
@@ -290,9 +291,10 @@
   .relbadge:hover { border-color: var(--accent); }
   #menu { position: absolute; z-index: 45; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-lg); padding: 6px; display: none; min-width: 190px; animation: pop .14s cubic-bezier(.2,.8,.2,1); }
   @keyframes pop { from { transform: translateY(-4px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
-  #menu.show { display: block; }
+  #menu.show { display: block; max-height: calc(100vh - 16px); overflow-y: auto; }
   #menu .t { font-size: 11px; color: var(--muted); padding: 4px 8px; }
-  #menu button { display: block; width: 100%; text-align: left; border: none; background: transparent; padding: 7px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  #menu button { display: block; width: 100%; text-align: left; border: none; background: transparent; padding: 7px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text); }
+  #menu button small { display: block; font-size: 11px; color: var(--muted); margin-top: 1px; white-space: normal; max-width: 260px; }
   #menu button:hover, #menu button:focus { background: var(--panel-2); outline: none; }
 
   #empty {
@@ -340,6 +342,22 @@
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+  #legend { position: absolute; inset: 0; background: rgba(12,16,28,.4); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 30; }
+  #legend.show { display: flex; }
+  #legend .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 22px 26px; width: 720px; max-width: calc(100vw - 24px); max-height: 86vh; overflow: auto; box-shadow: var(--shadow-lg); animation: pop .16s cubic-bezier(.2,.8,.2,1); }
+  #legend h2 { margin: 0 0 6px; font-size: 18px; }
+  #legend h3 { margin: 18px 0 8px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  #legend .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 22px; }
+  #legend .item { display: flex; align-items: center; gap: 12px; font-size: 13px; line-height: 1.35; }
+  #legend .item svg { flex: none; width: 112px; height: 44px; stroke: var(--text); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  #legend .item svg .c { fill: var(--card); stroke: var(--border-strong); stroke-width: 1.5; }
+  #legend .item svg .m { stroke: var(--muted); }
+  #legend .item svg .r { stroke: var(--danger); }
+  #legend .item svg .f { fill: var(--text); stroke: none; }
+  #legend .item svg .t { fill: color-mix(in srgb, var(--text) 35%, transparent); stroke: none; }
+  #legend .item svg .hz { fill: url(#lg-hatch); stroke: none; }
+  #legend .item svg .bgline { stroke: var(--panel); }
+  @media (max-width: 640px) { #legend .grid { grid-template-columns: 1fr; } }
   #help { position: absolute; inset: 0; background: rgba(12,16,28,.4); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 30; }
   #help.show { display: flex; }
   #help .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 24px 28px; width: 560px; max-height: 80vh; overflow: auto; box-shadow: var(--shadow-lg); animation: pop .16s cubic-bezier(.2,.8,.2,1); }
@@ -377,6 +395,7 @@
     #filename { max-width: 110px; }
     .bar button { padding: 6px 8px; }
     #topright [data-act=fit], #topright [data-act=help], #topright #zoomlvl, #topright .sep { display: none; }
+    #topright [data-act=legend] { display: inline-flex; }
     #topright #lang { display: inline-block; }
     #topleft [data-act=new], #topleft [data-act=open], #topleft [data-act=save], #topleft [data-act=saveas], #topleft [data-act=pdf], #topleft [data-act=download], #topleft .sep:has(+ [data-act=pdf]) { display: none; }
     #topleft [data-act=filemenu] { display: inline-block; font-weight: 600; }
@@ -425,6 +444,7 @@
   <button data-act="fit" data-i18n-title="fit_t"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span class="lbl" data-i18n="fit"></span></button>
   <span class="sep"></span>
   <select id="lang" title="Language"><option value="en">EN</option><option value="ru">RU</option><option value="de">DE</option></select>
+  <button data-act="legend" data-i18n-title="legend_t"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h5v18H6a2 2 0 0 1-2-2zM13 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5z"/></svg><span class="lbl" data-i18n="legend"></span></button>
   <button data-act="help" data-i18n-title="help_t"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01"/></svg></button>
 </div>
 <div class="bar" id="bottom">
@@ -452,6 +472,7 @@
   <div class="row"><label data-i18n="status"></label><select id="m-status"><option value="married" data-i18n="st_married"></option><option value="partners" data-i18n="st_partners"></option><option value="separated" data-i18n="st_separated"></option><option value="divorced" data-i18n="st_divorced"></option><option value="reconciled_sep" data-i18n="st_reconciled_sep"></option><option value="reconciled_div" data-i18n="st_reconciled_div"></option></select></div>
   <div class="row"><label data-i18n="married"></label><input type="date" id="m-from"></div>
   <div class="row"><label data-i18n="until"></label><input type="date" id="m-to"></div>
+  <p class="hint" id="m-hint"></p>
   <div class="foot"><button class="danger" id="m-unlink" data-i18n="unlink"></button><button id="m-close" data-i18n="done"></button></div>
 </div>
 <div id="menu"></div>
@@ -459,6 +480,7 @@
   <h4 data-i18n="relation"></h4>
   <div class="row"><label data-i18n="fate"></label><select id="r-type"><option value="close" data-i18n="rel_close"></option><option value="fused" data-i18n="rel_fused"></option><option value="conflict" data-i18n="rel_conflict"></option><option value="distant" data-i18n="rel_distant"></option><option value="cutoff" data-i18n="rel_cutoff"></option><option value="focused" data-i18n="rel_focused"></option></select></div>
   <div class="row"><label data-i18n="label"></label><input type="text" id="r-label" autocomplete="off" data-1p-ignore></div>
+  <p class="hint" id="r-hint"></p>
   <div class="foot"><button class="danger" id="r-delete" data-i18n="delete"></button><button id="r-close" data-i18n="done"></button></div>
 </div>
 <div id="welcome">
@@ -515,6 +537,7 @@
 </div>
 
 <div id="help"><div class="panel"></div></div>
+<div id="legend"><div class="panel"></div></div>
 
 <input type="file" id="photoInput" accept="image/*">
 <input type="file" id="fileInput">
@@ -541,7 +564,14 @@
       autosave_failed: 'Autosave failed', saved: 'Saved', opened: 'Opened', save_failed: 'Save failed', open_failed: 'Open failed', not_tree: 'Not a family tree file',
       discard: 'Discard unsaved changes?', file_name: 'File name', unlink_confirm: 'Unlink this couple? Their children stay attached to the first parent.',
       restored: 'Restored unsaved draft',
-      download: 'Download file', download_t: 'Download a copy of this tree as a file', import_file: 'Import file…', library: 'Saved trees', file_menu: 'File', delete_tree: 'Delete this tree from this device?', saved_local: 'Saved on this device', recent: 'Recent files', continue_draft: 'Continue unsaved work', open_file: 'Open file…', new_tree: 'New tree', no_recent: 'No recent files yet', perm_denied: 'Access to the file was not granted', file_missing: 'File not found, removed from recent', forget: 'Remove from list', last_opened: 'opened', link: 'Link…', link_hint: 'Click a person to link with', link_t: 'Link with an existing person (L)', as_spouse: 'Set as spouse', as_child: 'Set as child', as_parent: 'Set as parent', rel_arrow: 'Relationship arrow', rel_close: 'Close', rel_conflict: 'Conflict', rel_distant: 'Distant', rel_cutoff: 'Cut off', rel_custom: 'Custom…', relation: 'Relationship', label: 'Label', already_linked: 'These people are already linked this way', cycle: 'That would make someone their own ancestor', two_parents_t: 'already has two parents', status: 'Status', st_married: 'Married', st_divorced: 'Divorced', st_partners: 'Partners (unmarried)', st_separated: 'Separated', fate: 'Type', fate_none: 'Person', fate_miscarriage: 'Miscarriage', fate_abortion: 'Abortion', fate_stillborn: 'Stillborn', line_ended: 'Line ended (no descendants)', linked: 'Linked', gender: 'Gender', g_: 'Not set', g_m: 'Male', g_f: 'Female', g_x: 'Other', index_person: 'Index person (the chart is about them)', fate_pregnancy: 'Pregnancy', child_link: 'Child link', link_bio: 'Biological', link_adopted: 'Adopted', link_foster: 'Foster', twin_of: 'Twin of', twin_none: 'Not a twin', identical: 'Identical twins', rel_fused: 'Fused', rel_focused: 'Focused on', st_reconciled_sep: 'Reconciled after separation', st_reconciled_div: 'Remarried after divorce', household: 'Same household', household_title: 'Household', dissolve: 'Dissolve household', leave_household: 'Remove from household', illness: 'Illness (physical or mental)', substance: 'Substance abuse', h_none: 'None', h_active: 'Current', h_recovered: 'Recovered', sheet_title: 'Edit person', export_pdf: 'Export PDF', export_t: 'Export as PDF (print dialog)', change_photo: 'Change photo', adjust_crop: 'Adjust crop', rotate_l: 'Rotate left', rotate_r: 'Rotate right', straighten: 'Straighten', crop_title: 'Crop photo', crop_hint: 'Drag to move, scroll or pinch to zoom', cancel: 'Cancel', apply: 'Apply', zoom: 'Zoom', nothing_export: 'Nothing to export',
+      download: 'Download file', download_t: 'Download a copy of this tree as a file', import_file: 'Import file…', library: 'Saved trees', file_menu: 'File', delete_tree: 'Delete this tree from this device?', saved_local: 'Saved on this device', recent: 'Recent files', continue_draft: 'Continue unsaved work', open_file: 'Open file…', new_tree: 'New tree', no_recent: 'No recent files yet', perm_denied: 'Access to the file was not granted', file_missing: 'File not found, removed from recent', forget: 'Remove from list', last_opened: 'opened', link: 'Link…', link_hint: 'Click a person to link with', link_t: 'Link with an existing person (L)', as_spouse: 'Set as spouse', as_child: 'Set as child', as_parent: 'Set as parent', rel_arrow: 'Relationship arrow', rel_close: 'Close', rel_conflict: 'Conflict', rel_distant: 'Distant', rel_cutoff: 'Cut off', rel_custom: 'Custom…', relation: 'Relationship', label: 'Label', already_linked: 'These people are already linked this way', cycle: 'That would make someone their own ancestor', two_parents_t: 'already has two parents', status: 'Status', st_married: 'Married', st_divorced: 'Divorced', st_partners: 'Partners (unmarried)', st_separated: 'Separated', fate: 'Type', fate_none: 'Person', fate_miscarriage: 'Miscarriage', fate_abortion: 'Abortion', fate_stillborn: 'Stillborn', line_ended: 'Line ended (no descendants)', linked: 'Linked', gender: 'Gender', g_: 'Not set', g_m: 'Male', g_f: 'Female', g_x: 'Other', index_person: 'Index person (the chart is about them)', fate_pregnancy: 'Pregnancy', child_link: 'Child link', link_bio: 'Biological', link_adopted: 'Adopted', link_foster: 'Foster', twin_of: 'Twin of', twin_none: 'Not a twin', identical: 'Identical twins', rel_fused: 'Fused', rel_focused: 'Focused on', st_reconciled_sep: 'Reconciled after separation', st_reconciled_div: 'Remarried after divorce', household: 'Same household', household_title: 'Household', dissolve: 'Dissolve household', leave_household: 'Remove from household', illness: 'Illness (physical or mental)', substance: 'Substance abuse', h_none: 'None', h_active: 'Current', h_recovered: 'Recovered', legend: 'Symbols', legend_t: 'Symbol guide', legend_title: 'Symbols and connections',
+      hint_as_spouse: 'Draw a marriage line between the two', hint_as_child: 'Attach the second person under the first as their child', hint_as_parent: 'Attach the first person under the second as their child', hint_household: 'Draw a loop around people living together',
+      hint_rel_close: 'Double line: a close, supportive bond', hint_rel_fused: 'Triple line: an enmeshed bond without boundaries', hint_rel_conflict: 'Zigzag: frequent conflict', hint_rel_distant: 'Dashed: little contact or emotional distance', hint_rel_cutoff: 'Line cut by two bars: contact broken off', hint_rel_focused: 'Arrow: attention or worry directed at the other person',
+      lg_couples: 'Couples', lg_children: 'Children', lg_people: 'People', lg_relations: 'Relationships',
+      lg_married: 'Marriage: solid line, years in the badge', lg_partners: 'Partners, not married: dashed line', lg_separated: 'Separated: one slash', lg_divorced: 'Divorced: two slashes', lg_rec_sep: 'Reconciled after separation', lg_rec_div: 'Remarried each other after divorce', lg_ordinal: 'Marriage number for people married more than once; first spouse on the left',
+      lg_bio: 'Biological child: solid line, oldest child on the left', lg_adopted: 'Adopted: dotted line with an arrow', lg_foster: 'Foster child: dashed line', lg_twins: 'Twins hang from one point', lg_identical: 'Identical twins: bar between them', lg_pregnancy: 'Pregnancy', lg_miscarriage: 'Miscarriage', lg_abortion: 'Abortion', lg_stillborn: 'Stillbirth',
+      lg_gender: 'Square marker for men, circle for women; men on the left of a couple', lg_deceased: 'Deceased: cross over the photo, years and age at death', lg_index: 'Index person, whom the chart is about: double outline', lg_illness: 'Illness, physical or mental: left half shaded, hatched when recovered', lg_substance: 'Substance abuse: lower half shaded, hatched when recovered', lg_ended: 'Line ended, no descendants', lg_household: 'Household: dashed loop around people living together',
+      sheet_title: 'Edit person', export_pdf: 'Export PDF', export_t: 'Export as PDF (print dialog)', change_photo: 'Change photo', adjust_crop: 'Adjust crop', rotate_l: 'Rotate left', rotate_r: 'Rotate right', straighten: 'Straighten', crop_title: 'Crop photo', crop_hint: 'Drag to move, scroll or pinch to zoom', cancel: 'Cancel', apply: 'Apply', zoom: 'Zoom', nothing_export: 'Nothing to export',
       help: [
         ['Keyboard shortcuts'],
         ['Navigate', [['Select parent / child', '↑ ↓'], ['Select sibling / spouse', '← →'], ['Deselect / close', 'Esc'], ['Fit tree to screen', 'F'], ['Zoom in / out / reset', '+ − 0'], ['Pan', 'Space+drag, wheel'], ['Zoom at cursor', 'pinch, ⌘+wheel']]],
@@ -567,7 +597,14 @@
       autosave_failed: 'Автосохранение не удалось', saved: 'Сохранено', opened: 'Открыто', save_failed: 'Ошибка сохранения', open_failed: 'Ошибка открытия', not_tree: 'Это не файл семейного древа',
       discard: 'Отменить несохранённые изменения?', file_name: 'Имя файла', unlink_confirm: 'Разорвать связь пары? Дети останутся у первого родителя.',
       restored: 'Восстановлен несохранённый черновик',
-      download: 'Скачать файл', download_t: 'Скачать копию дерева файлом', import_file: 'Импортировать файл…', library: 'Сохранённые деревья', file_menu: 'Файл', delete_tree: 'Удалить это дерево с устройства?', saved_local: 'Сохранено на устройстве', recent: 'Недавние файлы', continue_draft: 'Продолжить несохранённую работу', open_file: 'Открыть файл…', new_tree: 'Новое дерево', no_recent: 'Недавних файлов пока нет', perm_denied: 'Доступ к файлу не предоставлен', file_missing: 'Файл не найден и удалён из списка', forget: 'Убрать из списка', last_opened: 'открыт', link: 'Связать…', link_hint: 'Нажмите на человека, с которым связать', link_t: 'Связать с существующим человеком (L)', as_spouse: 'Сделать супругом', as_child: 'Сделать ребёнком', as_parent: 'Сделать родителем', rel_arrow: 'Стрелка отношений', rel_close: 'Близкие', rel_conflict: 'Конфликт', rel_distant: 'Отдалённые', rel_cutoff: 'Разрыв', rel_custom: 'Своя подпись…', relation: 'Отношения', label: 'Подпись', already_linked: 'Эти люди уже связаны так', cycle: 'Так человек станет собственным предком', two_parents_t: 'уже имеет двух родителей', status: 'Статус', st_married: 'В браке', st_divorced: 'Разведены', st_partners: 'Партнёры (без брака)', st_separated: 'Расстались', fate: 'Тип', fate_none: 'Человек', fate_miscarriage: 'Выкидыш', fate_abortion: 'Аборт', fate_stillborn: 'Мертворождённый', line_ended: 'Род не продлён (нет потомков)', linked: 'Связано', gender: 'Пол', g_: 'Не указан', g_m: 'Мужской', g_f: 'Женский', g_x: 'Другой', index_person: 'Главное лицо (о ком схема)', fate_pregnancy: 'Беременность', child_link: 'Связь с родителями', link_bio: 'Родной', link_adopted: 'Усыновлён', link_foster: 'Приёмный (опека)', twin_of: 'Близнец с', twin_none: 'Не близнец', identical: 'Однояйцевые', rel_fused: 'Слияние', rel_focused: 'Сфокусирован на', st_reconciled_sep: 'Примирение после разрыва', st_reconciled_div: 'Повторный брак после развода', household: 'Одно домохозяйство', household_title: 'Домохозяйство', dissolve: 'Распустить домохозяйство', leave_household: 'Убрать из домохозяйства', illness: 'Болезнь (физическая или психическая)', substance: 'Зависимость', h_none: 'Нет', h_active: 'Сейчас', h_recovered: 'Преодолено', sheet_title: 'Редактирование', export_pdf: 'Экспорт в PDF', export_t: 'Экспорт в PDF (диалог печати)', change_photo: 'Заменить фото', adjust_crop: 'Изменить обрезку', rotate_l: 'Повернуть влево', rotate_r: 'Повернуть вправо', straighten: 'Выровнять', crop_title: 'Обрезка фото', crop_hint: 'Перетащите для сдвига, колесо или щипок — масштаб', cancel: 'Отмена', apply: 'Применить', zoom: 'Масштаб', nothing_export: 'Нечего экспортировать',
+      download: 'Скачать файл', download_t: 'Скачать копию дерева файлом', import_file: 'Импортировать файл…', library: 'Сохранённые деревья', file_menu: 'Файл', delete_tree: 'Удалить это дерево с устройства?', saved_local: 'Сохранено на устройстве', recent: 'Недавние файлы', continue_draft: 'Продолжить несохранённую работу', open_file: 'Открыть файл…', new_tree: 'Новое дерево', no_recent: 'Недавних файлов пока нет', perm_denied: 'Доступ к файлу не предоставлен', file_missing: 'Файл не найден и удалён из списка', forget: 'Убрать из списка', last_opened: 'открыт', link: 'Связать…', link_hint: 'Нажмите на человека, с которым связать', link_t: 'Связать с существующим человеком (L)', as_spouse: 'Сделать супругом', as_child: 'Сделать ребёнком', as_parent: 'Сделать родителем', rel_arrow: 'Стрелка отношений', rel_close: 'Близкие', rel_conflict: 'Конфликт', rel_distant: 'Отдалённые', rel_cutoff: 'Разрыв', rel_custom: 'Своя подпись…', relation: 'Отношения', label: 'Подпись', already_linked: 'Эти люди уже связаны так', cycle: 'Так человек станет собственным предком', two_parents_t: 'уже имеет двух родителей', status: 'Статус', st_married: 'В браке', st_divorced: 'Разведены', st_partners: 'Партнёры (без брака)', st_separated: 'Расстались', fate: 'Тип', fate_none: 'Человек', fate_miscarriage: 'Выкидыш', fate_abortion: 'Аборт', fate_stillborn: 'Мертворождённый', line_ended: 'Род не продлён (нет потомков)', linked: 'Связано', gender: 'Пол', g_: 'Не указан', g_m: 'Мужской', g_f: 'Женский', g_x: 'Другой', index_person: 'Главное лицо (о ком схема)', fate_pregnancy: 'Беременность', child_link: 'Связь с родителями', link_bio: 'Родной', link_adopted: 'Усыновлён', link_foster: 'Приёмный (опека)', twin_of: 'Близнец с', twin_none: 'Не близнец', identical: 'Однояйцевые', rel_fused: 'Слияние', rel_focused: 'Сфокусирован на', st_reconciled_sep: 'Примирение после разрыва', st_reconciled_div: 'Повторный брак после развода', household: 'Одно домохозяйство', household_title: 'Домохозяйство', dissolve: 'Распустить домохозяйство', leave_household: 'Убрать из домохозяйства', illness: 'Болезнь (физическая или психическая)', substance: 'Зависимость', h_none: 'Нет', h_active: 'Сейчас', h_recovered: 'Преодолено', legend: 'Обозначения', legend_t: 'Справочник обозначений', legend_title: 'Обозначения и связи',
+      hint_as_spouse: 'Провести линию брака между двумя людьми', hint_as_child: 'Прикрепить второго человека под первым как его ребёнка', hint_as_parent: 'Прикрепить первого человека под вторым как его ребёнка', hint_household: 'Обвести людей, живущих вместе',
+      hint_rel_close: 'Двойная линия: близкие, поддерживающие отношения', hint_rel_fused: 'Тройная линия: слияние, отношения без границ', hint_rel_conflict: 'Зигзаг: частые конфликты', hint_rel_distant: 'Пунктир: мало контакта, отдалённость', hint_rel_cutoff: 'Линия с двумя чертами: общение прервано', hint_rel_focused: 'Стрелка: внимание или тревога, направленные на другого',
+      lg_couples: 'Пары', lg_children: 'Дети', lg_people: 'Люди', lg_relations: 'Отношения',
+      lg_married: 'Брак: сплошная линия, годы в значке', lg_partners: 'Партнёры без брака: пунктир', lg_separated: 'Расстались: одна черта', lg_divorced: 'Развод: две черты', lg_rec_sep: 'Примирение после разрыва', lg_rec_div: 'Повторный брак друг с другом после развода', lg_ordinal: 'Номер брака у тех, кто был в браке не раз; первый супруг слева',
+      lg_bio: 'Родной ребёнок: сплошная линия, старший слева', lg_adopted: 'Усыновлён: точечная линия со стрелкой', lg_foster: 'Приёмный (опека): пунктир', lg_twins: 'Близнецы выходят из одной точки', lg_identical: 'Однояйцевые близнецы: перекладина между ними', lg_pregnancy: 'Беременность', lg_miscarriage: 'Выкидыш', lg_abortion: 'Аборт', lg_stillborn: 'Мертворождение',
+      lg_gender: 'Квадрат — мужчина, круг — женщина; мужчина слева в паре', lg_deceased: 'Умер: крест на фото, годы и возраст смерти', lg_index: 'Главное лицо, о ком схема: двойная рамка', lg_illness: 'Болезнь, физическая или психическая: левая половина затемнена, штриховка — преодолена', lg_substance: 'Зависимость: нижняя половина затемнена, штриховка — преодолена', lg_ended: 'Род не продлён, нет потомков', lg_household: 'Домохозяйство: пунктирный контур вокруг живущих вместе',
+      sheet_title: 'Редактирование', export_pdf: 'Экспорт в PDF', export_t: 'Экспорт в PDF (диалог печати)', change_photo: 'Заменить фото', adjust_crop: 'Изменить обрезку', rotate_l: 'Повернуть влево', rotate_r: 'Повернуть вправо', straighten: 'Выровнять', crop_title: 'Обрезка фото', crop_hint: 'Перетащите для сдвига, колесо или щипок — масштаб', cancel: 'Отмена', apply: 'Применить', zoom: 'Масштаб', nothing_export: 'Нечего экспортировать',
       help: [
         ['Горячие клавиши'],
         ['Навигация', [['Выбрать родителя / ребёнка', '↑ ↓'], ['Выбрать брата-сестру / супруга', '← →'], ['Снять выделение / закрыть', 'Esc'], ['Вписать дерево в экран', 'F'], ['Приблизить / отдалить / сброс', '+ − 0'], ['Перемещение', 'Space+мышь, колесо'], ['Масштаб у курсора', 'щипок, ⌘+колесо']]],
@@ -593,7 +630,14 @@
       autosave_failed: 'Automatisches Speichern fehlgeschlagen', saved: 'Gespeichert', opened: 'Geöffnet', save_failed: 'Speichern fehlgeschlagen', open_failed: 'Öffnen fehlgeschlagen', not_tree: 'Keine Stammbaum-Datei',
       discard: 'Ungespeicherte Änderungen verwerfen?', file_name: 'Dateiname', unlink_confirm: 'Dieses Paar trennen? Die Kinder bleiben beim ersten Elternteil.',
       restored: 'Ungespeicherten Entwurf wiederhergestellt',
-      download: 'Datei herunterladen', download_t: 'Kopie dieses Stammbaums als Datei herunterladen', import_file: 'Datei importieren…', library: 'Gespeicherte Stammbäume', file_menu: 'Datei', delete_tree: 'Diesen Stammbaum von diesem Gerät löschen?', saved_local: 'Auf diesem Gerät gespeichert', recent: 'Zuletzt geöffnet', continue_draft: 'Ungespeicherte Arbeit fortsetzen', open_file: 'Datei öffnen…', new_tree: 'Neuer Stammbaum', no_recent: 'Noch keine zuletzt geöffneten Dateien', perm_denied: 'Zugriff auf die Datei wurde nicht gewährt', file_missing: 'Datei nicht gefunden, aus der Liste entfernt', forget: 'Aus Liste entfernen', last_opened: 'geöffnet', link: 'Verknüpfen…', link_hint: 'Person anklicken, mit der verknüpft werden soll', link_t: 'Mit vorhandener Person verknüpfen (L)', as_spouse: 'Als Partner festlegen', as_child: 'Als Kind festlegen', as_parent: 'Als Elternteil festlegen', rel_arrow: 'Beziehungspfeil', rel_close: 'Eng', rel_conflict: 'Konflikt', rel_distant: 'Distanziert', rel_cutoff: 'Abgebrochen', rel_custom: 'Eigene Beschriftung…', relation: 'Beziehung', label: 'Beschriftung', already_linked: 'Diese Personen sind bereits so verknüpft', cycle: 'Dann wäre jemand sein eigener Vorfahre', two_parents_t: 'hat bereits zwei Eltern', status: 'Status', st_married: 'Verheiratet', st_divorced: 'Geschieden', st_partners: 'Partner (unverheiratet)', st_separated: 'Getrennt', fate: 'Typ', fate_none: 'Person', fate_miscarriage: 'Fehlgeburt', fate_abortion: 'Abtreibung', fate_stillborn: 'Totgeburt', line_ended: 'Linie endet (keine Nachkommen)', linked: 'Verknüpft', gender: 'Geschlecht', g_: 'Nicht angegeben', g_m: 'Männlich', g_f: 'Weiblich', g_x: 'Divers', index_person: 'Indexperson (um wen es geht)', fate_pregnancy: 'Schwangerschaft', child_link: 'Kindbeziehung', link_bio: 'Leiblich', link_adopted: 'Adoptiert', link_foster: 'Pflegekind', twin_of: 'Zwilling von', twin_none: 'Kein Zwilling', identical: 'Eineiige Zwillinge', rel_fused: 'Verschmolzen', rel_focused: 'Fokussiert auf', st_reconciled_sep: 'Versöhnung nach Trennung', st_reconciled_div: 'Wiederverheiratung nach Scheidung', household: 'Gemeinsamer Haushalt', household_title: 'Haushalt', dissolve: 'Haushalt auflösen', leave_household: 'Aus Haushalt entfernen', illness: 'Erkrankung (physisch oder psychisch)', substance: 'Substanzmissbrauch', h_none: 'Keine', h_active: 'Aktuell', h_recovered: 'Überwunden', sheet_title: 'Person bearbeiten', export_pdf: 'PDF exportieren', export_t: 'Als PDF exportieren (Druckdialog)', change_photo: 'Foto ändern', adjust_crop: 'Ausschnitt anpassen', rotate_l: 'Nach links drehen', rotate_r: 'Nach rechts drehen', straighten: 'Begradigen', crop_title: 'Foto zuschneiden', crop_hint: 'Ziehen zum Verschieben, Scrollen oder Pinch zum Zoomen', cancel: 'Abbrechen', apply: 'Übernehmen', zoom: 'Zoom', nothing_export: 'Nichts zu exportieren',
+      download: 'Datei herunterladen', download_t: 'Kopie dieses Stammbaums als Datei herunterladen', import_file: 'Datei importieren…', library: 'Gespeicherte Stammbäume', file_menu: 'Datei', delete_tree: 'Diesen Stammbaum von diesem Gerät löschen?', saved_local: 'Auf diesem Gerät gespeichert', recent: 'Zuletzt geöffnet', continue_draft: 'Ungespeicherte Arbeit fortsetzen', open_file: 'Datei öffnen…', new_tree: 'Neuer Stammbaum', no_recent: 'Noch keine zuletzt geöffneten Dateien', perm_denied: 'Zugriff auf die Datei wurde nicht gewährt', file_missing: 'Datei nicht gefunden, aus der Liste entfernt', forget: 'Aus Liste entfernen', last_opened: 'geöffnet', link: 'Verknüpfen…', link_hint: 'Person anklicken, mit der verknüpft werden soll', link_t: 'Mit vorhandener Person verknüpfen (L)', as_spouse: 'Als Partner festlegen', as_child: 'Als Kind festlegen', as_parent: 'Als Elternteil festlegen', rel_arrow: 'Beziehungspfeil', rel_close: 'Eng', rel_conflict: 'Konflikt', rel_distant: 'Distanziert', rel_cutoff: 'Abgebrochen', rel_custom: 'Eigene Beschriftung…', relation: 'Beziehung', label: 'Beschriftung', already_linked: 'Diese Personen sind bereits so verknüpft', cycle: 'Dann wäre jemand sein eigener Vorfahre', two_parents_t: 'hat bereits zwei Eltern', status: 'Status', st_married: 'Verheiratet', st_divorced: 'Geschieden', st_partners: 'Partner (unverheiratet)', st_separated: 'Getrennt', fate: 'Typ', fate_none: 'Person', fate_miscarriage: 'Fehlgeburt', fate_abortion: 'Abtreibung', fate_stillborn: 'Totgeburt', line_ended: 'Linie endet (keine Nachkommen)', linked: 'Verknüpft', gender: 'Geschlecht', g_: 'Nicht angegeben', g_m: 'Männlich', g_f: 'Weiblich', g_x: 'Divers', index_person: 'Indexperson (um wen es geht)', fate_pregnancy: 'Schwangerschaft', child_link: 'Kindbeziehung', link_bio: 'Leiblich', link_adopted: 'Adoptiert', link_foster: 'Pflegekind', twin_of: 'Zwilling von', twin_none: 'Kein Zwilling', identical: 'Eineiige Zwillinge', rel_fused: 'Verschmolzen', rel_focused: 'Fokussiert auf', st_reconciled_sep: 'Versöhnung nach Trennung', st_reconciled_div: 'Wiederverheiratung nach Scheidung', household: 'Gemeinsamer Haushalt', household_title: 'Haushalt', dissolve: 'Haushalt auflösen', leave_household: 'Aus Haushalt entfernen', illness: 'Erkrankung (physisch oder psychisch)', substance: 'Substanzmissbrauch', h_none: 'Keine', h_active: 'Aktuell', h_recovered: 'Überwunden', legend: 'Symbole', legend_t: 'Symbolerklärung', legend_title: 'Symbole und Verbindungen',
+      hint_as_spouse: 'Eine Ehelinie zwischen beiden ziehen', hint_as_child: 'Die zweite Person als Kind unter die erste hängen', hint_as_parent: 'Die erste Person als Kind unter die zweite hängen', hint_household: 'Zusammenlebende Personen einkreisen',
+      hint_rel_close: 'Doppellinie: enge, unterstützende Beziehung', hint_rel_fused: 'Dreifachlinie: verschmolzen, ohne Grenzen', hint_rel_conflict: 'Zickzack: häufige Konflikte', hint_rel_distant: 'Gestrichelt: wenig Kontakt, Distanz', hint_rel_cutoff: 'Linie mit zwei Strichen: Kontakt abgebrochen', hint_rel_focused: 'Pfeil: Aufmerksamkeit oder Sorge auf die andere Person gerichtet',
+      lg_couples: 'Paare', lg_children: 'Kinder', lg_people: 'Personen', lg_relations: 'Beziehungen',
+      lg_married: 'Ehe: durchgezogene Linie, Jahre im Abzeichen', lg_partners: 'Unverheiratete Partner: gestrichelt', lg_separated: 'Getrennt: ein Schrägstrich', lg_divorced: 'Geschieden: zwei Schrägstriche', lg_rec_sep: 'Versöhnung nach Trennung', lg_rec_div: 'Wiederverheiratung nach Scheidung', lg_ordinal: 'Nummer der Ehe bei mehrfach Verheirateten; erster Partner links',
+      lg_bio: 'Leibliches Kind: durchgezogen, ältestes Kind links', lg_adopted: 'Adoptiert: gepunktet mit Pfeil', lg_foster: 'Pflegekind: gestrichelt', lg_twins: 'Zwillinge gehen von einem Punkt aus', lg_identical: 'Eineiige Zwillinge: Querbalken', lg_pregnancy: 'Schwangerschaft', lg_miscarriage: 'Fehlgeburt', lg_abortion: 'Abtreibung', lg_stillborn: 'Totgeburt',
+      lg_gender: 'Quadrat für Männer, Kreis für Frauen; Männer links im Paar', lg_deceased: 'Verstorben: Kreuz über dem Foto, Jahre und Sterbealter', lg_index: 'Indexperson, um die es geht: doppelter Rahmen', lg_illness: 'Erkrankung, physisch oder psychisch: linke Hälfte schattiert, schraffiert wenn überwunden', lg_substance: 'Substanzmissbrauch: untere Hälfte schattiert, schraffiert wenn überwunden', lg_ended: 'Linie endet, keine Nachkommen', lg_household: 'Haushalt: gestrichelte Schleife um Zusammenlebende',
+      sheet_title: 'Person bearbeiten', export_pdf: 'PDF exportieren', export_t: 'Als PDF exportieren (Druckdialog)', change_photo: 'Foto ändern', adjust_crop: 'Ausschnitt anpassen', rotate_l: 'Nach links drehen', rotate_r: 'Nach rechts drehen', straighten: 'Begradigen', crop_title: 'Foto zuschneiden', crop_hint: 'Ziehen zum Verschieben, Scrollen oder Pinch zum Zoomen', cancel: 'Abbrechen', apply: 'Übernehmen', zoom: 'Zoom', nothing_export: 'Nichts zu exportieren',
       help: [
         ['Tastenkürzel'],
         ['Navigation', [['Elternteil / Kind wählen', '↑ ↓'], ['Geschwister / Partner wählen', '← →'], ['Auswahl aufheben / schließen', 'Esc'], ['Baum einpassen', 'F'], ['Vergrößern / verkleinern / zurücksetzen', '+ − 0'], ['Verschieben', 'Leertaste+Ziehen, Mausrad'], ['Zoom am Cursor', 'Pinch, ⌘+Mausrad']]],
@@ -613,14 +657,62 @@
     document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.dataset.i18nTitle); });
     for (const [act, k] of [['undo', 'undo_t'], ['redo', 'redo_t'], ['zoomin', 'zoomin_t'], ['zoomout', 'zoomout_t']]) document.querySelector(`[data-act=${act}]`).title = t(k);
     const [[title], ...sections] = t('help');
-    document.querySelector('#help .panel').innerHTML = `<h2>${esc(title)}</h2>` + sections.map(([h, rows]) =>
+    document.querySelector('#help .panel').innerHTML = `<h2>${esc(title)}</h2><p style="margin:-6px 0 4px;font-size:13px;color:var(--muted)"><kbd>G</kbd> ${esc(t('legend_t'))}</p>` + sections.map(([h, rows]) =>
       `<h3>${esc(h)}</h3><div class="grid">` + rows.map(([a, b]) => `<div><span>${esc(a)}</span><span>${b.split(' ').map(x => /^(?:[⌘⇧]*[A-Z0-9]{1,2}|[↑↓←→⌫+−?0]+|Enter|Esc|Tab|Del|Space|Leertaste)$/.test(x) ? `<kbd>${esc(x)}</kbd>` : esc(x)).join(' ')}</span></div>`).join('') + '</div>').join('');
     document.getElementById('lang').value = lang;
+  }
+  function renderLegend() {
+    const card = (x, y, w = 36, h = 18, extra = '') => `<rect class="c" x="${x}" y="${y}" width="${w}" height="${h}" rx="4"${extra}/>`;
+    const couple = (mid) => card(6, 13) + card(70, 13) + mid;
+    const kids = (lines) => card(38, 2, 36, 14) + `<path d="M56 16 V24"/>` + lines;
+    const groups = [
+      ['lg_couples', [
+        ['lg_married', couple(`<path d="M42 22 H70"/>`)],
+        ['lg_partners', couple(`<path d="M42 22 H70" stroke-dasharray="4 3"/>`)],
+        ['lg_separated', couple(`<path d="M42 22 H70"/><path class="r" d="M53 29 L59 15"/>`)],
+        ['lg_divorced', couple(`<path d="M42 22 H70"/><path class="r" d="M50 29 L56 15 M58 29 L64 15"/>`)],
+        ['lg_rec_sep', couple(`<path d="M42 22 H70"/><path class="r" d="M53 29 L59 15 M48 15 L64 29"/>`)],
+        ['lg_rec_div', couple(`<path d="M42 22 H70"/><path class="r" d="M50 29 L56 15 M58 29 L64 15 M46 15 L66 29"/>`)],
+        ['lg_ordinal', card(2, 13, 30) + card(41, 13, 30) + card(80, 13, 30) + `<path d="M32 22 H41 M71 22 H80"/><text x="31" y="38" font-size="9" fill="currentColor" stroke="none">♥¹</text><text x="71" y="38" font-size="9" fill="currentColor" stroke="none">♥²</text>`],
+      ]],
+      ['lg_children', [
+        ['lg_bio', kids(`<path d="M30 24 H82 M30 24 V30 M56 24 V30 M82 24 V30"/>` + card(14, 30, 32, 12) + card(40, 30, 32, 12) + card(66, 30, 32, 12))],
+        ['lg_adopted', kids(`<path d="M56 24 V36" stroke-dasharray="2 4"/><path d="M52 31 L56 36 L60 31"/>` + card(40, 36, 32, 8))],
+        ['lg_foster', kids(`<path d="M56 24 V36" stroke-dasharray="5 4"/>` + card(40, 36, 32, 8))],
+        ['lg_twins', kids(`<path d="M56 24 L42 36 M56 24 L70 36"/>` + card(26, 36, 32, 8) + card(54, 36, 32, 8))],
+        ['lg_identical', kids(`<path d="M56 24 L42 36 M56 24 L70 36 M48 31 H64"/>` + card(26, 36, 32, 8) + card(54, 36, 32, 8))],
+        ['lg_pregnancy', `<path d="M56 8 L72 36 H40 Z"/>`],
+        ['lg_miscarriage', `<circle class="f" cx="56" cy="22" r="7"/>`],
+        ['lg_abortion', `<path d="M48 14 L64 30 M64 14 L48 30"/>`],
+        ['lg_stillborn', `<rect x="44" y="10" width="24" height="24" rx="3"/><path d="M48 14 L64 30 M64 14 L48 30"/>`],
+      ]],
+      ['lg_people', [
+        ['lg_gender', `<circle class="c" cx="30" cy="22" r="14"/><rect x="18" y="26" width="8" height="8" fill="var(--card)"/><circle class="c" cx="82" cy="22" r="14"/><circle cx="70" cy="30" r="4" fill="var(--card)"/>`],
+        ['lg_deceased', `<circle class="c" cx="56" cy="22" r="14"/><path d="M46 12 L66 32 M66 12 L46 32"/>`],
+        ['lg_index', `<rect class="c" x="30" y="8" width="52" height="28" rx="6"/><rect x="26" y="4" width="60" height="36" rx="9"/>`],
+        ['lg_illness', `<circle class="c" cx="40" cy="22" r="14"/><path class="t" d="M40 8 A14 14 0 0 0 40 36 Z"/><circle class="c" cx="78" cy="22" r="14"/><path class="hz" d="M78 8 A14 14 0 0 0 78 36 Z"/>`],
+        ['lg_substance', `<circle class="c" cx="40" cy="22" r="14"/><path class="t" d="M26 22 A14 14 0 0 0 54 22 Z"/><circle class="c" cx="78" cy="22" r="14"/><path class="hz" d="M64 22 A14 14 0 0 0 92 22 Z"/>`],
+        ['lg_ended', card(38, 4, 36, 18) + `<path class="m" d="M56 22 V32 M44 32 H68"/>`],
+        ['lg_household', card(14, 10, 36, 14) + card(62, 10, 36, 14) + card(38, 28, 36, 12) + `<path class="m" d="M8 20 Q4 4 30 4 H84 Q108 4 104 20 Q102 42 76 42 H34 Q10 42 8 20 Z" stroke-dasharray="5 4"/>`],
+      ]],
+      ['lg_relations', [
+        ['rel_close', card(2, 13, 30) + card(80, 13, 30) + `<path d="M32 22 H80" stroke-width="6"/><path class="bgline" d="M32 22 H80" stroke-width="2"/>`],
+        ['rel_fused', card(2, 13, 30) + card(80, 13, 30) + `<path d="M32 22 H80" stroke-width="9"/><path class="bgline" d="M32 22 H80" stroke-width="5"/><path d="M32 22 H80" stroke-width="1.5"/>`],
+        ['rel_conflict', card(2, 13, 30) + card(80, 13, 30) + `<path class="r" d="M32 22 L38 16 L44 28 L50 16 L56 28 L62 16 L68 28 L74 16 L80 22"/>`],
+        ['rel_distant', card(2, 13, 30) + card(80, 13, 30) + `<path class="m" d="M32 22 H80" stroke-dasharray="7 5"/>`],
+        ['rel_cutoff', card(2, 13, 30) + card(80, 13, 30) + `<path d="M32 22 H80 M52 14 V30 M60 14 V30"/>`],
+        ['rel_focused', card(2, 13, 30) + card(80, 13, 30) + `<path d="M32 22 H76 M70 16 L78 22 L70 28"/>`],
+      ]],
+    ];
+    const hintFor = (k) => k.startsWith('rel_') ? t('hint_' + k) : t(k);
+    const defs = `<defs><pattern id="lg-hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2" height="5" fill="color-mix(in srgb, var(--text) 35%, transparent)"/></pattern></defs>`;
+    $('#legend .panel').innerHTML = `<h2>${esc(t('legend_title'))}</h2>` + groups.map(([g, items]) =>
+      `<h3>${esc(t(g))}</h3><div class="grid">` + items.map(([k, svg]) => `<div class="item"><svg viewBox="0 0 112 44">${defs}${svg}</svg><span>${esc(hintFor(k))}</span></div>`).join('') + '</div>').join('');
   }
   function setLang(l) {
     lang = l; localStorage.setItem(LANG_KEY, l);
     if (fileName === I18N.en.untitled || Object.values(I18N).some(d => d.untitled === fileName)) fileName = t('untitled');
-    applyI18n(); render();
+    applyI18n(); renderLegend(); render();
   }
 
   const CARD_W = 280, CARD_H = 112, H_GAP = 36, V_GAP = 96, COUPLE_GAP = 76, TREE_GAP = 100;
@@ -1354,6 +1446,7 @@
     return d + ` L${last.x} ${last.y}`;
   }
   function year(s) { return s ? s.slice(0, 4) : ''; }
+  const statusHint = (st) => t({ married: 'lg_married', partners: 'lg_partners', separated: 'lg_separated', divorced: 'lg_divorced', reconciled_sep: 'lg_rec_sep', reconciled_div: 'lg_rec_div' }[st] || 'lg_married');
   function marriageOrdinal(f) {
     let best = 0;
     for (const pid of f.parents) {
@@ -1378,6 +1471,7 @@
     const names = f.parents.map(id => state.people[id]?.name || t('unnamed'));
     $('#mpop-title').textContent = names.join(' & ');
     $('#m-from').value = f.married || ''; $('#m-to').value = f.ended || ''; $('#m-status').value = f.status || 'married';
+    $('#m-hint').textContent = statusHint(f.status || 'married');
     const r = anchor.getBoundingClientRect();
     mpop.classList.add('show');
     const w = mpop.offsetWidth, h = mpop.offsetHeight;
@@ -1396,7 +1490,7 @@
     const f = fam(mpopFamily); if (!f) return;
     if (e.target.id === 'm-from') f.married = e.target.value;
     if (e.target.id === 'm-to') f.ended = e.target.value;
-    if (e.target.id === 'm-status') f.status = e.target.value;
+    if (e.target.id === 'm-status') { f.status = e.target.value; $('#m-hint').textContent = statusHint(f.status); }
   });
   mpop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); closeMarriage(); } e.stopPropagation(); });
   $('#m-close').addEventListener('click', closeMarriage);
@@ -1413,7 +1507,7 @@
     const r = state.relations.find(x => x.id === rid); if (!r) return;
     stopEditing(); if (mpopFamily) closeMarriage();
     rpopId = rid; rpopSnapshot = snapshot();
-    $('#r-type').value = r.type; $('#r-label').value = r.label || ''; $('#r-label').placeholder = t('rel_' + r.type);
+    $('#r-type').value = r.type; $('#r-label').value = r.label || ''; $('#r-label').placeholder = t('rel_' + r.type); $('#r-hint').textContent = t('hint_rel_' + r.type);
     const b = anchor.getBoundingClientRect();
     rpop.classList.add('show');
     const w = rpop.offsetWidth, h = rpop.offsetHeight;
@@ -1429,7 +1523,7 @@
   }
   rpop.addEventListener('input', (e) => {
     const r = state.relations.find(x => x.id === rpopId); if (!r) return;
-    if (e.target.id === 'r-type') { r.type = e.target.value; $('#r-label').placeholder = t('rel_' + r.type); }
+    if (e.target.id === 'r-type') { r.type = e.target.value; $('#r-label').placeholder = t('rel_' + r.type); $('#r-hint').textContent = t('hint_rel_' + r.type); }
     if (e.target.id === 'r-label') r.label = e.target.value;
   });
   rpop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); closeRelation(); } e.stopPropagation(); });
@@ -1441,13 +1535,14 @@
 
   const menu = $('#menu');
   function openMenu(anchor, title, items) {
-    menu.innerHTML = `<div class="t">${esc(title)}</div>` + items.map((it, i) => `<button data-i="${i}">${esc(it.label)}</button>`).join('');
+    menu.innerHTML = `<div class="t">${esc(title)}</div>` + items.map((it, i) => `<button data-i="${i}">${esc(it.label)}${it.hint ? `<small>${esc(it.hint)}</small>` : ''}</button>`).join('');
     menu.onclick = (e) => { const b = e.target.closest('button'); if (!b) return; closeMenu(); items[b.dataset.i].run(); };
     const r = anchor.getBoundingClientRect();
     menu.classList.add('show');
     const w = menu.offsetWidth, h = menu.offsetHeight;
     menu.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px';
-    menu.style.top = (r.bottom + 6 + h > innerHeight ? r.top - h - 6 : r.bottom + 6) + 'px';
+    const below = r.bottom + 6, above = r.top - h - 6;
+    menu.style.top = Math.max(8, Math.min(innerHeight - h - 8, below + h <= innerHeight - 8 ? below : (above >= 8 ? above : below))) + 'px';
     menu.querySelector('button').focus();
   }
   function closeMenu() { menu.classList.remove('show'); menu.innerHTML = ''; }
@@ -1616,17 +1711,17 @@
     const a = linkFrom, b = targetId; cancelLink();
     if (!a || a === b || !state.people[a] || !state.people[b]) return;
     const apply = (fn) => { let err = null; mutate(() => { err = fn(); }); if (err) { undoStack.pop(); toast(err); } else { toast(t('linked')); select(a); } };
-    const relItems = ['close', 'fused', 'conflict', 'distant', 'cutoff', 'focused'].map(type => ({ label: (type === 'focused' ? '→ ' : '↔ ') + t('rel_' + type), run: () => apply(() => addRelation(a, b, type)) }));
+    const relItems = ['close', 'fused', 'conflict', 'distant', 'cutoff', 'focused'].map(type => ({ label: (type === 'focused' ? '→ ' : '↔ ') + t('rel_' + type), hint: t('hint_rel_' + type), run: () => apply(() => addRelation(a, b, type)) }));
     const childOpts = () => {
       const fams = parentFamilies(a);
       if (fams.length > 1) return openMenu(anchor, t('add_child_menu'), fams.map(f => ({ label: t('with') + ' ' + (f.parents.filter(x => x !== a).map(x => state.people[x]?.name || t('unnamed')).join(', ') || t('no_partner')), run: () => apply(() => linkChild(a, b, f.id)) })));
       apply(() => linkChild(a, b));
     };
     openMenu(anchor, `${state.people[a].name || t('unnamed')} → ${state.people[b].name || t('unnamed')}`, [
-      { label: t('as_spouse'), run: () => apply(() => linkSpouse(a, b)) },
-      { label: t('as_child'), run: childOpts },
-      { label: t('as_parent'), run: () => apply(() => linkChild(b, a)) },
-      { label: '◯ ' + t('household'), run: () => apply(() => joinHousehold(a, b)) },
+      { label: t('as_spouse'), hint: t('hint_as_spouse'), run: () => apply(() => linkSpouse(a, b)) },
+      { label: t('as_child'), hint: t('hint_as_child'), run: childOpts },
+      { label: t('as_parent'), hint: t('hint_as_parent'), run: () => apply(() => linkChild(b, a)) },
+      { label: '◯ ' + t('household'), hint: t('hint_household'), run: () => apply(() => joinHousehold(a, b)) },
       ...relItems,
     ]);
   }
@@ -2012,6 +2107,7 @@
     if (inField) return;
     if (e.key === 'Escape') {
       if ($('#help').classList.contains('show')) return $('#help').classList.remove('show');
+      if ($('#legend').classList.contains('show')) return $('#legend').classList.remove('show');
       if (welcome.classList.contains('show') && people().length) return hideWelcome();
       if (mpopFamily) return closeMarriage();
       if (linkFrom) return cancelLink();
@@ -2020,6 +2116,7 @@
     }
     if (e.key === ' ') { e.preventDefault(); spaceDown = true; viewport.classList.add('panning'); return; }
     if (e.key === '?') return $('#help').classList.toggle('show');
+    if (e.key === 'g' || e.key === 'G') { $('#help').classList.remove('show'); return $('#legend').classList.toggle('show'); }
     if (e.key === 'f' || e.key === 'F') return fitView();
     if (e.key === '0') return resetView();
     if (e.key === '+' || e.key === '=') return zoomAt(1.2, viewport.clientWidth / 2, viewport.clientHeight / 2, true);
@@ -2061,6 +2158,7 @@
       ]),
       zoomin: () => zoomAt(1.2, c, m, true), zoomout: () => zoomAt(1 / 1.2, c, m, true), fit: fitView,
       help: () => $('#help').classList.toggle('show'),
+      legend: () => { $('#help').classList.remove('show'); $('#legend').classList.toggle('show'); },
     })[b.dataset.act]();
   }));
   $('#actions').addEventListener('click', (e) => {
@@ -2073,6 +2171,7 @@
     else createRelative(selectedId, a, b);
   });
   $('#help').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('show'); });
+  $('#legend').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('show'); });
 
   const hasFS = 'showSaveFilePicker' in window;
   const EXT = '.ftree';
@@ -2331,7 +2430,7 @@
 
   fileName = t('untitled');
   const restored = restoreDraft();
-  applyI18n();
+  applyI18n(); renderLegend();
   render();
   document.getElementById('lang').addEventListener('change', (e) => setLang(e.target.value));
   if (restored) fitView(); else resetView();

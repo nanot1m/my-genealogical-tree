@@ -35,3 +35,28 @@ test.describe('installable app', () => {
     await context.setOffline(false);
   });
 });
+
+test.describe('in-app documentation', () => {
+  test('symbol guide opens from the toolbar and G, link menu explains each option', async ({ page }) => {
+    const { newTree, firstPerson, addRelative, cardOf, select } = await import('./helpers.js');
+    await newTree(page);
+    await firstPerson(page, 'A');
+    await addRelative(page, null, 'c', 'B');
+    await page.click('[data-act=legend]');
+    await expect(page.locator('#legend.show')).toBeVisible();
+    await expect(page.locator('#legend .item')).toHaveCount(29);
+    await expect(page.locator('#legend h3')).toHaveText(['Couples', 'Children', 'People', 'Relationships']);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#legend.show')).toHaveCount(0);
+    await page.keyboard.press('g');
+    await expect(page.locator('#legend.show')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await select(page, 'A'); await page.keyboard.press('l'); await cardOf(page, 'B').click();
+    await expect(page.locator('#menu button small').first()).toHaveText('Draw a marriage line between the two');
+    await expect(page.locator('#menu button', { hasText: 'Conflict' }).locator('small')).toHaveText('Zigzag: frequent conflict');
+    await page.keyboard.press('Escape');
+    await page.selectOption('#lang', 'ru');
+    await page.keyboard.press('g');
+    await expect(page.locator('#legend h2')).toHaveText('Обозначения и связи');
+  });
+});
