@@ -8,7 +8,7 @@ test.describe('canvas and first person', () => {
     await expect(page.locator('#empty p')).toHaveText('Click to add the first person');
     await page.click('#empty');
     await expect(page.locator('#empty')).toBeHidden();
-    await expect(page.locator('.card.editing .f-name')).toBeFocused();
+    await expect(page.locator('#sh-name')).toBeFocused();
     await page.keyboard.type('Anna Smith');
     await page.keyboard.press('Enter');
     await expect(cardOf(page, 'Anna Smith')).toBeVisible();
@@ -110,8 +110,8 @@ test.describe('keyboard', () => {
   test('name inputs opt out of password managers', async ({ page }) => {
     await newTree(page);
     await page.click('#empty');
-    await expect(page.locator('.card.editing .f-name')).toHaveAttribute('data-1p-ignore', '');
-    await expect(page.locator('.card.editing .f-name')).toHaveAttribute('autocomplete', 'off');
+    await expect(page.locator('#sh-name')).toHaveAttribute('data-1p-ignore', '');
+    await expect(page.locator('#sh-name')).toHaveAttribute('autocomplete', 'off');
   });
 });
 

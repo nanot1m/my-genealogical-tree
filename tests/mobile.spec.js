@@ -13,7 +13,7 @@ test.describe('touch devices', () => {
     await page.tap('#empty');
     await expect(page.locator('#sheet')).toBeVisible();
     await expect(page.locator('#sh-name')).toBeFocused();
-    await page.keyboard.type('Анастасия'); await page.keyboard.press('Enter'); await page.keyboard.type('Иванова');
+    await page.keyboard.type('Анастасия'); await page.keyboard.press('Tab'); await page.keyboard.type('Иванова');
     await page.fill('#sh-birth', '1950-03-04');
     await page.locator('#sh-alive').uncheck();
     await page.fill('#sh-death', '2020-01-01');
@@ -70,7 +70,7 @@ test.describe('touch devices', () => {
 
   test('phone layout: toolbars stack, action bar fits, sheet does not overflow in Russian', async ({ page }) => {
     await newTreeTouch(page, { lang: 'ru' });
-    await page.tap('#empty'); await page.keyboard.type('Анастасия Константинопольская'); await page.keyboard.press('Enter'); await page.keyboard.type('Иванова');
+    await page.tap('#empty'); await page.keyboard.type('Анастасия Константинопольская'); await page.keyboard.press('Tab'); await page.keyboard.type('Иванова');
     const overflow = () => page.evaluate(() => [...document.querySelectorAll('.bar, #sheet input, #sheet .sh-row, #sheet .foot button, #actions button')]
       .filter(el => el.offsetParent !== null)
       .filter(el => el.getBoundingClientRect().right > innerWidth + 1 || el.getBoundingClientRect().left < -1)

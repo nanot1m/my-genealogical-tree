@@ -46,7 +46,7 @@ export async function finishEditing(page) {
 export async function firstPerson(page, name, birth) {
   await page.click('#empty');
   await page.keyboard.type(name);
-  if (birth) await page.fill('.card.editing .f-birth', birth);
+  if (birth) await page.fill('#sh-birth', birth);
   await finishEditing(page);
 }
 
@@ -55,7 +55,7 @@ export async function addRelative(page, who, key, name, birth) {
   await page.keyboard.press(key);
   await expect(page.locator('.card.editing')).toHaveCount(1);
   await page.keyboard.type(name);
-  if (birth) await page.fill('.card.editing .f-birth', birth);
+  if (birth) await page.fill('#sh-birth', birth);
   await finishEditing(page);
   await page.waitForTimeout(80);
 }

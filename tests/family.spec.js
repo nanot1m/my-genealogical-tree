@@ -108,12 +108,12 @@ test.describe('genogram markers', () => {
     await firstPerson(page, 'Anna');
     await addRelative(page, null, 'm', 'Boris');
     const edit = async (name, fn) => { await select(page, name); await cardOf(page, name).dblclick(); await fn(); await page.keyboard.press('Enter'); await page.waitForTimeout(150); };
-    await edit('Anna', async () => { await page.selectOption('.card.editing .f-gender', 'f'); });
+    await edit('Anna', async () => { await page.selectOption('#sh-gender', 'f'); });
     await edit('Boris', async () => {
-      await page.selectOption('.card.editing .f-gender', 'm');
-      await page.locator('.card.editing .f-alive').uncheck();
-      await page.fill('.card.editing .f-death', '2010-01-01');
-      await page.locator('.card.editing .f-index').check();
+      await page.selectOption('#sh-gender', 'm');
+      await page.locator('#sh-alive').uncheck();
+      await page.fill('#sh-death', '2010-01-01');
+      await page.locator('#sh-index').check();
     });
     await expect(cardOf(page, 'Boris')).toHaveClass(/deceased/);
     await expect(cardOf(page, 'Boris')).toHaveClass(/index/);
@@ -122,10 +122,10 @@ test.describe('genogram markers', () => {
     let r = rows(await positions(page));
     expect(r[0]).toEqual(['Boris', 'Anna']);
     for (const k of ['Twin1', 'Twin2', 'Adopted', 'Foster', 'Preg']) await addRelative(page, 'Anna', 'c', k);
-    await edit('Twin1', async () => { await page.selectOption('.card.editing .f-twin', { label: 'Twin2' }); await page.locator('.card.editing .f-identical').check(); });
-    await edit('Adopted', async () => { await page.selectOption('.card.editing .f-kind', 'adopted'); });
-    await edit('Foster', async () => { await page.selectOption('.card.editing .f-kind', 'foster'); });
-    await edit('Preg', async () => { await page.selectOption('.card.editing .f-fate', 'pregnancy'); });
+    await edit('Twin1', async () => { await page.selectOption('#sh-twin', { label: 'Twin2' }); await page.locator('#sh-identical').check(); });
+    await edit('Adopted', async () => { await page.selectOption('#sh-kind', 'adopted'); });
+    await edit('Foster', async () => { await page.selectOption('#sh-kind', 'foster'); });
+    await edit('Preg', async () => { await page.selectOption('#sh-fate', 'pregnancy'); });
     await expect(cardOf(page, 'Preg').locator('.photo svg.fg path')).toHaveCount(1);
     expect((await page.locator('#edges path.adopted').getAttribute('d')).length).toBeGreaterThan(0);
     expect((await page.locator('#edges path.foster').getAttribute('d')).length).toBeGreaterThan(0);
@@ -143,7 +143,7 @@ test.describe('genogram markers', () => {
     await expect(cardOf(page, 'Boris')).not.toHaveClass(/index/);
     await page.locator('.marriage').first().click(); await page.selectOption('#m-status', 'reconciled_div'); await page.keyboard.press('Enter');
     expect(((await page.locator('#edges path.slash').getAttribute('d')).match(/M/g) || []).length).toBe(3);
-    await edit('Boris', async () => { await page.selectOption('.card.editing .f-illness', 'active'); await page.selectOption('.card.editing .f-substance', 'recovered'); });
+    await edit('Boris', async () => { await page.selectOption('#sh-illness', 'active'); await page.selectOption('#sh-substance', 'recovered'); });
     await expect(cardOf(page, 'Boris').locator('.photo .hx.ill.active')).toHaveCount(1);
     await expect(cardOf(page, 'Boris').locator('.photo .hx.sub.recovered')).toHaveCount(1);
     await select(page, 'Anna'); await page.keyboard.press('l'); await cardOf(page, 'Twin1').click();
@@ -162,8 +162,8 @@ test.describe('genogram markers', () => {
     await firstPerson(page, 'Mom');
     await addRelative(page, null, 'c', 'Z');
     await cardOf(page, 'Z').dblclick();
-    await page.selectOption('.card.editing .f-fate', 'miscarriage');
-    await page.locator('.card.editing .f-ended').check();
+    await page.selectOption('#sh-fate', 'miscarriage');
+    await page.locator('#sh-ended').check();
     await page.keyboard.press('Enter');
     await expect(cardOf(page, 'Z')).toHaveClass(/unborn/);
     await expect(cardOf(page, 'Z').locator('.fate-chip')).toHaveText('Miscarriage');
