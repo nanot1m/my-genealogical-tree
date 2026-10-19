@@ -71,8 +71,10 @@ test.describe('layout', () => {
     const firstMid = (center(pos, 'John') + center(pos, 'Mary')) / 2;
     expect(Math.abs(center(pos, 'Kid A') - firstMid)).toBeLessThan(2);
     const secondKids = (center(pos, 'Kid B') + center(pos, 'Kid C')) / 2;
-    expect(Math.abs(secondKids - center(pos, 'Second'))).toBeLessThan(2);
+    const secondMid = (center(pos, 'John') + center(pos, 'Second')) / 2;
+    expect(Math.abs(secondKids - secondMid)).toBeLessThan(2);
     expect(center(pos, 'Kid B')).toBeGreaterThan(center(pos, 'Kid A'));
+    expect(rows(pos)[0]).toEqual(['Mary', 'John', 'Second']);
     const badges = await page.locator('.marriage .h').allTextContents();
     expect(new Set(badges)).toEqual(new Set(['♥¹', '♥²']));
   });

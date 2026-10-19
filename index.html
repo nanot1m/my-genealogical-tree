@@ -76,6 +76,7 @@
   #world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
   #world.anim { transition: transform .28s cubic-bezier(.2,.8,.2,1); }
   #edges { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+  #badges { position: absolute; left: 0; top: 0; z-index: 2; }
   #edges path { fill: none; stroke: var(--line); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
   .card {
@@ -622,7 +623,10 @@
   const people = () => Object.values(state.people);
   const fam = (id) => state.families[id];
   function childFamily(pid) { return Object.values(state.families).find(f => f.children.includes(pid)); }
-  function parentFamilies(pid) { return Object.values(state.families).filter(f => f.parents.includes(pid)); }
+  function parentFamilies(pid) {
+    return Object.values(state.families).filter(f => f.parents.includes(pid))
+      .sort((a, b) => (a.married || '9999').localeCompare(b.married || '9999'));
+  }
   function parentsOf(pid) { const f = childFamily(pid); return f ? f.parents : []; }
   function childrenOf(pid) { return parentFamilies(pid).flatMap(f => f.children); }
   function spousesOf(pid) { return parentFamilies(pid).flatMap(f => f.parents.filter(x => x !== pid)); }
@@ -844,6 +848,8 @@
       for (let i = 0; i < unit.length; i++) {
         for (const f of parentFamilies(unit[i])) for (const sp of f.parents) if (!claimed.has(sp)) { claimed.add(sp); unit.push(sp); }
       }
+      const ownSpouses = parentFamilies(pid).flatMap(f => f.parents.filter(x => x !== pid)).filter(x => unit.includes(x));
+      if (ownSpouses.length >= 2 && unit.length === ownSpouses.length + 1) unit.splice(0, unit.length, ownSpouses[0], pid, ...ownSpouses.slice(1));
       const n = { own: pid, unit, groups: [], ancestors: [] };
       for (const m of unit) {
         const f = childFamily(m); if (!f) continue;
@@ -896,14 +902,14 @@
     };
 
     function measure(n) {
-      n.uw = n.unit.length * CARD_W + Math.max(0, n.unit.length - 1) * COUPLE_GAP;
+      n.ux = n.unit.map((_, i) => i * STEP);
       const ownIdx = n.unit.indexOf(n.own);
-      n.ownCenter = ownIdx * STEP + CARD_W / 2;
+      const parentIdx = (f) => f.parents.map(id => n.unit.indexOf(id)).filter(i => i >= 0).sort((a, b) => a - b);
       const originRel = (f) => {
-        const idx = f.parents.map(id => n.unit.indexOf(id)).filter(i => i >= 0).sort((a, b) => a - b);
-        if (!idx.length) return n.uw / 2;
-        if (idx.length === 1 || idx[1] - idx[0] > 1) return idx[idx.length - 1] * STEP + CARD_W / 2;
-        return (idx[0] + idx[1]) / 2 * STEP + CARD_W / 2;
+        const idx = parentIdx(f);
+        if (!idx.length) return (n.ux[n.ux.length - 1] + CARD_W) / 2;
+        if (idx.length === 1 || idx[1] - idx[0] > 1) return n.ux[idx[idx.length - 1]] + CARD_W / 2;
+        return (n.ux[idx[0]] + n.ux[idx[1]]) / 2 + CARD_W / 2;
       };
       n.groups.sort((a, b) => originRel(a.f) - originRel(b.f));
       let comp = null; n.kids = [];
@@ -918,10 +924,19 @@
         }
         const avgOwn = local.reduce((a, k) => a + k.dx + k.c.ownCenter, 0) / local.length;
         let gdx = originRel(g.f) - avgOwn;
-        if (comp) gdx += settle(comp, shift(gExt, gdx, 0), 1);
+        if (comp) {
+          const push = settle(comp, shift(gExt, gdx, 0), 1);
+          const idx = parentIdx(g.f);
+          if (push > 0 && idx.length === 2 && idx[1] - idx[0] === 1 && idx[1] > 0) {
+            for (let j = idx[1]; j < n.ux.length; j++) n.ux[j] += 2 * push;
+          }
+          gdx += push;
+        }
         comp = union(comp, shift(gExt, gdx, 0));
         for (const k of local) n.kids.push({ c: k.c, dx: k.dx + gdx });
       }
+      n.uw = n.ux[n.ux.length - 1] + CARD_W;
+      n.ownCenter = n.ux[ownIdx] + CARD_W / 2;
       n.ext = union(comp, new Map([[0, [[0, n.uw]]]]));
       return n;
     }
@@ -929,7 +944,7 @@
     const pending = [];
     function place(n, x, row) {
       const y = row * (CARD_H + V_GAP);
-      n.unit.forEach((id, i) => positions.set(id, { x: x + i * STEP, y }));
+      n.unit.forEach((id, i) => positions.set(id, { x: x + n.ux[i], y }));
       occupied = union(occupied, new Map([[row, [[x, x + n.uw]]]]));
       for (const { c, dx } of n.kids) place(c, x + dx, row + 1);
       const ownIdx = n.unit.indexOf(n.own);
@@ -938,7 +953,7 @@
         const dir = n.side < 0 ? -1 : n.side > 0 ? 1 : k < ownIdx ? -1 : k > ownIdx ? 1 : (k === 0 ? -1 : 1);
         return { a, k, dir };
       }).sort((p, q) => (p.dir < 0 ? q.k - p.k : p.k - q.k));
-      for (const { a, k, dir } of list) pending.push({ a, row: row - 1, center: x + k * STEP + CARD_W / 2, dir, order: row });
+      for (const { a, k, dir } of list) pending.push({ a, row: row - 1, center: x + n.ux[k] + CARD_W / 2, dir, order: row });
     }
     function placeAncestors() {
       pending.sort((p, q) => p.order - q.order);
@@ -1112,7 +1127,7 @@
       let origin = null;
       if (ps.length === 2) {
         const [a, b] = ps;
-        const adjacent = Math.abs(a.top - b.top) < 1 && b.x - (a.x + CARD_W) <= COUPLE_GAP + 1;
+        const adjacent = Math.abs(a.top - b.top) < 1 && ![...pos.values()].some(q => Math.abs(q.y - a.top) < 1 && q.x > a.x && q.x < b.x);
         const bucket = f.status === 'partners' ? dPartners : d;
         if (adjacent) {
           bucket.push(`M${a.cx + CARD_W / 2} ${a.cy} L${b.cx - CARD_W / 2} ${b.cy}`);
@@ -1215,7 +1230,6 @@
     for (const pid of f.parents) {
       const fams = parentFamilies(pid);
       if (fams.length < 2) continue;
-      fams.sort((a, b) => (a.married || '9999').localeCompare(b.married || '9999'));
       best = Math.max(best, fams.indexOf(f) + 1);
     }
     return best ? String(best).replace(/\d/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]) : '';
