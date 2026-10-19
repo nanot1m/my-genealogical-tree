@@ -10,7 +10,7 @@ Live: https://nanot1m.github.io/my-genealogical-tree/
 - Cards with photo, name, birth surname, birth and death dates, living toggle, age
 - Parents, siblings, children, multiple spouses with marriage dates and status (married, partners, separated, divorced)
 - Link existing people as spouse, child or parent; relationship arrows (close, conflict, distant, cut off, custom label)
-- Genogram notation after McGoldrick and Gerson: gender markers with men on the left of a couple, deceased cross, index person ring, pregnancy / miscarriage / abortion / stillbirth glyphs, adopted and foster connectors, twins (identical or not), marriage ordinals, divorce and separation slashes, and relationship lines (close, fused, conflict, distant, cut off, focused on)
+- Genogram notation after McGoldrick and Gerson: gender markers with men on the left of a couple, deceased cross, index person ring, pregnancy / miscarriage / abortion / stillbirth glyphs, adopted and foster connectors, twins (identical or not), marriage ordinals, divorce and separation slashes, relationship lines (close, fused, conflict, distant, cut off, focused on), reconciliation marks, household circles, and illness / substance markers
 - Automatic layout: couples as units, parents centered over children, in-law branches on the outer side, birth-date sibling order, crossing-minimizing passes
 - Photo cropper with zoom, drag, 90° rotation and straightening; crops stay editable
 - Keyboard-first: arrows navigate, Enter edits, P/C/S/M/L create or link, ⌫ deletes, ⌘Z undo, ? shows all shortcuts

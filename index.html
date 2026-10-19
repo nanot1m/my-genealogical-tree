@@ -248,7 +248,8 @@
   #rpop button.danger { color: var(--danger); background: transparent; }
   #mpop select { flex: 1; font: inherit; font-size: 13px; padding: 3px 6px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: var(--card); color: var(--text); min-width: 0; }
   #sheet select { font: inherit; font-size: 16px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; width: 100%; background: var(--card); color: var(--text); }
-  .edit select.f-fate { font: inherit; font-size: 12px; padding: 1px 4px; border: 1px solid var(--border); border-radius: 6px; flex: 1; min-width: 0; background: var(--card); color: var(--text); }
+  .edit select { font: inherit; font-size: 12px; padding: 1px 4px; border: 1px solid var(--border); border-radius: 6px; flex: 1; min-width: 0; width: 0; background: var(--card); color: var(--text); }
+  .edit .row label[title] { width: 18px; text-align: center; }
   .edit .row .ended { display: flex; align-items: center; gap: 4px; width: auto; color: var(--text); white-space: nowrap; cursor: pointer; }
   .card.deceased .photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top right, transparent calc(50% - 1.5px), var(--text) calc(50% - 1.5px), var(--text) calc(50% + 1.5px), transparent calc(50% + 1.5px)), linear-gradient(to top left, transparent calc(50% - 1.5px), var(--text) calc(50% - 1.5px), var(--text) calc(50% + 1.5px), transparent calc(50% + 1.5px)); opacity: .7; pointer-events: none; }
   .card.deceased .photo img { filter: grayscale(.6); }
@@ -260,6 +261,13 @@
   .card.g-x .photo .gm { border-radius: 50% 2px 50% 2px; }
   .card.g-m .photo { border-radius: 16px; }
   .card.g-m .photo img { border-radius: 0; }
+  .photo .hx { position: absolute; pointer-events: none; }
+  .photo .hx.ill { left: 0; top: 0; bottom: 0; width: 50%; }
+  .photo .hx.sub { left: 0; right: 0; bottom: 0; height: 50%; }
+  .photo .hx.active { background: color-mix(in srgb, var(--text) 35%, transparent); }
+  .photo .hx.recovered { background: repeating-linear-gradient(45deg, transparent 0 3px, color-mix(in srgb, var(--text) 35%, transparent) 3px 5px); }
+  #edges path.house { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 6 5; fill: color-mix(in srgb, var(--accent) 5%, transparent); }
+  .relbadge.house { font-weight: 600; }
   .photo .fg { width: 34px; height: 34px; stroke: var(--text); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; color: var(--text); }
   .card.unborn { border-style: dashed; background: var(--panel-2); }
   .card.unborn .photo { background: var(--panel-2); color: var(--muted); font-size: 22px; }
@@ -441,7 +449,7 @@
 <div id="toast"></div>
 <div id="mpop">
   <h4 id="mpop-title">Marriage</h4>
-  <div class="row"><label data-i18n="status"></label><select id="m-status"><option value="married" data-i18n="st_married"></option><option value="partners" data-i18n="st_partners"></option><option value="separated" data-i18n="st_separated"></option><option value="divorced" data-i18n="st_divorced"></option></select></div>
+  <div class="row"><label data-i18n="status"></label><select id="m-status"><option value="married" data-i18n="st_married"></option><option value="partners" data-i18n="st_partners"></option><option value="separated" data-i18n="st_separated"></option><option value="divorced" data-i18n="st_divorced"></option><option value="reconciled_sep" data-i18n="st_reconciled_sep"></option><option value="reconciled_div" data-i18n="st_reconciled_div"></option></select></div>
   <div class="row"><label data-i18n="married"></label><input type="date" id="m-from"></div>
   <div class="row"><label data-i18n="until"></label><input type="date" id="m-to"></div>
   <div class="foot"><button class="danger" id="m-unlink" data-i18n="unlink"></button><button id="m-close" data-i18n="done"></button></div>
@@ -484,6 +492,8 @@
     <label class="sh-row" id="sh-kind-row"><span data-i18n="child_link"></span><select id="sh-kind"><option value="bio" data-i18n="link_bio"></option><option value="adopted" data-i18n="link_adopted"></option><option value="foster" data-i18n="link_foster"></option></select></label>
     <label class="sh-row" id="sh-twin-row"><span data-i18n="twin_of"></span><select id="sh-twin"></select></label>
     <label class="sh-row sh-alive" id="sh-identical-row"><span data-i18n="identical"></span><input type="checkbox" id="sh-identical"></label>
+    <label class="sh-row"><span data-i18n="illness"></span><select id="sh-illness"><option value="" data-i18n="h_none"></option><option value="active" data-i18n="h_active"></option><option value="recovered" data-i18n="h_recovered"></option></select></label>
+    <label class="sh-row"><span data-i18n="substance"></span><select id="sh-substance"><option value="" data-i18n="h_none"></option><option value="active" data-i18n="h_active"></option><option value="recovered" data-i18n="h_recovered"></option></select></label>
     <label class="sh-row sh-alive"><span data-i18n="index_person"></span><input type="checkbox" id="sh-index"></label>
     <label class="sh-row sh-alive"><span data-i18n="line_ended"></span><input type="checkbox" id="sh-ended"></label>
     <div class="foot"><button id="sh-delete" class="danger" data-i18n="delete"></button><button id="sh-done" class="primary" data-i18n="done"></button></div>
@@ -531,7 +541,7 @@
       autosave_failed: 'Autosave failed', saved: 'Saved', opened: 'Opened', save_failed: 'Save failed', open_failed: 'Open failed', not_tree: 'Not a family tree file',
       discard: 'Discard unsaved changes?', file_name: 'File name', unlink_confirm: 'Unlink this couple? Their children stay attached to the first parent.',
       restored: 'Restored unsaved draft',
-      download: 'Download file', download_t: 'Download a copy of this tree as a file', import_file: 'Import file…', library: 'Saved trees', file_menu: 'File', delete_tree: 'Delete this tree from this device?', saved_local: 'Saved on this device', recent: 'Recent files', continue_draft: 'Continue unsaved work', open_file: 'Open file…', new_tree: 'New tree', no_recent: 'No recent files yet', perm_denied: 'Access to the file was not granted', file_missing: 'File not found, removed from recent', forget: 'Remove from list', last_opened: 'opened', link: 'Link…', link_hint: 'Click a person to link with', link_t: 'Link with an existing person (L)', as_spouse: 'Set as spouse', as_child: 'Set as child', as_parent: 'Set as parent', rel_arrow: 'Relationship arrow', rel_close: 'Close', rel_conflict: 'Conflict', rel_distant: 'Distant', rel_cutoff: 'Cut off', rel_custom: 'Custom…', relation: 'Relationship', label: 'Label', already_linked: 'These people are already linked this way', cycle: 'That would make someone their own ancestor', two_parents_t: 'already has two parents', status: 'Status', st_married: 'Married', st_divorced: 'Divorced', st_partners: 'Partners (unmarried)', st_separated: 'Separated', fate: 'Type', fate_none: 'Person', fate_miscarriage: 'Miscarriage', fate_abortion: 'Abortion', fate_stillborn: 'Stillborn', line_ended: 'Line ended (no descendants)', linked: 'Linked', gender: 'Gender', g_: 'Not set', g_m: 'Male', g_f: 'Female', g_x: 'Other', index_person: 'Index person (the chart is about them)', fate_pregnancy: 'Pregnancy', child_link: 'Child link', link_bio: 'Biological', link_adopted: 'Adopted', link_foster: 'Foster', twin_of: 'Twin of', twin_none: 'Not a twin', identical: 'Identical twins', rel_fused: 'Fused', rel_focused: 'Focused on', sheet_title: 'Edit person', export_pdf: 'Export PDF', export_t: 'Export as PDF (print dialog)', change_photo: 'Change photo', adjust_crop: 'Adjust crop', rotate_l: 'Rotate left', rotate_r: 'Rotate right', straighten: 'Straighten', crop_title: 'Crop photo', crop_hint: 'Drag to move, scroll or pinch to zoom', cancel: 'Cancel', apply: 'Apply', zoom: 'Zoom', nothing_export: 'Nothing to export',
+      download: 'Download file', download_t: 'Download a copy of this tree as a file', import_file: 'Import file…', library: 'Saved trees', file_menu: 'File', delete_tree: 'Delete this tree from this device?', saved_local: 'Saved on this device', recent: 'Recent files', continue_draft: 'Continue unsaved work', open_file: 'Open file…', new_tree: 'New tree', no_recent: 'No recent files yet', perm_denied: 'Access to the file was not granted', file_missing: 'File not found, removed from recent', forget: 'Remove from list', last_opened: 'opened', link: 'Link…', link_hint: 'Click a person to link with', link_t: 'Link with an existing person (L)', as_spouse: 'Set as spouse', as_child: 'Set as child', as_parent: 'Set as parent', rel_arrow: 'Relationship arrow', rel_close: 'Close', rel_conflict: 'Conflict', rel_distant: 'Distant', rel_cutoff: 'Cut off', rel_custom: 'Custom…', relation: 'Relationship', label: 'Label', already_linked: 'These people are already linked this way', cycle: 'That would make someone their own ancestor', two_parents_t: 'already has two parents', status: 'Status', st_married: 'Married', st_divorced: 'Divorced', st_partners: 'Partners (unmarried)', st_separated: 'Separated', fate: 'Type', fate_none: 'Person', fate_miscarriage: 'Miscarriage', fate_abortion: 'Abortion', fate_stillborn: 'Stillborn', line_ended: 'Line ended (no descendants)', linked: 'Linked', gender: 'Gender', g_: 'Not set', g_m: 'Male', g_f: 'Female', g_x: 'Other', index_person: 'Index person (the chart is about them)', fate_pregnancy: 'Pregnancy', child_link: 'Child link', link_bio: 'Biological', link_adopted: 'Adopted', link_foster: 'Foster', twin_of: 'Twin of', twin_none: 'Not a twin', identical: 'Identical twins', rel_fused: 'Fused', rel_focused: 'Focused on', st_reconciled_sep: 'Reconciled after separation', st_reconciled_div: 'Remarried after divorce', household: 'Same household', household_title: 'Household', dissolve: 'Dissolve household', leave_household: 'Remove from household', illness: 'Illness (physical or mental)', substance: 'Substance abuse', h_none: 'None', h_active: 'Current', h_recovered: 'Recovered', sheet_title: 'Edit person', export_pdf: 'Export PDF', export_t: 'Export as PDF (print dialog)', change_photo: 'Change photo', adjust_crop: 'Adjust crop', rotate_l: 'Rotate left', rotate_r: 'Rotate right', straighten: 'Straighten', crop_title: 'Crop photo', crop_hint: 'Drag to move, scroll or pinch to zoom', cancel: 'Cancel', apply: 'Apply', zoom: 'Zoom', nothing_export: 'Nothing to export',
       help: [
         ['Keyboard shortcuts'],
         ['Navigate', [['Select parent / child', '↑ ↓'], ['Select sibling / spouse', '← →'], ['Deselect / close', 'Esc'], ['Fit tree to screen', 'F'], ['Zoom in / out / reset', '+ − 0'], ['Pan', 'Space+drag, wheel'], ['Zoom at cursor', 'pinch, ⌘+wheel']]],
@@ -557,7 +567,7 @@
       autosave_failed: 'Автосохранение не удалось', saved: 'Сохранено', opened: 'Открыто', save_failed: 'Ошибка сохранения', open_failed: 'Ошибка открытия', not_tree: 'Это не файл семейного древа',
       discard: 'Отменить несохранённые изменения?', file_name: 'Имя файла', unlink_confirm: 'Разорвать связь пары? Дети останутся у первого родителя.',
       restored: 'Восстановлен несохранённый черновик',
-      download: 'Скачать файл', download_t: 'Скачать копию дерева файлом', import_file: 'Импортировать файл…', library: 'Сохранённые деревья', file_menu: 'Файл', delete_tree: 'Удалить это дерево с устройства?', saved_local: 'Сохранено на устройстве', recent: 'Недавние файлы', continue_draft: 'Продолжить несохранённую работу', open_file: 'Открыть файл…', new_tree: 'Новое дерево', no_recent: 'Недавних файлов пока нет', perm_denied: 'Доступ к файлу не предоставлен', file_missing: 'Файл не найден и удалён из списка', forget: 'Убрать из списка', last_opened: 'открыт', link: 'Связать…', link_hint: 'Нажмите на человека, с которым связать', link_t: 'Связать с существующим человеком (L)', as_spouse: 'Сделать супругом', as_child: 'Сделать ребёнком', as_parent: 'Сделать родителем', rel_arrow: 'Стрелка отношений', rel_close: 'Близкие', rel_conflict: 'Конфликт', rel_distant: 'Отдалённые', rel_cutoff: 'Разрыв', rel_custom: 'Своя подпись…', relation: 'Отношения', label: 'Подпись', already_linked: 'Эти люди уже связаны так', cycle: 'Так человек станет собственным предком', two_parents_t: 'уже имеет двух родителей', status: 'Статус', st_married: 'В браке', st_divorced: 'Разведены', st_partners: 'Партнёры (без брака)', st_separated: 'Расстались', fate: 'Тип', fate_none: 'Человек', fate_miscarriage: 'Выкидыш', fate_abortion: 'Аборт', fate_stillborn: 'Мертворождённый', line_ended: 'Род не продлён (нет потомков)', linked: 'Связано', gender: 'Пол', g_: 'Не указан', g_m: 'Мужской', g_f: 'Женский', g_x: 'Другой', index_person: 'Главное лицо (о ком схема)', fate_pregnancy: 'Беременность', child_link: 'Связь с родителями', link_bio: 'Родной', link_adopted: 'Усыновлён', link_foster: 'Приёмный (опека)', twin_of: 'Близнец с', twin_none: 'Не близнец', identical: 'Однояйцевые', rel_fused: 'Слияние', rel_focused: 'Сфокусирован на', sheet_title: 'Редактирование', export_pdf: 'Экспорт в PDF', export_t: 'Экспорт в PDF (диалог печати)', change_photo: 'Заменить фото', adjust_crop: 'Изменить обрезку', rotate_l: 'Повернуть влево', rotate_r: 'Повернуть вправо', straighten: 'Выровнять', crop_title: 'Обрезка фото', crop_hint: 'Перетащите для сдвига, колесо или щипок — масштаб', cancel: 'Отмена', apply: 'Применить', zoom: 'Масштаб', nothing_export: 'Нечего экспортировать',
+      download: 'Скачать файл', download_t: 'Скачать копию дерева файлом', import_file: 'Импортировать файл…', library: 'Сохранённые деревья', file_menu: 'Файл', delete_tree: 'Удалить это дерево с устройства?', saved_local: 'Сохранено на устройстве', recent: 'Недавние файлы', continue_draft: 'Продолжить несохранённую работу', open_file: 'Открыть файл…', new_tree: 'Новое дерево', no_recent: 'Недавних файлов пока нет', perm_denied: 'Доступ к файлу не предоставлен', file_missing: 'Файл не найден и удалён из списка', forget: 'Убрать из списка', last_opened: 'открыт', link: 'Связать…', link_hint: 'Нажмите на человека, с которым связать', link_t: 'Связать с существующим человеком (L)', as_spouse: 'Сделать супругом', as_child: 'Сделать ребёнком', as_parent: 'Сделать родителем', rel_arrow: 'Стрелка отношений', rel_close: 'Близкие', rel_conflict: 'Конфликт', rel_distant: 'Отдалённые', rel_cutoff: 'Разрыв', rel_custom: 'Своя подпись…', relation: 'Отношения', label: 'Подпись', already_linked: 'Эти люди уже связаны так', cycle: 'Так человек станет собственным предком', two_parents_t: 'уже имеет двух родителей', status: 'Статус', st_married: 'В браке', st_divorced: 'Разведены', st_partners: 'Партнёры (без брака)', st_separated: 'Расстались', fate: 'Тип', fate_none: 'Человек', fate_miscarriage: 'Выкидыш', fate_abortion: 'Аборт', fate_stillborn: 'Мертворождённый', line_ended: 'Род не продлён (нет потомков)', linked: 'Связано', gender: 'Пол', g_: 'Не указан', g_m: 'Мужской', g_f: 'Женский', g_x: 'Другой', index_person: 'Главное лицо (о ком схема)', fate_pregnancy: 'Беременность', child_link: 'Связь с родителями', link_bio: 'Родной', link_adopted: 'Усыновлён', link_foster: 'Приёмный (опека)', twin_of: 'Близнец с', twin_none: 'Не близнец', identical: 'Однояйцевые', rel_fused: 'Слияние', rel_focused: 'Сфокусирован на', st_reconciled_sep: 'Примирение после разрыва', st_reconciled_div: 'Повторный брак после развода', household: 'Одно домохозяйство', household_title: 'Домохозяйство', dissolve: 'Распустить домохозяйство', leave_household: 'Убрать из домохозяйства', illness: 'Болезнь (физическая или психическая)', substance: 'Зависимость', h_none: 'Нет', h_active: 'Сейчас', h_recovered: 'Преодолено', sheet_title: 'Редактирование', export_pdf: 'Экспорт в PDF', export_t: 'Экспорт в PDF (диалог печати)', change_photo: 'Заменить фото', adjust_crop: 'Изменить обрезку', rotate_l: 'Повернуть влево', rotate_r: 'Повернуть вправо', straighten: 'Выровнять', crop_title: 'Обрезка фото', crop_hint: 'Перетащите для сдвига, колесо или щипок — масштаб', cancel: 'Отмена', apply: 'Применить', zoom: 'Масштаб', nothing_export: 'Нечего экспортировать',
       help: [
         ['Горячие клавиши'],
         ['Навигация', [['Выбрать родителя / ребёнка', '↑ ↓'], ['Выбрать брата-сестру / супруга', '← →'], ['Снять выделение / закрыть', 'Esc'], ['Вписать дерево в экран', 'F'], ['Приблизить / отдалить / сброс', '+ − 0'], ['Перемещение', 'Space+мышь, колесо'], ['Масштаб у курсора', 'щипок, ⌘+колесо']]],
@@ -583,7 +593,7 @@
       autosave_failed: 'Automatisches Speichern fehlgeschlagen', saved: 'Gespeichert', opened: 'Geöffnet', save_failed: 'Speichern fehlgeschlagen', open_failed: 'Öffnen fehlgeschlagen', not_tree: 'Keine Stammbaum-Datei',
       discard: 'Ungespeicherte Änderungen verwerfen?', file_name: 'Dateiname', unlink_confirm: 'Dieses Paar trennen? Die Kinder bleiben beim ersten Elternteil.',
       restored: 'Ungespeicherten Entwurf wiederhergestellt',
-      download: 'Datei herunterladen', download_t: 'Kopie dieses Stammbaums als Datei herunterladen', import_file: 'Datei importieren…', library: 'Gespeicherte Stammbäume', file_menu: 'Datei', delete_tree: 'Diesen Stammbaum von diesem Gerät löschen?', saved_local: 'Auf diesem Gerät gespeichert', recent: 'Zuletzt geöffnet', continue_draft: 'Ungespeicherte Arbeit fortsetzen', open_file: 'Datei öffnen…', new_tree: 'Neuer Stammbaum', no_recent: 'Noch keine zuletzt geöffneten Dateien', perm_denied: 'Zugriff auf die Datei wurde nicht gewährt', file_missing: 'Datei nicht gefunden, aus der Liste entfernt', forget: 'Aus Liste entfernen', last_opened: 'geöffnet', link: 'Verknüpfen…', link_hint: 'Person anklicken, mit der verknüpft werden soll', link_t: 'Mit vorhandener Person verknüpfen (L)', as_spouse: 'Als Partner festlegen', as_child: 'Als Kind festlegen', as_parent: 'Als Elternteil festlegen', rel_arrow: 'Beziehungspfeil', rel_close: 'Eng', rel_conflict: 'Konflikt', rel_distant: 'Distanziert', rel_cutoff: 'Abgebrochen', rel_custom: 'Eigene Beschriftung…', relation: 'Beziehung', label: 'Beschriftung', already_linked: 'Diese Personen sind bereits so verknüpft', cycle: 'Dann wäre jemand sein eigener Vorfahre', two_parents_t: 'hat bereits zwei Eltern', status: 'Status', st_married: 'Verheiratet', st_divorced: 'Geschieden', st_partners: 'Partner (unverheiratet)', st_separated: 'Getrennt', fate: 'Typ', fate_none: 'Person', fate_miscarriage: 'Fehlgeburt', fate_abortion: 'Abtreibung', fate_stillborn: 'Totgeburt', line_ended: 'Linie endet (keine Nachkommen)', linked: 'Verknüpft', gender: 'Geschlecht', g_: 'Nicht angegeben', g_m: 'Männlich', g_f: 'Weiblich', g_x: 'Divers', index_person: 'Indexperson (um wen es geht)', fate_pregnancy: 'Schwangerschaft', child_link: 'Kindbeziehung', link_bio: 'Leiblich', link_adopted: 'Adoptiert', link_foster: 'Pflegekind', twin_of: 'Zwilling von', twin_none: 'Kein Zwilling', identical: 'Eineiige Zwillinge', rel_fused: 'Verschmolzen', rel_focused: 'Fokussiert auf', sheet_title: 'Person bearbeiten', export_pdf: 'PDF exportieren', export_t: 'Als PDF exportieren (Druckdialog)', change_photo: 'Foto ändern', adjust_crop: 'Ausschnitt anpassen', rotate_l: 'Nach links drehen', rotate_r: 'Nach rechts drehen', straighten: 'Begradigen', crop_title: 'Foto zuschneiden', crop_hint: 'Ziehen zum Verschieben, Scrollen oder Pinch zum Zoomen', cancel: 'Abbrechen', apply: 'Übernehmen', zoom: 'Zoom', nothing_export: 'Nichts zu exportieren',
+      download: 'Datei herunterladen', download_t: 'Kopie dieses Stammbaums als Datei herunterladen', import_file: 'Datei importieren…', library: 'Gespeicherte Stammbäume', file_menu: 'Datei', delete_tree: 'Diesen Stammbaum von diesem Gerät löschen?', saved_local: 'Auf diesem Gerät gespeichert', recent: 'Zuletzt geöffnet', continue_draft: 'Ungespeicherte Arbeit fortsetzen', open_file: 'Datei öffnen…', new_tree: 'Neuer Stammbaum', no_recent: 'Noch keine zuletzt geöffneten Dateien', perm_denied: 'Zugriff auf die Datei wurde nicht gewährt', file_missing: 'Datei nicht gefunden, aus der Liste entfernt', forget: 'Aus Liste entfernen', last_opened: 'geöffnet', link: 'Verknüpfen…', link_hint: 'Person anklicken, mit der verknüpft werden soll', link_t: 'Mit vorhandener Person verknüpfen (L)', as_spouse: 'Als Partner festlegen', as_child: 'Als Kind festlegen', as_parent: 'Als Elternteil festlegen', rel_arrow: 'Beziehungspfeil', rel_close: 'Eng', rel_conflict: 'Konflikt', rel_distant: 'Distanziert', rel_cutoff: 'Abgebrochen', rel_custom: 'Eigene Beschriftung…', relation: 'Beziehung', label: 'Beschriftung', already_linked: 'Diese Personen sind bereits so verknüpft', cycle: 'Dann wäre jemand sein eigener Vorfahre', two_parents_t: 'hat bereits zwei Eltern', status: 'Status', st_married: 'Verheiratet', st_divorced: 'Geschieden', st_partners: 'Partner (unverheiratet)', st_separated: 'Getrennt', fate: 'Typ', fate_none: 'Person', fate_miscarriage: 'Fehlgeburt', fate_abortion: 'Abtreibung', fate_stillborn: 'Totgeburt', line_ended: 'Linie endet (keine Nachkommen)', linked: 'Verknüpft', gender: 'Geschlecht', g_: 'Nicht angegeben', g_m: 'Männlich', g_f: 'Weiblich', g_x: 'Divers', index_person: 'Indexperson (um wen es geht)', fate_pregnancy: 'Schwangerschaft', child_link: 'Kindbeziehung', link_bio: 'Leiblich', link_adopted: 'Adoptiert', link_foster: 'Pflegekind', twin_of: 'Zwilling von', twin_none: 'Kein Zwilling', identical: 'Eineiige Zwillinge', rel_fused: 'Verschmolzen', rel_focused: 'Fokussiert auf', st_reconciled_sep: 'Versöhnung nach Trennung', st_reconciled_div: 'Wiederverheiratung nach Scheidung', household: 'Gemeinsamer Haushalt', household_title: 'Haushalt', dissolve: 'Haushalt auflösen', leave_household: 'Aus Haushalt entfernen', illness: 'Erkrankung (physisch oder psychisch)', substance: 'Substanzmissbrauch', h_none: 'Keine', h_active: 'Aktuell', h_recovered: 'Überwunden', sheet_title: 'Person bearbeiten', export_pdf: 'PDF exportieren', export_t: 'Als PDF exportieren (Druckdialog)', change_photo: 'Foto ändern', adjust_crop: 'Ausschnitt anpassen', rotate_l: 'Nach links drehen', rotate_r: 'Nach rechts drehen', straighten: 'Begradigen', crop_title: 'Foto zuschneiden', crop_hint: 'Ziehen zum Verschieben, Scrollen oder Pinch zum Zoomen', cancel: 'Abbrechen', apply: 'Übernehmen', zoom: 'Zoom', nothing_export: 'Nichts zu exportieren',
       help: [
         ['Tastenkürzel'],
         ['Navigation', [['Elternteil / Kind wählen', '↑ ↓'], ['Geschwister / Partner wählen', '← →'], ['Auswahl aufheben / schließen', 'Esc'], ['Baum einpassen', 'F'], ['Vergrößern / verkleinern / zurücksetzen', '+ − 0'], ['Verschieben', 'Leertaste+Ziehen, Mausrad'], ['Zoom am Cursor', 'Pinch, ⌘+Mausrad']]],
@@ -630,7 +640,7 @@
   let fileHandle = null, fileName = null, dirty = false;
   let view = { x: 0, y: 0, s: 1 };
 
-  function emptyState() { return { version: 1, people: {}, families: {}, relations: [], indexPerson: null }; }
+  function emptyState() { return { version: 1, people: {}, families: {}, relations: [], indexPerson: null, households: [] }; }
   function uid(p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
   const $ = (s) => document.querySelector(s);
@@ -650,7 +660,7 @@
   function siblingsOf(pid) { const f = childFamily(pid); return f ? f.children : [pid]; }
 
   function newPerson() {
-    const p = { id: uid('p'), name: '', birthName: '', birth: '', death: '', alive: true, photo: null, photoSrc: null, crop: null, fate: '', lineEnded: false, gender: '' };
+    const p = { id: uid('p'), name: '', birthName: '', birth: '', death: '', alive: true, photo: null, photoSrc: null, crop: null, fate: '', lineEnded: false, gender: '', illness: '', substance: '' };
     state.people[p.id] = p;
     return p;
   }
@@ -690,6 +700,7 @@
   function deletePerson(pid) {
     delete state.people[pid];
     if (state.indexPerson === pid) state.indexPerson = null;
+    state.households = (state.households || []).map(h => ({ ...h, members: h.members.filter(x => x !== pid) })).filter(h => h.members.length > 1);
     state.relations = state.relations.filter(r => r.from !== pid && r.to !== pid);
     for (const f of Object.values(state.families)) { if (f.kinds) { delete f.kinds[pid]; for (const k of Object.values(f.kinds)) if (k.twin === pid) k.twin = ''; } }
     for (const f of Object.values(state.families)) {
@@ -726,6 +737,16 @@
   function addRelation(a, b, type) {
     if (a === b || state.relations.some(r => (r.from === a && r.to === b) || (r.from === b && r.to === a))) return t('already_linked');
     state.relations.push({ id: uid('r'), from: a, to: b, type, label: '' });
+    return null;
+  }
+  function joinHousehold(a, b) {
+    state.households ??= [];
+    const ha = state.households.find(h => h.members.includes(a)), hb = state.households.find(h => h.members.includes(b));
+    if (ha && ha === hb) return t('already_linked');
+    if (ha && hb) { ha.members.push(...hb.members.filter(x => !ha.members.includes(x))); state.households = state.households.filter(h => h !== hb); }
+    else if (ha) ha.members.push(b);
+    else if (hb) hb.members.push(a);
+    else state.households.push({ id: uid('h'), members: [a, b] });
     return null;
   }
   function kindOf(pid) { const f = childFamily(pid); return (f && f.kinds && f.kinds[pid]) || { type: 'bio', twin: '', identical: false }; }
@@ -1092,6 +1113,7 @@
     return `
         <div class="photo" title="${t('set_photo')}">
           ${p.fate ? fateGlyph(p.fate) : p.photo ? `<img src="${p.photo}" alt="">` : `<span>${initials(p.name)}</span>`}
+          ${p.illness ? `<i class="hx ill ${p.illness}" title="${t('illness')}"></i>` : ''}${p.substance ? `<i class="hx sub ${p.substance}" title="${t('substance')}"></i>` : ''}
           ${p.gender ? `<i class="gm" title="${t('g_' + p.gender)}"></i>` : ''}
           <div class="cam">📷</div>
           <button class="photo-x ${p.photo ? 'has-photo' : ''}" title="${t('remove_photo')}">×</button>
@@ -1107,6 +1129,8 @@
               <span class="alive"><input type="checkbox" class="f-alive" ${p.alive ? 'checked' : ''}> ${t('living')}</span></div>
             <div class="row"><label>${t('fate')}</label><select class="f-fate">${['', 'pregnancy', 'miscarriage', 'abortion', 'stillborn'].map(v => `<option value="${v}" ${p.fate === v ? 'selected' : ''}>${t(v ? 'fate_' + v : 'fate_none')}</option>`).join('')}</select>
               <span class="ended" title="${t('line_ended')}"><input type="checkbox" class="f-ended" ${p.lineEnded ? 'checked' : ''}> ⊥</span></div>
+            <div class="row"><label title="${t('illness')}">⚕</label><select class="f-illness">${['', 'active', 'recovered'].map(v => `<option value="${v}" ${p.illness === v ? 'selected' : ''}>${t(v ? 'h_' + v : 'h_none')}</option>`).join('')}</select>
+              <label title="${t('substance')}">⚠</label><select class="f-substance">${['', 'active', 'recovered'].map(v => `<option value="${v}" ${p.substance === v ? 'selected' : ''}>${t(v ? 'h_' + v : 'h_none')}</option>`).join('')}</select></div>
             <div class="row"><label>${t('gender')}</label><select class="f-gender">${['', 'm', 'f', 'x'].map(v => `<option value="${v}" ${p.gender === v ? 'selected' : ''}>${t('g_' + v)}</option>`).join('')}</select>
               <span class="ended" title="${t('index_person')}"><input type="checkbox" class="f-index" ${state.indexPerson === p.id ? 'checked' : ''}> ◎</span></div>
             ${childFamily(p.id) ? `<div class="row"><label>${t('child_link')}</label><select class="f-kind">${['bio', 'adopted', 'foster'].map(v => `<option value="${v}" ${kindOf(p.id).type === v ? 'selected' : ''}>${t('link_' + v)}</option>`).join('')}</select>
@@ -1149,9 +1173,38 @@
   function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
   function renderEdges(pos = positions) {
-    const d = [], dPartners = [], dSlash = [], dEnded = [], rels = [], dAdopted = [], dFoster = [], dArrow = [];
+    const d = [], dPartners = [], dSlash = [], dEnded = [], rels = [], dAdopted = [], dFoster = [], dArrow = [], dHouse = [];
+    const hull = (pts) => {
+      pts = [...pts].sort((a, b) => a.x - b.x || a.y - b.y);
+      const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+      const lower = []; for (const p of pts) { while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop(); lower.push(p); }
+      const upper = []; for (const p of [...pts].reverse()) { while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop(); upper.push(p); }
+      return lower.slice(0, -1).concat(upper.slice(0, -1));
+    };
+    const houseBadges = [];
+    for (const h of state.households || []) {
+      const pts = [];
+      for (const id of h.members) { const q = pos.get(id); if (!q) continue; const pad = 18; pts.push({ x: q.x - pad, y: q.y - pad }, { x: q.x + CARD_W + pad, y: q.y - pad }, { x: q.x - pad, y: q.y + CARD_H + pad }, { x: q.x + CARD_W + pad, y: q.y + CARD_H + pad }); }
+      if (pts.length < 8) continue;
+      const hp = hull(pts); let path = '';
+      for (let i = 0; i < hp.length; i++) {
+        const a = hp[i], b = hp[(i + 1) % hp.length], m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        path += i === 0 ? `M${m.x} ${m.y}` : ` Q${a.x} ${a.y} ${m.x} ${m.y}`;
+      }
+      const a0 = hp[0], b0 = hp[1 % hp.length];
+      dHouse.push(path + ` Q${a0.x} ${a0.y} ${(a0.x + b0.x) / 2} ${(a0.y + b0.y) / 2} Z`);
+      const top = hp.reduce((m, p) => p.y < m.y ? p : m, hp[0]);
+      houseBadges.push({ h, x: hp.reduce((a, p) => a + p.x, 0) / hp.length, y: top.y });
+    }
     marriages = [];
     const mid = (id) => { const p = pos.get(id); return { id, x: p.x, cx: p.x + CARD_W / 2, cy: p.y + CARD_H / 2, top: p.y, bottom: p.y + CARD_H }; };
+    const slashes = (mx, my, status) => {
+      if (!status || status === 'married' || status === 'partners') return;
+      const two = status === 'divorced' || status === 'reconciled_div';
+      if (two) { dSlash.push(`M${mx - 9} ${my + 8} L${mx - 1} ${my - 8}`, `M${mx + 1} ${my + 8} L${mx + 9} ${my - 8}`); }
+      else dSlash.push(`M${mx - 4} ${my + 8} L${mx + 4} ${my - 8}`);
+      if (status.startsWith('reconciled')) dSlash.push(`M${mx - 10} ${my - 8} L${mx + 10} ${my + 8}`);
+    };
     const lanes = [];
     const laneFor = (y, x1, x2) => {
       for (let k = 0; ; k++) {
@@ -1172,22 +1225,14 @@
           bucket.push(`M${a.cx + CARD_W / 2} ${a.cy} L${b.cx - CARD_W / 2} ${b.cy}`);
           origin = { x: (a.cx + b.cx) / 2, y: a.cy };
           marriages.push({ f, x: origin.x, y: a.cy + 27 });
-          if (f.status === 'divorced' || f.status === 'separated') {
-            const mx = origin.x, my = a.cy;
-            dSlash.push(`M${mx - 9} ${my + 8} L${mx - 1} ${my - 8}`);
-            if (f.status === 'divorced') dSlash.push(`M${mx + 1} ${my + 8} L${mx + 9} ${my - 8}`);
-          }
+          slashes(origin.x, a.cy, f.status);
         } else {
           const gap = Math.round((b.cx - a.cx) / (CARD_W + COUPLE_GAP));
           const archY = Math.min(a.top, b.top) - 18 - 14 * Math.max(0, gap - 2);
           bucket.push(`M${a.cx} ${a.top} L${a.cx} ${archY} L${b.cx} ${archY} L${b.cx} ${b.top}`);
           origin = { x: b.cx, y: b.bottom };
           marriages.push({ f, x: (a.cx + b.cx) / 2, y: archY });
-          if (f.status === 'divorced' || f.status === 'separated') {
-            const mx = (a.cx + b.cx) / 2;
-            dSlash.push(`M${mx - 9} ${archY + 8} L${mx - 1} ${archY - 8}`);
-            if (f.status === 'divorced') dSlash.push(`M${mx + 1} ${archY + 8} L${mx + 9} ${archY - 8}`);
-          }
+          slashes((a.cx + b.cx) / 2, archY, f.status);
         }
       } else if (ps.length === 1) origin = { x: ps[0].cx, y: ps[0].bottom };
       if (!cs.length) continue;
@@ -1268,8 +1313,15 @@
       relBadges.push({ r, x: (p1.x + 2 * cx + p2.x) / 4, y: (p1.y + 2 * cy + p2.y) / 4 });
     }
     const defs = `<defs><marker id="arrow-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="currentColor" style="color: var(--text)"/></marker></defs>`;
-    edgesSvg.innerHTML = defs + `<path d="${d.join(' ')}"/><path class="adopted" d="${dAdopted.join(' ')}"/><path class="foster" d="${dFoster.join(' ')}"/><path d="${dArrow.join(' ')}"/><path class="partners" d="${dPartners.join(' ')}"/><path class="slash" d="${dSlash.join(' ')}"/><path class="ended" d="${dEnded.join(' ')}"/>` + rels.join('');
+    edgesSvg.innerHTML = defs + `<path class="house" d="${dHouse.join(' ')}"/><path d="${d.join(' ')}"/><path class="adopted" d="${dAdopted.join(' ')}"/><path class="foster" d="${dFoster.join(' ')}"/><path d="${dArrow.join(' ')}"/><path class="partners" d="${dPartners.join(' ')}"/><path class="slash" d="${dSlash.join(' ')}"/><path class="ended" d="${dEnded.join(' ')}"/>` + rels.join('');
     badgesEl.innerHTML = '';
+    for (const { h, x, y } of houseBadges) {
+      const el = document.createElement('div');
+      el.className = 'relbadge house'; el.dataset.hid = h.id; el.title = t('household_title');
+      el.style.left = x + 'px'; el.style.top = y + 'px';
+      el.textContent = '⌂ ' + h.members.length;
+      badgesEl.appendChild(el);
+    }
     for (const { r, x, y } of relBadges) {
       const el = document.createElement('div');
       el.className = 'relbadge'; el.dataset.rid = r.id; el.title = t('relation');
@@ -1312,7 +1364,7 @@
     return best ? String(best).replace(/\d/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]) : '';
   }
   function marriageText(f) {
-    const mark = f.status === 'divorced' ? '⚡ ' : f.status === 'separated' ? '⁄ ' : '';
+    const mark = f.status === 'divorced' ? '⚡ ' : f.status === 'separated' ? '⁄ ' : f.status?.startsWith('reconciled') ? '↺ ' : '';
     if (!f.married && !f.ended) return mark.trim();
     return mark + `${year(f.married) || '?'} – ${f.ended ? year(f.ended) : (f.status === 'divorced' || f.status === 'separated' ? '?' : t('present'))}`;
   }
@@ -1509,6 +1561,15 @@
     if (moved || e.type === 'pointercancel') return;
     const badge = e.target.closest('.marriage');
     if (badge) { openMarriage(badge.dataset.fid, badge); return; }
+    const hb = e.target.closest('.relbadge.house');
+    if (hb) {
+      const h = (state.households || []).find(x => x.id === hb.dataset.hid); if (!h) return;
+      openMenu(hb, t('household_title'), [
+        ...h.members.map(id => ({ label: t('leave_household') + ': ' + (state.people[id]?.name || t('unnamed')), run: () => mutate(() => { h.members = h.members.filter(x => x !== id); if (h.members.length < 2) state.households = state.households.filter(x => x !== h); }) })),
+        { label: t('dissolve'), run: () => mutate(() => { state.households = state.households.filter(x => x !== h); }) },
+      ]);
+      return;
+    }
     const rb = e.target.closest('.relbadge');
     if (rb) { openRelation(rb.dataset.rid, rb); return; }
     if (!onCard && !e.target.closest('#empty')) { if (linkFrom) cancelLink(); stopEditing(); select(null); }
@@ -1565,6 +1626,7 @@
       { label: t('as_spouse'), run: () => apply(() => linkSpouse(a, b)) },
       { label: t('as_child'), run: childOpts },
       { label: t('as_parent'), run: () => apply(() => linkChild(b, a)) },
+      { label: '◯ ' + t('household'), run: () => apply(() => joinHousehold(a, b)) },
       ...relItems,
     ]);
   }
@@ -1620,6 +1682,8 @@
     else if (e.target.classList.contains('f-fate')) p.fate = e.target.value;
     else if (e.target.classList.contains('f-ended')) p.lineEnded = e.target.checked;
     else if (e.target.classList.contains('f-gender')) p.gender = e.target.value;
+    else if (e.target.classList.contains('f-illness')) p.illness = e.target.value;
+    else if (e.target.classList.contains('f-substance')) p.substance = e.target.value;
     else if (e.target.classList.contains('f-index')) state.indexPerson = e.target.checked ? p.id : null;
     else if (e.target.classList.contains('f-kind')) setKind(p.id, { type: e.target.value });
     else if (e.target.classList.contains('f-twin')) { setKind(p.id, { twin: e.target.value }); card.querySelector('.f-identical').disabled = !e.target.value; }
@@ -1662,6 +1726,7 @@
     sh('sh-death-row').hidden = p.alive;
     sh('sh-fate').value = p.fate || ''; sh('sh-ended').checked = !!p.lineEnded;
     sh('sh-gender').value = p.gender || ''; sh('sh-index').checked = state.indexPerson === id;
+    sh('sh-illness').value = p.illness || ''; sh('sh-substance').value = p.substance || '';
     const hasParents = !!childFamily(id);
     sh('sh-kind-row').hidden = sh('sh-twin-row').hidden = sh('sh-identical-row').hidden = !hasParents;
     if (hasParents) {
@@ -1698,6 +1763,8 @@
       case 'sh-death': p.death = e.target.value; break;
       case 'sh-fate': p.fate = e.target.value; break;
       case 'sh-gender': p.gender = e.target.value; break;
+      case 'sh-illness': p.illness = e.target.value; break;
+      case 'sh-substance': p.substance = e.target.value; break;
       case 'sh-index': state.indexPerson = e.target.checked ? p.id : null; break;
       case 'sh-kind': setKind(p.id, { type: e.target.value }); break;
       case 'sh-twin': setKind(p.id, { twin: e.target.value }); sh('sh-identical').disabled = !e.target.value; break;
@@ -2030,7 +2097,7 @@
       const { photo, photoSrc, ...rest } = p;
       people[p.id] = { ...rest, thumbRef: ref(photo), photoRef: ref(photoSrc) };
     }
-    const meta = new TextEncoder().encode(JSON.stringify({ version: 1, people, families: state.families, relations: state.relations, indexPerson: state.indexPerson || null, blobs: blobs.map(b => b.mime) }));
+    const meta = new TextEncoder().encode(JSON.stringify({ version: 1, people, families: state.families, relations: state.relations, indexPerson: state.indexPerson || null, households: state.households || [], blobs: blobs.map(b => b.mime) }));
     const head = new Uint8Array(MAGIC.length + 4); head.set(MAGIC);
     new DataView(head.buffer).setUint32(MAGIC.length, meta.length, true);
     const parts = [head, meta];
@@ -2058,7 +2125,7 @@
       const { thumbRef, photoRef, ...rest } = p;
       people[p.id] = { ...rest, photo: thumbRef == null ? null : blobs[thumbRef], photoSrc: photoRef == null ? null : blobs[photoRef] };
     }
-    return { version: 1, people, families: meta.families || {}, relations: meta.relations || [], indexPerson: meta.indexPerson || null };
+    return { version: 1, people, families: meta.families || {}, relations: meta.relations || [], indexPerson: meta.indexPerson || null, households: meta.households || [] };
   }
 
   async function save(as) {
@@ -2108,8 +2175,9 @@
   function loadData(buf, name) {
     const data = deserialize(buf);
     if (!data || typeof data.people !== 'object' || typeof data.families !== 'object') throw new Error(t('not_tree'));
-    state = { version: 1, people: data.people, families: data.families, relations: Array.isArray(data.relations) ? data.relations : [], indexPerson: null };
-    for (const p of Object.values(state.people)) { p.alive = p.alive ?? !p.death; p.name ??= ''; p.birthName ??= ''; p.birth ??= ''; p.death ??= ''; p.photo ??= null; p.photoSrc ??= null; p.crop ??= null; p.fate ??= ''; p.lineEnded ??= false; p.gender ??= ''; }
+    state = { version: 1, people: data.people, families: data.families, relations: Array.isArray(data.relations) ? data.relations : [], indexPerson: null, households: [] };
+    for (const p of Object.values(state.people)) { p.alive = p.alive ?? !p.death; p.name ??= ''; p.birthName ??= ''; p.birth ??= ''; p.death ??= ''; p.photo ??= null; p.photoSrc ??= null; p.crop ??= null; p.fate ??= ''; p.lineEnded ??= false; p.gender ??= ''; p.illness ??= ''; p.substance ??= ''; }
+    state.households = Array.isArray(data.households) ? data.households.map(h => ({ ...h, members: h.members.filter(id => state.people[id]) })).filter(h => h.members.length > 1) : [];
     state.indexPerson = data.indexPerson && state.people[data.indexPerson] ? data.indexPerson : null;
     for (const f of Object.values(state.families)) { f.married ??= ''; f.ended ??= ''; f.status ??= 'married'; f.parents ??= []; f.children ??= []; f.kinds ??= {}; }
     fileName = name.replace(/\.json$/, EXT); fileHandle = null; libraryId = null; dirty = name.endsWith('.json'); undoStack = []; redoStack = []; selectedId = null; editingId = null;
@@ -2250,7 +2318,7 @@
   function restoreDraft() {
     try {
       const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
-      if (d && d.state && Object.keys(d.state.people).length) { state = d.state; state.relations ??= []; state.indexPerson ??= null; fileName = d.fileName || fileName; dirty = !!d.dirty; libraryId = d.libraryId || null; return true; }
+      if (d && d.state && Object.keys(d.state.people).length) { state = d.state; state.relations ??= []; state.indexPerson ??= null; state.households ??= []; fileName = d.fileName || fileName; dirty = !!d.dirty; libraryId = d.libraryId || null; return true; }
     } catch (_) {}
     return false;
   }

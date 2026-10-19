@@ -141,6 +141,18 @@ test.describe('genogram markers', () => {
     await expect(page.locator('#edges path.rel.close[marker-start]')).toHaveCount(0);
     await select(page, 'Boris'); await page.keyboard.press('i');
     await expect(cardOf(page, 'Boris')).not.toHaveClass(/index/);
+    await page.locator('.marriage').first().click(); await page.selectOption('#m-status', 'reconciled_div'); await page.keyboard.press('Enter');
+    expect(((await page.locator('#edges path.slash').getAttribute('d')).match(/M/g) || []).length).toBe(3);
+    await edit('Boris', async () => { await page.selectOption('.card.editing .f-illness', 'active'); await page.selectOption('.card.editing .f-substance', 'recovered'); });
+    await expect(cardOf(page, 'Boris').locator('.photo .hx.ill.active')).toHaveCount(1);
+    await expect(cardOf(page, 'Boris').locator('.photo .hx.sub.recovered')).toHaveCount(1);
+    await select(page, 'Anna'); await page.keyboard.press('l'); await cardOf(page, 'Twin1').click();
+    await page.locator('#menu button', { hasText: 'household' }).click();
+    await expect(page.locator('.relbadge.house')).toHaveText('⌂ 2');
+    expect((await page.locator('#edges path.house').getAttribute('d')).length).toBeGreaterThan(0);
+    await page.locator('.relbadge.house').click();
+    await page.locator('#menu button', { hasText: 'Dissolve' }).click();
+    await expect(page.locator('.relbadge.house')).toHaveCount(0);
     const st = await draftState(page);
     expect(Object.values(st.families).find(f => f.children.length === 5).kinds).toEqual(expect.objectContaining({ [Object.keys(st.people).find(k => st.people[k].name === 'Adopted')]: expect.objectContaining({ type: 'adopted' }) }));
   });

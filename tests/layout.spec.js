@@ -104,7 +104,7 @@ test.describe('layout', () => {
     expect(await overlapCount(page)).toBe(0);
     expect(r[0].sort()).toEqual(['F1', 'F2', 'F3', 'M1', 'M2', 'M3', 'Ma', 'Pa'].sort());
     expect(r[1]).toEqual(['S1', 'K1', 'K2', 'S2', 'K3', 'S3']);
-    const d = await page.locator('#edges > path').first().getAttribute('d');
+    const d = await page.locator('#edges > path:not([class])').first().getAttribute('d');
     const busYs = new Set();
     let prev = null;
     for (const m of d.matchAll(/([MLQ])((?:\s*-?[\d.]+){2,4})/g)) {
