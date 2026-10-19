@@ -94,6 +94,7 @@ test.describe('linking existing people', () => {
     await page.fill('#r-label', 'feud'); await page.selectOption('#r-type', 'close'); await page.keyboard.press('Enter');
     await expect(page.locator('.relbadge')).toHaveText('feud');
     await expect(page.locator('#edges path.rel.close')).toHaveCount(1);
+    await expect(page.locator('#edges path.rel.inner')).toHaveCount(1);
     expect((await draftState(page)).relations).toEqual([expect.objectContaining({ type: 'close', label: 'feud' })]);
     await page.locator('.relbadge').click();
     await page.click('#r-delete');
@@ -102,6 +103,48 @@ test.describe('linking existing people', () => {
 });
 
 test.describe('genogram markers', () => {
+  test('standard symbols: deceased cross, index person, gender ordering, pregnancy, adopted/foster, twins, line styles', async ({ page }) => {
+    await newTree(page);
+    await firstPerson(page, 'Anna');
+    await addRelative(page, null, 'm', 'Boris');
+    const edit = async (name, fn) => { await select(page, name); await cardOf(page, name).dblclick(); await fn(); await page.keyboard.press('Enter'); await page.waitForTimeout(150); };
+    await edit('Anna', async () => { await page.selectOption('.card.editing .f-gender', 'f'); });
+    await edit('Boris', async () => {
+      await page.selectOption('.card.editing .f-gender', 'm');
+      await page.locator('.card.editing .f-alive').uncheck();
+      await page.fill('.card.editing .f-death', '2010-01-01');
+      await page.locator('.card.editing .f-index').check();
+    });
+    await expect(cardOf(page, 'Boris')).toHaveClass(/deceased/);
+    await expect(cardOf(page, 'Boris')).toHaveClass(/index/);
+    await expect(cardOf(page, 'Boris')).toHaveClass(/g-m/);
+    await expect(cardOf(page, 'Anna')).toHaveClass(/g-f/);
+    let r = rows(await positions(page));
+    expect(r[0]).toEqual(['Boris', 'Anna']);
+    for (const k of ['Twin1', 'Twin2', 'Adopted', 'Foster', 'Preg']) await addRelative(page, 'Anna', 'c', k);
+    await edit('Twin1', async () => { await page.selectOption('.card.editing .f-twin', { label: 'Twin2' }); await page.locator('.card.editing .f-identical').check(); });
+    await edit('Adopted', async () => { await page.selectOption('.card.editing .f-kind', 'adopted'); });
+    await edit('Foster', async () => { await page.selectOption('.card.editing .f-kind', 'foster'); });
+    await edit('Preg', async () => { await page.selectOption('.card.editing .f-fate', 'pregnancy'); });
+    await expect(cardOf(page, 'Preg').locator('.photo svg.fg path')).toHaveCount(1);
+    expect((await page.locator('#edges path.adopted').getAttribute('d')).length).toBeGreaterThan(0);
+    expect((await page.locator('#edges path.foster').getAttribute('d')).length).toBeGreaterThan(0);
+    r = rows(await positions(page));
+    expect(r[1].indexOf('Twin2') - r[1].indexOf('Twin1')).toBe(1);
+    await select(page, 'Twin1'); await page.keyboard.press('l'); await cardOf(page, 'Adopted').click();
+    await page.locator('#menu button', { hasText: 'Fused' }).click();
+    await expect(page.locator('#edges path.rel.fused')).toHaveCount(2);
+    await expect(page.locator('#edges path.rel.inner')).toHaveCount(1);
+    await select(page, 'Anna'); await page.keyboard.press('l'); await cardOf(page, 'Foster').click();
+    await page.locator('#menu button', { hasText: 'Focused' }).click();
+    await expect(page.locator('#edges path.rel.focused')).toHaveAttribute('marker-end', /arrow-head/);
+    await expect(page.locator('#edges path.rel.close[marker-start]')).toHaveCount(0);
+    await select(page, 'Boris'); await page.keyboard.press('i');
+    await expect(cardOf(page, 'Boris')).not.toHaveClass(/index/);
+    const st = await draftState(page);
+    expect(Object.values(st.families).find(f => f.children.length === 5).kinds).toEqual(expect.objectContaining({ [Object.keys(st.people).find(k => st.people[k].name === 'Adopted')]: expect.objectContaining({ type: 'adopted' }) }));
+  });
+
   test('miscarriage/abortion/stillborn cards and line-ended glyph', async ({ page }) => {
     await newTree(page);
     await firstPerson(page, 'Mom');
