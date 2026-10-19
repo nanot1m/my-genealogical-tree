@@ -899,22 +899,28 @@
       n.uw = n.unit.length * CARD_W + Math.max(0, n.unit.length - 1) * COUPLE_GAP;
       const ownIdx = n.unit.indexOf(n.own);
       n.ownCenter = ownIdx * STEP + CARD_W / 2;
-      const order = (g) => { const other = g.f.parents.find(id => id !== n.own) ?? g.f.parents[0]; const k = n.unit.indexOf(other); return k < 0 ? 99 : k; };
-      n.groups.sort((a, b) => order(a) - order(b));
+      const originRel = (f) => {
+        const idx = f.parents.map(id => n.unit.indexOf(id)).filter(i => i >= 0).sort((a, b) => a - b);
+        if (!idx.length) return n.uw / 2;
+        if (idx.length === 1 || idx[1] - idx[0] > 1) return idx[idx.length - 1] * STEP + CARD_W / 2;
+        return (idx[0] + idx[1]) / 2 * STEP + CARD_W / 2;
+      };
+      n.groups.sort((a, b) => originRel(a.f) - originRel(b.f));
       let comp = null; n.kids = [];
-      for (const g of n.groups) for (const c of g.children) {
-        measure(c);
-        const e = shift(c.ext, 0, 1);
-        const dx = comp ? settle(comp, e, 1) : 0;
-        comp = union(comp, shift(e, dx, 0));
-        n.kids.push({ c, dx });
-      }
-      let unitLeft = 0;
-      if (n.kids.length) {
-        const avg = n.kids.reduce((a, k) => a + k.dx + k.c.ownCenter, 0) / n.kids.length;
-        unitLeft = freeSlot(comp.get(0) || [], avg - n.uw / 2, n.uw);
-        for (const k of n.kids) k.dx -= unitLeft;
-        comp = shift(comp, -unitLeft, 0);
+      for (const g of n.groups) {
+        let gExt = null; const local = [];
+        for (const c of g.children) {
+          measure(c);
+          const e = shift(c.ext, 0, 1);
+          const dx = gExt ? settle(gExt, e, 1) : 0;
+          gExt = union(gExt, shift(e, dx, 0));
+          local.push({ c, dx });
+        }
+        const avgOwn = local.reduce((a, k) => a + k.dx + k.c.ownCenter, 0) / local.length;
+        let gdx = originRel(g.f) - avgOwn;
+        if (comp) gdx += settle(comp, shift(gExt, gdx, 0), 1);
+        comp = union(comp, shift(gExt, gdx, 0));
+        for (const k of local) n.kids.push({ c: k.c, dx: k.dx + gdx });
       }
       n.ext = union(comp, new Map([[0, [[0, n.uw]]]]));
       return n;
@@ -1185,7 +1191,7 @@
       el.className = 'marriage' + (txt ? '' : ' empty');
       el.dataset.fid = m.f.id; el.title = t('marriage_dates');
       el.style.left = m.x + 'px'; el.style.top = m.y + 'px';
-      el.innerHTML = `<span class="h">♥</span>${esc(txt)}`;
+      el.innerHTML = `<span class="h">♥${marriageOrdinal(m.f)}</span>${esc(txt)}`;
       badgesEl.appendChild(el);
     }
   }
@@ -1204,6 +1210,16 @@
     return d + ` L${last.x} ${last.y}`;
   }
   function year(s) { return s ? s.slice(0, 4) : ''; }
+  function marriageOrdinal(f) {
+    let best = 0;
+    for (const pid of f.parents) {
+      const fams = parentFamilies(pid);
+      if (fams.length < 2) continue;
+      fams.sort((a, b) => (a.married || '9999').localeCompare(b.married || '9999'));
+      best = Math.max(best, fams.indexOf(f) + 1);
+    }
+    return best ? String(best).replace(/\d/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]) : '';
+  }
   function marriageText(f) {
     const mark = f.status === 'divorced' ? '⚡ ' : f.status === 'separated' ? '⁄ ' : '';
     if (!f.married && !f.ended) return mark.trim();

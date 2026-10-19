@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { newTree, firstPerson, addRelative, positions, rows, overlapCount } from './helpers.js';
+import { newTree, firstPerson, addRelative, positions, rows, overlapCount, select } from './helpers.js';
 
 const center = (pos, name) => { const p = pos.find(x => x.name === name); return p.x + 140; };
 
@@ -54,6 +54,27 @@ test.describe('layout', () => {
     const inlaws = ['Papa Z', 'Mama Z', 'Papa R', 'Mama R', 'Omar', 'Natella'];
     for (const n of inlaws) expect(center(pos, n)).toBeLessThan(center(pos, 'Sharip'));
     expect(center(pos, 'Omar')).toBeGreaterThan(center(pos, 'Mama Z'));
+  });
+
+  test('children of each marriage sit under their own couple, marriages are numbered', async ({ page }) => {
+    await newTree(page);
+    await firstPerson(page, 'John');
+    await addRelative(page, null, 'm', 'Mary');
+    await addRelative(page, 'John', 'c', 'Kid A');
+    await addRelative(page, 'John', 'm', 'Second');
+    await select(page, 'John'); await page.keyboard.press('c'); await page.keyboard.press('2');
+    await page.keyboard.type('Kid B'); await page.keyboard.press('Enter');
+    await select(page, 'John'); await page.keyboard.press('c'); await page.keyboard.press('2');
+    await page.keyboard.type('Kid C'); await page.keyboard.press('Enter');
+    const pos = await positions(page);
+    expect(await overlapCount(page)).toBe(0);
+    const firstMid = (center(pos, 'John') + center(pos, 'Mary')) / 2;
+    expect(Math.abs(center(pos, 'Kid A') - firstMid)).toBeLessThan(2);
+    const secondKids = (center(pos, 'Kid B') + center(pos, 'Kid C')) / 2;
+    expect(Math.abs(secondKids - center(pos, 'Second'))).toBeLessThan(2);
+    expect(center(pos, 'Kid B')).toBeGreaterThan(center(pos, 'Kid A'));
+    const badges = await page.locator('.marriage .h').allTextContents();
+    expect(new Set(badges)).toEqual(new Set(['♥¹', '♥²']));
   });
 
   test('siblings are ordered by birth date, undated keep their slot', async ({ page }) => {
