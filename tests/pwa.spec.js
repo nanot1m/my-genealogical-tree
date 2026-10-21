@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openApp } from './helpers.js';
+import { openApp, newTree, cardOf } from './helpers.js';
 
 test.describe('installable app', () => {
   test('manifest, icons, iOS meta tags and service worker are served and wired up', async ({ page, request }) => {
@@ -33,6 +33,31 @@ test.describe('installable app', () => {
     await page.reload();
     await expect(page.locator('#welcome.show')).toBeVisible();
     await context.setOffline(false);
+  });
+});
+
+test.describe('auto-update', () => {
+  test.use({ serviceWorkers: 'block' });
+
+  test('new deployed version shows an update button that reloads and keeps the draft', async ({ page }) => {
+    let v = 'a';
+    await page.route('**/version.json', r => r.fulfill({ json: { v } }));
+    await newTree(page);
+    await page.click('#empty');
+    await page.keyboard.type('Mary'); await page.keyboard.press('Enter');
+    v = 'b';
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    await expect(page.locator('#update')).toBeVisible();
+    await Promise.all([page.waitForEvent('load'), page.click('#update')]);
+    await expect(cardOf(page, 'Mary')).toBeVisible();
+    await expect(page.locator('#update')).toBeHidden();
+  });
+
+  test('unchanged version shows nothing', async ({ page }) => {
+    await newTree(page);
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    await page.waitForTimeout(300);
+    await expect(page.locator('#update')).toBeHidden();
   });
 });
 

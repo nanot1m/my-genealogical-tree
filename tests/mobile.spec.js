@@ -82,4 +82,19 @@ test.describe('touch devices', () => {
     const right = await page.locator('#topright').boundingBox();
     expect(right.y).toBeGreaterThan(top.y + top.height - 1);
   });
+
+  test('install tutorial shows once on first launch, in the user locale', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => { localStorage.clear(); localStorage.setItem('familytree.lang', 'ru'); });
+    await page.reload();
+    await expect(page.locator('#install')).toBeVisible();
+    await expect(page.locator('#install h4')).toHaveText('Установите Family Tree');
+    await expect(page.locator('#inst-steps li')).toHaveCount(3);
+    await expect(page.locator('#inst-steps li').first()).toContainText('Поделиться');
+    await page.tap('#inst-later');
+    await expect(page.locator('#install')).toBeHidden();
+    await page.reload();
+    await page.waitForTimeout(1500);
+    await expect(page.locator('#install')).toBeHidden();
+  });
 });

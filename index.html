@@ -184,7 +184,7 @@
   #sheet { position: absolute; inset: 0; display: none; pointer-events: none; z-index: 35; }
   #sheet.show { display: block; }
   #sheet .sheet {
-    pointer-events: auto; position: absolute; right: 16px; top: 72px; bottom: 16px; width: 340px; overflow: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 14px 18px 16px;
+    pointer-events: auto; position: absolute; left: 16px; top: 72px; width: 340px; max-height: calc(100% - 32px); overflow: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 14px 18px 16px;
     box-shadow: var(--shadow-lg); animation: pop .18s cubic-bezier(.2,.8,.2,1);
   }
   #sheet .grab { display: none; width: 40px; height: 4px; border-radius: 2px; background: var(--border-strong); margin: 4px auto 10px; }
@@ -222,6 +222,23 @@
     #sheet #sh-close { display: none; }
     #sheet input[type=text], #sheet input[type=date], #sheet select { font-size: 16px; padding: 10px 12px; }
   }
+  #update { position: absolute; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; display: none; border: none; border-radius: 12px; padding: 10px 16px; font: inherit; font-size: 14px; font-weight: 500; background: var(--accent); color: #fff; box-shadow: var(--shadow-lg); cursor: pointer; white-space: nowrap; }
+  #update.show { display: block; }
+  #install { position: absolute; inset: 0; background: rgba(20,24,40,.35); display: none; align-items: flex-end; justify-content: center; z-index: 60; }
+  #install.show { display: flex; }
+  #install .panel { width: 100%; max-width: 520px; background: var(--panel); border-radius: 20px 20px 0 0; padding: 18px 20px calc(16px + env(safe-area-inset-bottom)); box-shadow: var(--shadow-lg); animation: sheet-up .22s cubic-bezier(.2,.8,.2,1); }
+  #install .head { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+  #install .head img { width: 48px; height: 48px; border-radius: 12px; }
+  #install h4 { margin: 0; font-size: 17px; }
+  #install p { margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+  #install ol { margin: 0 0 14px; padding: 0; list-style: none; counter-reset: st; display: flex; flex-direction: column; gap: 10px; }
+  #install li { counter-increment: st; display: flex; gap: 12px; align-items: center; font-size: 14.5px; }
+  #install li::before { content: counter(st); flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+  #install .ic { display: inline-flex; vertical-align: middle; padding: 1px 6px; border-radius: 6px; background: var(--panel-2); font-weight: 600; }
+  #install .foot { display: flex; gap: 10px; }
+  #install button { flex: 1; border: none; border-radius: 10px; padding: 12px 16px; font-size: 15px; font-weight: 500; background: var(--panel-2); color: var(--text); cursor: pointer; }
+  #install button.primary { background: var(--accent); color: #fff; }
+  #install [hidden] { display: none !important; }
   @keyframes sheet-up { from { transform: translateY(40px); opacity: .6; } to { transform: none; opacity: 1; } }
   #crop { position: absolute; inset: 0; background: rgba(20,24,40,.45); display: none; align-items: center; justify-content: center; z-index: 50; }
   #crop.show { display: flex; }
@@ -465,6 +482,7 @@
   <button data-sel="delete" class="danger" data-i18n="delete"></button>
 </div>
 <div id="toast"></div>
+<button type="button" id="update" data-i18n="update_ready"></button>
 <div id="mpop">
   <h4 id="mpop-title">Marriage</h4>
   <div class="row"><label data-i18n="status"></label><select id="m-status"><option value="married" data-i18n="st_married"></option><option value="partners" data-i18n="st_partners"></option><option value="separated" data-i18n="st_separated"></option><option value="divorced" data-i18n="st_divorced"></option><option value="reconciled_sep" data-i18n="st_reconciled_sep"></option><option value="reconciled_div" data-i18n="st_reconciled_div"></option></select></div>
@@ -491,6 +509,14 @@
       <button id="w-open"></button>
       <button id="w-new" data-i18n="new_tree"></button>
     </div>
+  </div>
+</div>
+<div id="install" role="dialog" aria-modal="true">
+  <div class="panel">
+    <div class="head"><img src="icons/icon-192.png" alt=""><h4 data-i18n="inst_title"></h4></div>
+    <p data-i18n="inst_text"></p>
+    <ol id="inst-steps"></ol>
+    <div class="foot"><button type="button" id="inst-later" data-i18n="inst_later"></button><button type="button" id="inst-go" class="primary" data-i18n="inst_go" hidden></button></div>
   </div>
 </div>
 <div id="sheet">
@@ -590,7 +616,7 @@
       lg_married: 'Marriage: solid line, years in the badge', lg_partners: 'Partners, not married: dashed line', lg_separated: 'Separated: one slash', lg_divorced: 'Divorced: two slashes', lg_rec_sep: 'Reconciled after separation', lg_rec_div: 'Remarried each other after divorce', lg_ordinal: 'Marriage number for people married more than once; first spouse on the left',
       lg_bio: 'Biological child: solid line, oldest child on the left', lg_adopted: 'Adopted: dotted line with an arrow', lg_foster: 'Foster child: dashed line', lg_twins: 'Twins hang from one point', lg_identical: 'Identical twins: bar between them', lg_pregnancy: 'Pregnancy', lg_miscarriage: 'Miscarriage', lg_abortion: 'Abortion', lg_stillborn: 'Stillbirth',
       lg_gender: 'Square marker for men, circle for women; men on the left of a couple', lg_deceased: 'Deceased: cross over the photo, years and age at death', lg_index: 'Index person, whom the chart is about: double outline', lg_illness: 'Illness, physical or mental: left half shaded, hatched when recovered', lg_substance: 'Substance abuse: lower half shaded, hatched when recovered', lg_ended: 'Line ended, no descendants', lg_household: 'Household: dashed loop around people living together',
-      sec_person: 'Person', sec_dates: 'Dates', sec_family: 'Family', sec_notation: 'Genogram notation', no_parents_hint: 'Available once the person has parents', sheet_title: 'Edit person', export_pdf: 'Export PDF', export_t: 'Export as PDF (print dialog)', change_photo: 'Change photo', adjust_crop: 'Adjust crop', rotate_l: 'Rotate left', rotate_r: 'Rotate right', straighten: 'Straighten', crop_title: 'Crop photo', crop_hint: 'Drag to move, scroll or pinch to zoom', cancel: 'Cancel', apply: 'Apply', zoom: 'Zoom', nothing_export: 'Nothing to export',
+      sec_person: 'Person', sec_dates: 'Dates', sec_family: 'Family', sec_notation: 'Genogram notation', no_parents_hint: 'Available once the person has parents', sheet_title: 'Edit person', export_pdf: 'Export PDF', export_t: 'Export as PDF (print dialog)', change_photo: 'Change photo', adjust_crop: 'Adjust crop', rotate_l: 'Rotate left', rotate_r: 'Rotate right', straighten: 'Straighten', crop_title: 'Crop photo', crop_hint: 'Drag to move, scroll or pinch to zoom', cancel: 'Cancel', apply: 'Apply', zoom: 'Zoom', nothing_export: 'Nothing to export', update_ready: 'New version available · Update', inst_title: 'Install Family Tree', inst_text: 'Add the app to your home screen: it opens full screen, like a regular app, and works offline.', inst_later: 'Not now', inst_go: 'Install', inst_ios: ['Tap <span class="ic">Share ⎋</span> in the browser toolbar', 'Scroll down and choose <span class="ic">Add to Home Screen ⊕</span>', 'Tap <span class="ic">Add</span> in the top corner'], inst_android: ['Open the browser menu <span class="ic">⋮</span>', 'Choose <span class="ic">Install app</span> or <span class="ic">Add to Home screen</span>', 'Confirm with <span class="ic">Install</span>'],
       help: [
         ['Keyboard shortcuts'],
         ['Navigate', [['Select parent / child', '↑ ↓'], ['Select sibling / spouse', '← →'], ['Deselect / close', 'Esc'], ['Fit tree to screen', 'F'], ['Zoom in / out / reset', '+ − 0'], ['Pan', 'Space+drag, wheel'], ['Zoom at cursor', 'pinch, ⌘+wheel']]],
@@ -623,7 +649,7 @@
       lg_married: 'Брак: сплошная линия, годы в значке', lg_partners: 'Партнёры без брака: пунктир', lg_separated: 'Расстались: одна черта', lg_divorced: 'Развод: две черты', lg_rec_sep: 'Примирение после разрыва', lg_rec_div: 'Повторный брак друг с другом после развода', lg_ordinal: 'Номер брака у тех, кто был в браке не раз; первый супруг слева',
       lg_bio: 'Родной ребёнок: сплошная линия, старший слева', lg_adopted: 'Усыновлён: точечная линия со стрелкой', lg_foster: 'Приёмный (опека): пунктир', lg_twins: 'Близнецы выходят из одной точки', lg_identical: 'Однояйцевые близнецы: перекладина между ними', lg_pregnancy: 'Беременность', lg_miscarriage: 'Выкидыш', lg_abortion: 'Аборт', lg_stillborn: 'Мертворождение',
       lg_gender: 'Квадрат — мужчина, круг — женщина; мужчина слева в паре', lg_deceased: 'Умер: крест на фото, годы и возраст смерти', lg_index: 'Главное лицо, о ком схема: двойная рамка', lg_illness: 'Болезнь, физическая или психическая: левая половина затемнена, штриховка — преодолена', lg_substance: 'Зависимость: нижняя половина затемнена, штриховка — преодолена', lg_ended: 'Род не продлён, нет потомков', lg_household: 'Домохозяйство: пунктирный контур вокруг живущих вместе',
-      sec_person: 'Человек', sec_dates: 'Даты', sec_family: 'Семья', sec_notation: 'Обозначения генограммы', no_parents_hint: 'Доступно, когда у человека есть родители', sheet_title: 'Редактирование', export_pdf: 'Экспорт в PDF', export_t: 'Экспорт в PDF (диалог печати)', change_photo: 'Заменить фото', adjust_crop: 'Изменить обрезку', rotate_l: 'Повернуть влево', rotate_r: 'Повернуть вправо', straighten: 'Выровнять', crop_title: 'Обрезка фото', crop_hint: 'Перетащите для сдвига, колесо или щипок — масштаб', cancel: 'Отмена', apply: 'Применить', zoom: 'Масштаб', nothing_export: 'Нечего экспортировать',
+      sec_person: 'Человек', sec_dates: 'Даты', sec_family: 'Семья', sec_notation: 'Обозначения генограммы', no_parents_hint: 'Доступно, когда у человека есть родители', sheet_title: 'Редактирование', export_pdf: 'Экспорт в PDF', export_t: 'Экспорт в PDF (диалог печати)', change_photo: 'Заменить фото', adjust_crop: 'Изменить обрезку', rotate_l: 'Повернуть влево', rotate_r: 'Повернуть вправо', straighten: 'Выровнять', crop_title: 'Обрезка фото', crop_hint: 'Перетащите для сдвига, колесо или щипок — масштаб', cancel: 'Отмена', apply: 'Применить', zoom: 'Масштаб', nothing_export: 'Нечего экспортировать', update_ready: 'Доступна новая версия · Обновить', inst_title: 'Установите Family Tree', inst_text: 'Добавьте приложение на рабочий стол: оно откроется на весь экран, как обычное приложение, и будет работать без интернета.', inst_later: 'Не сейчас', inst_go: 'Установить', inst_ios: ['Нажмите <span class="ic">Поделиться ⎋</span> на панели браузера', 'Прокрутите вниз и выберите <span class="ic">На экран «Домой» ⊕</span>', 'Нажмите <span class="ic">Добавить</span> в верхнем углу'], inst_android: ['Откройте меню браузера <span class="ic">⋮</span>', 'Выберите <span class="ic">Установить приложение</span> или <span class="ic">Добавить на главный экран</span>', 'Подтвердите кнопкой <span class="ic">Установить</span>'],
       help: [
         ['Горячие клавиши'],
         ['Навигация', [['Выбрать родителя / ребёнка', '↑ ↓'], ['Выбрать брата-сестру / супруга', '← →'], ['Снять выделение / закрыть', 'Esc'], ['Вписать дерево в экран', 'F'], ['Приблизить / отдалить / сброс', '+ − 0'], ['Перемещение', 'Space+мышь, колесо'], ['Масштаб у курсора', 'щипок, ⌘+колесо']]],
@@ -656,7 +682,7 @@
       lg_married: 'Ehe: durchgezogene Linie, Jahre im Abzeichen', lg_partners: 'Unverheiratete Partner: gestrichelt', lg_separated: 'Getrennt: ein Schrägstrich', lg_divorced: 'Geschieden: zwei Schrägstriche', lg_rec_sep: 'Versöhnung nach Trennung', lg_rec_div: 'Wiederverheiratung nach Scheidung', lg_ordinal: 'Nummer der Ehe bei mehrfach Verheirateten; erster Partner links',
       lg_bio: 'Leibliches Kind: durchgezogen, ältestes Kind links', lg_adopted: 'Adoptiert: gepunktet mit Pfeil', lg_foster: 'Pflegekind: gestrichelt', lg_twins: 'Zwillinge gehen von einem Punkt aus', lg_identical: 'Eineiige Zwillinge: Querbalken', lg_pregnancy: 'Schwangerschaft', lg_miscarriage: 'Fehlgeburt', lg_abortion: 'Abtreibung', lg_stillborn: 'Totgeburt',
       lg_gender: 'Quadrat für Männer, Kreis für Frauen; Männer links im Paar', lg_deceased: 'Verstorben: Kreuz über dem Foto, Jahre und Sterbealter', lg_index: 'Indexperson, um die es geht: doppelter Rahmen', lg_illness: 'Erkrankung, physisch oder psychisch: linke Hälfte schattiert, schraffiert wenn überwunden', lg_substance: 'Substanzmissbrauch: untere Hälfte schattiert, schraffiert wenn überwunden', lg_ended: 'Linie endet, keine Nachkommen', lg_household: 'Haushalt: gestrichelte Schleife um Zusammenlebende',
-      sec_person: 'Person', sec_dates: 'Daten', sec_family: 'Familie', sec_notation: 'Genogramm-Notation', no_parents_hint: 'Verfügbar, sobald die Person Eltern hat', sheet_title: 'Person bearbeiten', export_pdf: 'PDF exportieren', export_t: 'Als PDF exportieren (Druckdialog)', change_photo: 'Foto ändern', adjust_crop: 'Ausschnitt anpassen', rotate_l: 'Nach links drehen', rotate_r: 'Nach rechts drehen', straighten: 'Begradigen', crop_title: 'Foto zuschneiden', crop_hint: 'Ziehen zum Verschieben, Scrollen oder Pinch zum Zoomen', cancel: 'Abbrechen', apply: 'Übernehmen', zoom: 'Zoom', nothing_export: 'Nichts zu exportieren',
+      sec_person: 'Person', sec_dates: 'Daten', sec_family: 'Familie', sec_notation: 'Genogramm-Notation', no_parents_hint: 'Verfügbar, sobald die Person Eltern hat', sheet_title: 'Person bearbeiten', export_pdf: 'PDF exportieren', export_t: 'Als PDF exportieren (Druckdialog)', change_photo: 'Foto ändern', adjust_crop: 'Ausschnitt anpassen', rotate_l: 'Nach links drehen', rotate_r: 'Nach rechts drehen', straighten: 'Begradigen', crop_title: 'Foto zuschneiden', crop_hint: 'Ziehen zum Verschieben, Scrollen oder Pinch zum Zoomen', cancel: 'Abbrechen', apply: 'Übernehmen', zoom: 'Zoom', nothing_export: 'Nichts zu exportieren', update_ready: 'Neue Version verfügbar · Aktualisieren', inst_title: 'Family Tree installieren', inst_text: 'Füge die App zum Home-Bildschirm hinzu: Sie öffnet im Vollbild wie eine normale App und funktioniert offline.', inst_later: 'Nicht jetzt', inst_go: 'Installieren', inst_ios: ['Tippe in der Browserleiste auf <span class="ic">Teilen ⎋</span>', 'Scrolle nach unten und wähle <span class="ic">Zum Home-Bildschirm ⊕</span>', 'Tippe oben auf <span class="ic">Hinzufügen</span>'], inst_android: ['Öffne das Browsermenü <span class="ic">⋮</span>', 'Wähle <span class="ic">App installieren</span> oder <span class="ic">Zum Startbildschirm hinzufügen</span>', 'Bestätige mit <span class="ic">Installieren</span>'],
       help: [
         ['Tastenkürzel'],
         ['Navigation', [['Elternteil / Kind wählen', '↑ ↓'], ['Geschwister / Partner wählen', '← →'], ['Auswahl aufheben / schließen', 'Esc'], ['Baum einpassen', 'F'], ['Vergrößern / verkleinern / zurücksetzen', '+ − 0'], ['Verschieben', 'Leertaste+Ziehen, Mausrad'], ['Zoom am Cursor', 'Pinch, ⌘+Mausrad']]],
@@ -1161,6 +1187,7 @@
     layout();
     renderCards();
     animatePositions();
+    placeSheet();
     emptyEl.hidden = people().length > 0;
     $('#actions').classList.toggle('show', !!selectedId && !editingId);
     document.body.classList.toggle('has-selection', !!selectedId);
@@ -1565,6 +1592,7 @@
 
   function applyView() {
     world.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.s})`;
+    placeSheet();
     let g = GRID * view.s; while (g < 16) g *= 2;
     viewport.style.backgroundSize = `${g}px ${g}px`;
     viewport.style.backgroundPosition = `${view.x}px ${view.y}px`;
@@ -1794,9 +1822,24 @@
     }
     refreshSheetPhoto();
     sheet.classList.add('show');
+    placeSheet();
     editingId = id; cardsEl.querySelectorAll('.card.editing').forEach(el => el.classList.remove('editing')); cardEl(id)?.classList.add('editing');
     $('#actions').classList.remove('show');
     if (fresh || !isCoarse) { sh('sh-name').focus(); if (fresh) sh('sh-name').select(); }
+  }
+  const sheetDocked = matchMedia('(max-width: 760px), (pointer: coarse)');
+  function placeSheet() {
+    if (!sheetId) return;
+    const box = sheet.querySelector('.sheet'), pos = positions.get(sheetId);
+    if (sheetDocked.matches || !pos) { box.style.left = box.style.top = ''; return; }
+    const vr = viewport.getBoundingClientRect(), sr = sheet.getBoundingClientRect();
+    const x = vr.left - sr.left + pos.x * view.s + view.x, y = vr.top - sr.top + pos.y * view.s + view.y, w = CARD_W * view.s;
+    const bw = box.offsetWidth, bh = box.offsetHeight, m = 16, gap = 12;
+    let left = x + w + gap;
+    if (left + bw > sr.width - m) left = x - gap - bw;
+    if (left < m) left = Math.max(m, Math.min(x, sr.width - m - bw));
+    const top = Math.max(m, Math.min(y - 20, sr.height - m - bh));
+    box.style.left = left + 'px'; box.style.top = top + 'px';
   }
   function refreshCard(id) {
     const p = state.people[id], el = cardEl(id); if (!p || !el) return;
@@ -2354,11 +2397,12 @@
   $('#w-new').addEventListener('click', () => { if (dirty && people().length && !confirm(t('discard'))) return; dirty = false; newTree(); hideWelcome(); });
   welcome.addEventListener('pointerdown', (e) => { if (e.target === welcome && (people().length || !hasFS)) hideWelcome(); });
 
+  function saveDraft() {
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ state, fileName, dirty, libraryId })); } catch (_) {}
+  }
   function scheduleDraft() {
     clearTimeout(scheduleDraft.t);
-    scheduleDraft.t = setTimeout(() => {
-      try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ state, fileName, dirty, libraryId })); } catch (_) {}
-    }, 400);
+    scheduleDraft.t = setTimeout(saveDraft, 400);
     if (dirty) scheduleAutosave();
   }
   const canAutosave = () => hasFS ? !!fileHandle : true;
@@ -2393,7 +2437,7 @@
     } catch (_) {}
     return false;
   }
-  window.addEventListener('beforeunload', (e) => { if (dirty && !canAutosave()) { e.preventDefault(); e.returnValue = ''; } else if (dirty) { clearTimeout(scheduleAutosave.t); autosave(); } });
+  window.addEventListener('beforeunload', (e) => { if (reloading) return; if (dirty && !canAutosave()) { e.preventDefault(); e.returnValue = ''; } else if (dirty) { clearTimeout(scheduleAutosave.t); autosave(); } });
 
   function toast(msg) {
     const t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -2408,6 +2452,43 @@
   if (restored) fitView(); else resetView();
   $('[data-act=download]').hidden = hasFS;
   navigator.storage?.persist?.().catch(() => {});
+  let appVersion = null, updateReady = false, reloading = false;
+  async function applyUpdate() {
+    reloading = true; clearTimeout(scheduleDraft.t); saveDraft();
+    // GitHub Pages serves index.html with max-age=600, so refresh the HTTP cache before reloading
+    try { await fetch('./', { cache: 'reload' }); } catch (_) {}
+    location.reload();
+  }
+  async function checkUpdate() {
+    let v;
+    try { v = (await (await fetch('version.json', { cache: 'no-store' })).json()).v; } catch (_) { return; }
+    if (!appVersion) appVersion = v;
+    else if (v !== appVersion) { updateReady = true; $('#update').classList.add('show'); }
+  }
+  $('#update').addEventListener('click', applyUpdate);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    if (updateReady && !dirty && !sheetId) applyUpdate(); else checkUpdate();
+  });
+  setInterval(checkUpdate, 30 * 60_000);
+  checkUpdate();
+
+  const INSTALL_KEY = 'familytree.installDismissed';
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/.test(navigator.userAgent);
+  const isStandalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  let installEvent = null;
+  function renderInstall() {
+    sh('inst-go').hidden = !installEvent;
+    sh('inst-steps').hidden = !!installEvent;
+    sh('inst-steps').innerHTML = t(isIOS ? 'inst_ios' : 'inst_android').map(x => `<li><span>${x}</span></li>`).join('');
+  }
+  function closeInstall() { $('#install').classList.remove('show'); localStorage.setItem(INSTALL_KEY, '1'); }
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvent = e; renderInstall(); });
+  window.addEventListener('appinstalled', closeInstall);
+  sh('inst-later').addEventListener('click', closeInstall);
+  sh('inst-go').addEventListener('click', async () => { installEvent.prompt(); await installEvent.userChoice; installEvent = null; closeInstall(); });
+  if ((isIOS || isAndroid) && !isStandalone && !localStorage.getItem(INSTALL_KEY)) setTimeout(() => { renderInstall(); $('#install').classList.add('show'); }, 1200);
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
   if ('launchQueue' in window) {
     window.launchQueue.setConsumer(async (params) => {

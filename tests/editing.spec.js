@@ -83,3 +83,19 @@ test.describe('photos and cropper', () => {
     await expect(page.locator('#crop-angle')).toHaveValue('15');
   });
 });
+
+test('desktop editor pops up next to the edited card and follows it', async ({ page }) => {
+  await newTree(page);
+  await page.click('#empty');
+  await page.keyboard.type('Mary'); await page.keyboard.press('Enter');
+  await cardOf(page, 'Mary').dblclick();
+  const box = page.locator('#sheet .sheet');
+  await expect(box).toBeVisible();
+  const near = async () => {
+    const c = await cardOf(page, 'Mary').boundingBox(), b = await box.boundingBox();
+    return Math.abs(b.x - (c.x + c.width)) < 40 || Math.abs(b.x + b.width - c.x) < 40;
+  };
+  await expect.poll(near).toBe(true);
+  await page.mouse.move(700, 450); await page.mouse.wheel(-200, 0);
+  await expect.poll(near).toBe(true);
+});

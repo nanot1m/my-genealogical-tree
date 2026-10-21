@@ -8,6 +8,7 @@ export async function openApp(page, { lang = 'en', noFS = false, draft = null } 
   await page.evaluate(({ lang, draft }) => {
     localStorage.clear();
     localStorage.setItem('familytree.lang', lang);
+    localStorage.setItem('familytree.installDismissed', '1');
     if (draft) localStorage.setItem('familytree.draft', JSON.stringify(draft));
     indexedDB.deleteDatabase('familytree');
   }, { lang, draft });
