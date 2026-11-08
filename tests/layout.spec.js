@@ -195,6 +195,11 @@ test.describe('wide real-world tree (anonymized)', () => {
     await page.evaluate((d) => localStorage.setItem('familytree.draft', JSON.stringify(d)), { state, fileName: 'w.ftree', dirty: true });
     await page.reload(); await page.click('#w-continue'); await page.waitForTimeout(600);
     expect(await overlapCount(page)).toBe(0);
+    const pos = await positions(page);
+    const x = (n) => pos.find(p => p.name === n).x, y = (n) => pos.find(p => p.name === n).y;
+    expect(y('Person 132')).toBe(y('Person 133'));
+    expect(x('Person 132')).toBeLessThan(x('Person 133'));
+    expect(x('Person 133')).toBeLessThan(x('Person 134'));
   });
 
   test('no overlaps, no card stranded far from its spouse or siblings', async ({ page }) => {

@@ -1196,7 +1196,7 @@
           if (tw && ids.includes(tw) && Math.abs(ids.indexOf(tw) - ids.indexOf(id)) > 1) { ids.splice(ids.indexOf(tw), 1); ids.splice(ids.indexOf(id) + 1, 0, tw); }
         }
         const fixed = !!p || ids.every(id => state.people[id]?.birth);
-        const kids = ids.map(buildNode);
+        const kids = []; for (const id of ids) if (!claimed.has(id)) kids.push(buildNode(id));
         kids.forEach(c => { c.fixed = fixed; });
         if (kids.length) n.groups.push({ f, children: kids });
       }
@@ -1278,29 +1278,69 @@
     }
     let occupied = new Map();
     const pending = [];
-    function place(n, x, row) {
+    function placeAroundSibling(kids, anchor, row) {
+      const f = childFamily(anchor), ax = positions.get(anchor);
+      if (!f || !ax) return false;
+      const order = byBirth(f.children), ai = order.indexOf(anchor);
+      if (ai < 0 || !kids.some(k => order.includes(k.c.own))) return false;
+      const rowY = row * (CARD_H + V_GAP);
+      const nodeFor = (id) => {
+        const k = kids.find(k => k.c.own === id); if (k) return k.c;
+        const e = pending.find(e => !e.done && e.a.own === id); if (!e) return null;
+        e.done = true; measure(e.a); return e.a;
+      };
+      const placedX = (id) => { const p = positions.get(id); return p && p.y === rowY ? p.x : null; };
+      let edge = ax.x + CARD_W;
+      for (const id of order.slice(ai + 1)) {
+        const px = placedX(id); if (px !== null) { edge = Math.max(edge, px + CARD_W); continue; }
+        const node = nodeFor(id); if (!node) continue;
+        let kx = edge + H_GAP;
+        kx += settle(occupied, shift(node.ext, kx, row), 1);
+        place(node, kx, row, node.anchorId); edge = kx + node.uw;
+      }
+      edge = ax.x;
+      for (const id of order.slice(0, ai).reverse()) {
+        const px = placedX(id); if (px !== null) { edge = Math.min(edge, px); continue; }
+        const node = nodeFor(id); if (!node) continue;
+        let kx = edge - H_GAP - node.uw;
+        kx += settle(occupied, shift(node.ext, kx, row), -1);
+        place(node, kx, row, node.anchorId); edge = kx;
+      }
+      return true;
+    }
+    function place(n, x, row, anchor) {
       const y = row * (CARD_H + V_GAP);
       n.unit.forEach((id, i) => positions.set(id, { x: x + n.ux[i], y }));
       occupied = union(occupied, new Map([[row, [[x, x + n.uw]]]]));
-      for (const { c, dx } of n.kids) place(c, x + dx, row + 1);
+      const sibs = strictOrder && anchor ? n.kids.filter(k => childFamily(k.c.own) === childFamily(anchor)) : [];
+      const placedAround = sibs.length && placeAroundSibling(sibs, anchor, row + 1);
+      for (const { c, dx } of n.kids) {
+        if (!placedAround) { place(c, x + dx, row + 1); continue; }
+        if (sibs.some(k => k.c === c)) continue;
+        let kx = x + dx;
+        const ax = positions.get(anchor).x, dir = kx + c.ownCenter < ax + CARD_W / 2 ? -1 : 1;
+        kx += settle(occupied, shift(c.ext, kx, row + 1), dir);
+        place(c, kx, row + 1);
+      }
       const ownIdx = n.unit.indexOf(n.own);
       const list = n.ancestors.map(({ node: a, anchor }) => {
         const k = n.unit.indexOf(anchor);
         const dir = n.side < 0 ? -1 : n.side > 0 ? 1 : k < ownIdx ? -1 : k > ownIdx ? 1 : (k === 0 ? -1 : 1);
         return { a, k, dir };
       }).sort((p, q) => (p.dir < 0 ? q.k - p.k : p.k - q.k));
-      for (const { a, k, dir } of list) pending.push({ a, row: row - 1, center: x + n.ux[k] + CARD_W / 2, dir, order: row });
+      for (const { a, k, dir } of list) { a.anchorId = n.unit[k]; pending.push({ a, row: row - 1, center: x + n.ux[k] + CARD_W / 2, dir, order: row, anchor: n.unit[k] }); }
     }
     function placeAncestors() {
       pending.sort((p, q) => p.order - q.order);
       for (let i = 0; i < pending.length; i++) {
-        const { a, row, center, dir } = pending[i];
+        const { a, row, center, dir, anchor } = pending[i];
+        if (pending[i].done) continue;
         measure(a);
         let dx = center - a.uw / 2;
         const push = settle(occupied, shift(a.ext, dx, row), dir), back = settle(occupied, shift(a.ext, dx, row), -dir);
         dx += Math.abs(back) < Math.abs(push) / 2 ? back : push;
         const before = pending.length;
-        place(a, dx, row);
+        place(a, dx, row, anchor);
         for (let j = before; j < pending.length; j++) pending[j].order = Infinity;
       }
     }
