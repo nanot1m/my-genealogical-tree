@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { newTree, firstPerson, addRelative, positions, rows, overlapCount, select } from './helpers.js';
+import { openApp, newTree, firstPerson, addRelative, positions, rows, overlapCount, select } from './helpers.js';
 
 const center = (pos, name) => { const p = pos.find(x => x.name === name); return p.x + 140; };
 
@@ -115,4 +115,24 @@ test.describe('layout', () => {
     }
     expect(busYs.size).toBeGreaterThan(1);
   });
+});
+
+test('a late spouse stays next to the person even when earlier children have wide subtrees', async ({ page }) => {
+  const people = {}, families = {};
+  const person = (id, name) => { people[id] = { id, name, alive: true }; };
+  person('hub', 'Hub'); person('wife', 'Wife'); person('late', 'Late');
+  families.fa = { id: 'fa', parents: ['hub'], children: [], status: 'married' };
+  families.fb = { id: 'fb', parents: ['hub', 'wife'], children: ['late'], status: 'married' };
+  for (const k of ['k1', 'k2', 'k3']) {
+    person(k, k.toUpperCase()); person(k + 'w', k.toUpperCase() + 'W'); person(k + 'a', k.toUpperCase() + 'a'); person(k + 'b', k.toUpperCase() + 'b');
+    families.fa.children.push(k);
+    families['f' + k] = { id: 'f' + k, parents: [k, k + 'w'], children: [k + 'a', k + 'b'], status: 'married' };
+  }
+  await openApp(page, { draft: { state: { people, families, relations: [] }, fileName: 'wide.ftree', dirty: true } });
+  await page.click('#w-continue');
+  const pos = await positions(page);
+  const hub = pos.find(p => p.name === 'Hub'), wife = pos.find(p => p.name === 'Wife');
+  expect(wife.y).toBe(hub.y);
+  expect(Math.abs(wife.x - hub.x)).toBeLessThanOrEqual(2 * 356 + 1);
+  expect(await overlapCount(page)).toBe(0);
 });

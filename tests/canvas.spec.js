@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { newTree, firstPerson, addRelative, cardOf, cards, select, positions, attachConsoleGuard } from './helpers.js';
+import { newTree, firstPerson, addRelative, cardOf, cards, select, deselect, positions, attachConsoleGuard } from './helpers.js';
 
 test.describe('canvas and first person', () => {
   test('starts with an empty grid and a plus button, click creates the first card', async ({ page }) => {
@@ -136,4 +136,27 @@ test.describe('animations', () => {
     await expect(page.locator('.card.leave')).toHaveCount(1);
     await expect(page.locator('.card.leave')).toHaveCount(0, { timeout: 2000 });
   });
+});
+
+test('Cmd+F finds a person by name and centers the view on them', async ({ page }) => {
+  await newTree(page);
+  await firstPerson(page, 'Anna');
+  await addRelative(page, 'Anna', 'c', 'Boris');
+  await addRelative(page, 'Anna', 'c', 'Clara Ivanova');
+  await deselect(page);
+  await page.keyboard.press('Meta+f');
+  await expect(page.locator('#search')).toBeVisible();
+  await page.keyboard.type('ivan');
+  await expect(page.locator('#s-list button')).toHaveText([/Clara Ivanova/]);
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#search')).toBeHidden();
+  await expect(cardOf(page, 'Clara Ivanova')).toHaveClass(/selected/);
+  await page.waitForTimeout(400);
+  const box = await cardOf(page, 'Clara Ivanova').boundingBox();
+  const vp = page.viewportSize();
+  expect(Math.abs(box.x + box.width / 2 - vp.width / 2)).toBeLessThan(5);
+  await page.keyboard.press('Meta+f'); await page.keyboard.type('zzz');
+  await expect(page.locator('#s-list .none')).toHaveText('No matches');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#search')).toBeHidden();
 });

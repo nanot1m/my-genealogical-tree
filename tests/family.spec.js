@@ -38,7 +38,7 @@ test.describe('spouses and marriages', () => {
     expect((await page.locator('#edges path.slash').getAttribute('d')).length).toBeGreaterThan(0);
     await page.locator('.marriage').first().click();
     await page.selectOption('#m-status', 'partners'); await page.keyboard.press('Enter');
-    expect((await page.locator('#edges path.partners').getAttribute('d')).length).toBeGreaterThan(0);
+    expect((await page.locator('#edges path.partners').evaluateAll(ps => ps.map(x => x.getAttribute('d')).join(''))).length).toBeGreaterThan(0);
     for (let i = 0; i < 5 && (await page.locator('.marriage').first().textContent()) !== '♥'; i++) await page.keyboard.press('Meta+z');
     await expect(page.locator('.marriage').first()).toHaveText('♥');
     await page.locator('.marriage').first().click();
@@ -91,6 +91,21 @@ test.describe('replacing parents and marriage order', () => {
     await page.locator('#sh-alive').uncheck(); await page.fill('#sh-death', '2007-08-29');
     await page.keyboard.press('Enter');
     await expect(page.locator('.marriage').first()).toContainText('1950 – † 2007');
+  });
+
+  test('three or more marriages: person anchored at the edge, later marriages routed below the row', async ({ page }) => {
+    await newTree(page);
+    await firstPerson(page, 'Hub');
+    await addRelative(page, null, 'm', 'S1');
+    await addRelative(page, 'Hub', 'm', 'S2');
+    await addRelative(page, 'Hub', 'm', 'S3');
+    const r = rows(await positions(page));
+    expect(r[0]).toEqual(['Hub', 'S1', 'S2', 'S3']);
+    const hub = (await positions(page)).find(p => p.name === 'Hub');
+    const ys = await page.locator('.marriage').evaluateAll(els => els.map(e => parseFloat(e.style.top)).sort((a, b) => a - b));
+    expect(ys[0]).toBeLessThan(hub.y + 112);
+    expect(ys[1]).toBeGreaterThan(hub.y + 112);
+    expect(ys[2]).toBeGreaterThan(ys[1]);
   });
 
   test('marriage order can be changed from the badge', async ({ page }) => {
