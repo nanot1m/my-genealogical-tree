@@ -79,6 +79,20 @@ test.describe('replacing parents and marriage order', () => {
     expect(fams.find(f => f.parents.includes('Mom')).children).toEqual([]);
   });
 
+  test('marriage with no end date ends at the first death', async ({ page }) => {
+    await newTree(page);
+    await firstPerson(page, 'John');
+    await addRelative(page, null, 'm', 'Mary');
+    await page.locator('.marriage').first().click();
+    await page.click('.df-mode[data-for=m-from]'); await page.fill('#m-from', '1950');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.marriage').first()).toContainText('1950 – present');
+    await cardOf(page, 'John').dblclick();
+    await page.locator('#sh-alive').uncheck(); await page.fill('#sh-death', '2007-08-29');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.marriage').first()).toContainText('1950 – † 2007');
+  });
+
   test('marriage order can be changed from the badge', async ({ page }) => {
     await newTree(page);
     await firstPerson(page, 'John');

@@ -25,25 +25,43 @@ test.describe('card fields', () => {
     await firstPerson(page, 'Ivan');
     await cardOf(page, 'Ivan').dblclick();
     await page.fill('#sh-place', 'Kazan'); await page.fill('#sh-prof', 'Engineer');
-    await page.keyboard.press('Enter');
+    await page.fill('#sh-notes', 'Line one'); await page.keyboard.press('Enter'); await page.keyboard.type('Line two');
+    await expect(page.locator('#sheet')).toHaveClass(/show/);
+    await page.click('#sh-done');
     await expect(cardOf(page, 'Ivan')).not.toContainText('Kazan');
     await expect(cardOf(page, 'Ivan')).not.toContainText('Engineer');
-    expect(Object.values((await draftState(page)).people)[0]).toEqual(expect.objectContaining({ birthplace: 'Kazan', profession: 'Engineer' }));
+    expect(Object.values((await draftState(page)).people)[0]).toEqual(expect.objectContaining({ birthplace: 'Kazan', profession: 'Engineer', notes: 'Line one\nLine two' }));
     await cardOf(page, 'Ivan').dblclick();
     await expect(page.locator('#sh-place')).toHaveValue('Kazan');
     await expect(page.locator('#sh-prof')).toHaveValue('Engineer');
+    await expect(page.locator('#sh-notes')).toHaveValue('Line one\nLine two');
   });
 
   test('partial dates: year only and year-month', async ({ page }) => {
     await newTree(page);
-    await firstPerson(page, 'Old Man', '1900');
+    await firstPerson(page, 'Old Man');
+    await cardOf(page, 'Old Man').dblclick();
+    await expect(page.locator('#sh-birth')).toHaveAttribute('type', 'date');
+    await page.click('.df-mode[data-for=sh-birth]');
+    await expect(page.locator('#sh-birth')).toHaveAttribute('type', 'text');
+    await page.fill('#sh-birth', '1900');
+    await page.keyboard.press('Enter');
     await expect(cardOf(page, 'Old Man').locator('.dates')).toContainText('b. 1900');
     await expect(cardOf(page, 'Old Man').locator('.dates')).toContainText(/\d+ y/);
     await cardOf(page, 'Old Man').dblclick();
+    await expect(page.locator('#sh-birth')).toHaveAttribute('type', 'text');
+    await expect(page.locator('.df-mode[data-for=sh-birth]')).toHaveText('Full date');
     await page.locator('#sh-alive').uncheck();
+    await page.click('.df-mode[data-for=sh-death]');
     await page.fill('#sh-death', '1980-06');
     await page.keyboard.press('Enter');
     await expect(cardOf(page, 'Old Man').locator('.dates')).toHaveText('1900 – June 1980 (80)');
+    await cardOf(page, 'Old Man').dblclick();
+    await page.click('.df-mode[data-for=sh-birth]');
+    await expect(page.locator('#sh-birth')).toHaveAttribute('type', 'date');
+    await page.fill('#sh-birth', '1900-02-03');
+    await page.keyboard.press('Enter');
+    await expect(cardOf(page, 'Old Man').locator('.dates')).toHaveText('Feb 3, 1900 – June 1980 (80)');
   });
 
   test('files saved with full dates and no marriage order render as before', async ({ page }) => {
@@ -60,6 +78,18 @@ test.describe('card fields', () => {
     await expect(cardOf(page, 'Ann').locator('.dates')).toHaveText('Mar 4, 1950 – Jan 1, 2020 (69)');
     await expect(page.locator('.marriage', { hasText: '¹' })).toContainText('1970 – 1980');
     await expect(page.locator('.marriage', { hasText: '²' })).toContainText('1990');
+  });
+
+  test('sheet edits reach the draft before the sheet is closed', async ({ page }) => {
+    await newTree(page);
+    await firstPerson(page, 'Anna');
+    await cardOf(page, 'Anna').dblclick();
+    await page.fill('#sh-prof', 'Baker');
+    expect(Object.values((await draftState(page)).people)[0].profession).toBe('Baker');
+    await page.reload();
+    await page.click('#w-continue');
+    await cardOf(page, 'Anna').dblclick();
+    await expect(page.locator('#sh-prof')).toHaveValue('Baker');
   });
 
   test('Tab cycles fields, Escape finishes, edits are a single undo step', async ({ page }) => {

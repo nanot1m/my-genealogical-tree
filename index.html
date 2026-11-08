@@ -151,12 +151,17 @@
   .marriage .h { color: var(--love); font-size: 10px; }
   .marriage.empty { padding: 2px 6px; }
 
-  #mpop { position: absolute; z-index: 25; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-lg); padding: 12px 14px; width: 250px; display: none; font-size: 13px; animation: pop .14s cubic-bezier(.2,.8,.2,1); }
+  #mpop { position: absolute; z-index: 25; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-lg); padding: 12px 14px; width: 320px; max-width: calc(100vw - 16px); display: none; font-size: 13px; animation: pop .14s cubic-bezier(.2,.8,.2,1); }
   #mpop.show { display: block; }
   #mpop h4 { margin: 0 0 8px; font-size: 13px; }
   #mpop .row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
   #mpop label { width: 54px; color: var(--muted); font-size: 12px; }
-  #mpop input[type=text] { flex: 1; font: inherit; font-size: 13px; padding: 3px 6px; border: 1px solid var(--border); border-radius: 6px; outline: none; min-width: 0; background: var(--card); color: var(--text); }
+  .df { display: flex; gap: 6px; min-width: 0; flex: 1; }
+  .df input { flex: 1; }
+  #sheet .df-mode, #mpop .df-mode { flex: none; border: none; border-radius: 0; background: none; color: var(--accent); padding: 0; font: inherit; font-size: 11px; cursor: pointer; white-space: nowrap; }
+  #sheet .df-mode:hover, #mpop .df-mode:hover { text-decoration: underline; }
+  #sheet .cap { display: flex; justify-content: space-between; gap: 8px; }
+  #mpop .df input { flex: 1; font: inherit; font-size: 13px; padding: 3px 6px; border: 1px solid var(--border); border-radius: 6px; outline: none; min-width: 0; background: var(--card); color: var(--text); }
   #mpop input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
   #mpop .foot { display: flex; justify-content: space-between; margin-top: 10px; }
   #mpop button { border: none; background: var(--panel-2); color: var(--text); border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 12px; font-weight: 500; }
@@ -203,8 +208,9 @@
   #sheet .sh-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); min-width: 0; }
   #sheet .sh-grid label.wide { grid-column: 1 / -1; }
   #sheet .sh-grid label > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #sheet input[type=text], #sheet select { font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; outline: none; width: 100%; min-width: 0; background: var(--card); color: var(--text); }
-  #sheet input:focus, #sheet select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  #sheet input[type=text], #sheet input[type=date], #sheet select, #sheet textarea { font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; outline: none; width: 100%; min-width: 0; background: var(--card); color: var(--text); }
+  #sheet textarea { resize: vertical; min-height: 72px; line-height: 1.4; display: block; }
+  #sheet input:focus, #sheet select:focus, #sheet textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
   #sheet #sh-name { font-weight: 600; }
   #sheet .sh-check { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13.5px; color: var(--text); cursor: pointer; }
   #sheet .sh-check input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); flex: none; }
@@ -221,7 +227,7 @@
     #sheet .sheet { position: relative; right: auto; top: auto; bottom: auto; width: 100%; max-width: 520px; max-height: 90vh; border-radius: 20px 20px 0 0; padding: 8px 20px calc(16px + env(safe-area-inset-bottom)); animation: sheet-up .22s cubic-bezier(.2,.8,.2,1); }
     #sheet .grab { display: block; }
     #sheet #sh-close { display: none; }
-    #sheet input[type=text], #sheet select { font-size: 16px; padding: 10px 12px; }
+    #sheet input[type=text], #sheet input[type=date], #sheet select, #sheet textarea { font-size: 16px; padding: 10px 12px; }
   }
   #update { position: absolute; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; display: none; border: none; border-radius: 12px; padding: 10px 16px; font: inherit; font-size: 14px; font-weight: 500; background: var(--accent); color: #fff; box-shadow: var(--shadow-lg); cursor: pointer; white-space: nowrap; }
   #update.show { display: block; }
@@ -487,8 +493,8 @@
 <div id="mpop">
   <h4 id="mpop-title">Marriage</h4>
   <div class="row"><label data-i18n="status"></label><select id="m-status"><option value="married" data-i18n="st_married"></option><option value="partners" data-i18n="st_partners"></option><option value="separated" data-i18n="st_separated"></option><option value="divorced" data-i18n="st_divorced"></option><option value="reconciled_sep" data-i18n="st_reconciled_sep"></option><option value="reconciled_div" data-i18n="st_reconciled_div"></option></select></div>
-  <div class="row"><label data-i18n="married"></label><input type="text" id="m-from" inputmode="numeric" placeholder="1980 · 1980-06 · 1980-06-15" autocomplete="off"></div>
-  <div class="row"><label data-i18n="until"></label><input type="text" id="m-to" inputmode="numeric" placeholder="1980 · 1980-06 · 1980-06-15" autocomplete="off"></div>
+  <div class="row"><label data-i18n="married"></label><span class="df"><input type="date" id="m-from"><button type="button" class="df-mode" data-for="m-from"></button></span></div>
+  <div class="row"><label data-i18n="until"></label><span class="df"><input type="date" id="m-to"><button type="button" class="df-mode" data-for="m-to"></button></span></div>
   <p class="hint" id="m-hint"></p>
   <div class="row" id="m-order-row"><label data-i18n="order"></label><button type="button" id="m-earlier" data-i18n="earlier"></button><button type="button" id="m-later" data-i18n="later"></button></div>
   <div class="foot"><button class="danger" id="m-unlink" data-i18n="unlink"></button><button id="m-close" data-i18n="done"></button></div>
@@ -543,9 +549,9 @@
     <section>
       <h5 data-i18n="sec_dates"></h5>
       <div class="sh-grid">
-        <label><span data-i18n="born"></span><input type="text" id="sh-birth" inputmode="numeric" placeholder="1980 · 1980-06 · 1980-06-15" autocomplete="off"></label>
+        <label><span class="cap"><span data-i18n="born"></span><button type="button" class="df-mode" data-for="sh-birth"></button></span><input type="date" id="sh-birth"></label>
         <label><span data-i18n="birthplace"></span><input type="text" id="sh-place" autocomplete="off" autocapitalize="words" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other"></label>
-        <label id="sh-death-row"><span data-i18n="died"></span><input type="text" id="sh-death" inputmode="numeric" placeholder="1980 · 1980-06 · 1980-06-15" autocomplete="off"></label>
+        <label id="sh-death-row"><span class="cap"><span data-i18n="died"></span><button type="button" class="df-mode" data-for="sh-death"></button></span><input type="date" id="sh-death"></label>
       </div>
       <label class="sh-check"><input type="checkbox" id="sh-alive"><span data-i18n="living"></span></label>
     </section>
@@ -566,6 +572,10 @@
       </div>
       <label class="sh-check"><input type="checkbox" id="sh-index"><span data-i18n="index_person"></span></label>
       <label class="sh-check"><input type="checkbox" id="sh-ended"><span data-i18n="line_ended"></span></label>
+    </section>
+    <section>
+      <h5 data-i18n="sec_notes"></h5>
+      <textarea id="sh-notes" rows="4" autocomplete="off" spellcheck="true"></textarea>
     </section>
     <div class="foot"><button id="sh-delete" class="danger" data-i18n="delete"></button><button id="sh-done" class="primary" data-i18n="done"></button></div>
   </div>
@@ -604,7 +614,7 @@
       edit: 'Edit', photo: 'Photo', add_parent: '+ Parent', add_sibling: '+ Sibling', add_child: '+ Child', add_spouse: '+ Spouse', delete: 'Delete',
       married: 'Married', until: 'Until', unlink: 'Unlink', done: 'Done', empty: 'Click to add the first person',
       untitled: 'Untitled tree', app: 'Family Tree',
-      unnamed: 'Unnamed', add_dates: 'Add dates', full_name: 'Full name', birth_name: 'Birth surname', birthplace: 'Birthplace', profession: 'Profession', nee: 'née', born: 'Born', died: 'Died', living: 'Living',
+      unnamed: 'Unnamed', add_dates: 'Add dates', full_name: 'Full name', birth_name: 'Birth surname', birthplace: 'Birthplace', year_only: 'Year only', sec_notes: 'Notes', notes_hint: 'Biography, stories, sources…', full_date: 'Full date', profession: 'Profession', nee: 'née', born: 'Born', died: 'Died', living: 'Living',
       set_photo: 'Set photo', remove_photo: 'Remove photo',
       tip_parent: 'Add parent (P)', tip_sibling_l: 'Add sibling (⇧←)', tip_sibling_r: 'Add sibling (S)', tip_child: 'Add child (C)', tip_spouse: 'Add spouse (M)',
       marriage_dates: 'Marriage dates', present: 'present', b: 'b.', years: 'y',
@@ -637,7 +647,7 @@
       edit: 'Изменить', photo: 'Фото', add_parent: '+ Родитель', add_sibling: '+ Брат/сестра', add_child: '+ Ребёнок', add_spouse: '+ Супруг', delete: 'Удалить',
       married: 'Брак с', until: 'До', unlink: 'Разорвать', done: 'Готово', empty: 'Нажмите, чтобы добавить первого человека',
       untitled: 'Новое дерево', app: 'Семейное древо',
-      unnamed: 'Без имени', add_dates: 'Добавить даты', full_name: 'Имя и фамилия', birth_name: 'Девичья фамилия', birthplace: 'Место рождения', profession: 'Профессия', nee: 'урожд.', born: 'Род.', died: 'Ум.', living: 'Жив(а)',
+      unnamed: 'Без имени', add_dates: 'Добавить даты', full_name: 'Имя и фамилия', birth_name: 'Девичья фамилия', birthplace: 'Место рождения', year_only: 'Только год', sec_notes: 'Заметки', notes_hint: 'Биография, истории, источники…', full_date: 'Точная дата', profession: 'Профессия', nee: 'урожд.', born: 'Род.', died: 'Ум.', living: 'Жив(а)',
       set_photo: 'Выбрать фото', remove_photo: 'Удалить фото',
       tip_parent: 'Добавить родителя (P)', tip_sibling_l: 'Добавить брата/сестру (⇧←)', tip_sibling_r: 'Добавить брата/сестру (S)', tip_child: 'Добавить ребёнка (C)', tip_spouse: 'Добавить супруга (M)',
       marriage_dates: 'Даты брака', present: 'н. в.', b: 'р.', years: 'л.',
@@ -670,7 +680,7 @@
       edit: 'Bearbeiten', photo: 'Foto', add_parent: '+ Elternteil', add_sibling: '+ Geschwister', add_child: '+ Kind', add_spouse: '+ Partner', delete: 'Löschen',
       married: 'Heirat', until: 'Bis', unlink: 'Trennen', done: 'Fertig', empty: 'Klicken, um die erste Person hinzuzufügen',
       untitled: 'Unbenannter Stammbaum', app: 'Stammbaum',
-      unnamed: 'Ohne Namen', add_dates: 'Daten hinzufügen', full_name: 'Vollständiger Name', birth_name: 'Geburtsname', birthplace: 'Geburtsort', profession: 'Beruf', nee: 'geb.', born: 'Geb.', died: 'Gest.', living: 'Lebt',
+      unnamed: 'Ohne Namen', add_dates: 'Daten hinzufügen', full_name: 'Vollständiger Name', birth_name: 'Geburtsname', birthplace: 'Geburtsort', year_only: 'Nur Jahr', sec_notes: 'Notizen', notes_hint: 'Biografie, Geschichten, Quellen…', full_date: 'Genaues Datum', profession: 'Beruf', nee: 'geb.', born: 'Geb.', died: 'Gest.', living: 'Lebt',
       set_photo: 'Foto wählen', remove_photo: 'Foto entfernen',
       tip_parent: 'Elternteil hinzufügen (P)', tip_sibling_l: 'Geschwister hinzufügen (⇧←)', tip_sibling_r: 'Geschwister hinzufügen (S)', tip_child: 'Kind hinzufügen (C)', tip_spouse: 'Partner hinzufügen (M)',
       marriage_dates: 'Ehedaten', present: 'heute', b: 'geb.', years: 'J.',
@@ -820,7 +830,7 @@
   function siblingsOf(pid) { const f = childFamily(pid); return f ? f.children : [pid]; }
 
   function newPerson() {
-    const p = { id: uid('p'), name: '', birthName: '', birthplace: '', profession: '', birth: '', death: '', alive: true, photo: null, photoSrc: null, crop: null, fate: '', lineEnded: false, gender: '', illness: '', substance: '' };
+    const p = { id: uid('p'), name: '', birthName: '', birthplace: '', profession: '', notes: '', birth: '', death: '', alive: true, photo: null, photoSrc: null, crop: null, fate: '', lineEnded: false, gender: '', illness: '', substance: '' };
     state.people[p.id] = p;
     return p;
   }
@@ -940,6 +950,7 @@
     if (!state.people[selectedId]) selectedId = null;
     afterChange();
   }
+  function touch() { dirty = true; scheduleDraft(); }
   function afterChange() {
     dirty = true;
     render();
@@ -1225,6 +1236,25 @@
     return parts.length ? parts.slice(0, 2).map(s => s[0].toUpperCase()).join('') : '';
   }
   const dateParts = (s) => { const m = /^(\d{4})(?:-(\d{1,2})(?:-(\d{1,2}))?)?$/.exec((s || '').trim()); return m ? [+m[1], m[2] ? +m[2] : null, m[3] ? +m[3] : null] : null; };
+  const isExactDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
+  function setDateField(input, value) {
+    const exact = !value || isExactDate(value);
+    input.type = exact ? 'date' : 'text';
+    if (!exact) { input.inputMode = 'numeric'; input.placeholder = '1980'; }
+    input.value = value || '';
+    document.querySelector(`.df-mode[data-for=${input.id}]`).textContent = t(exact ? 'year_only' : 'full_date');
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('.df-mode'); if (!b) return;
+    const input = document.getElementById(b.dataset.for);
+    const toText = input.type === 'date';
+    input.type = toText ? 'text' : 'date';
+    if (toText) { input.inputMode = 'numeric'; input.placeholder = '1980'; input.value = year(input.value); }
+    else input.value = '';
+    b.textContent = t(toText ? 'full_date' : 'year_only');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.focus();
+  });
   function fmtDate(s) {
     if (!s) return '';
     const parts = dateParts(s); if (!parts) return s;
@@ -1518,7 +1548,10 @@
   function marriageText(f) {
     const mark = f.status === 'divorced' ? '⚡ ' : f.status === 'separated' ? '⁄ ' : f.status?.startsWith('reconciled') ? '↺ ' : '';
     if (!f.married && !f.ended) return mark.trim();
-    return mark + `${year(f.married) || '?'} – ${f.ended ? year(f.ended) : (f.status === 'divorced' || f.status === 'separated' ? '?' : t('present'))}`;
+    const widowed = f.parents.map(id => state.people[id]).filter(p => p && !p.alive);
+    const death = widowed.length ? (widowed.map(p => year(p.death)).filter(Boolean).sort()[0] || '?') : '';
+    const end = f.ended ? year(f.ended) : (f.status === 'divorced' || f.status === 'separated') ? '?' : death ? '† ' + death : t('present');
+    return mark + `${year(f.married) || '?'} – ${end}`;
   }
 
   const mpop = $('#mpop');
@@ -1529,7 +1562,7 @@
     mpopFamily = fid; mpopSnapshot = snapshot();
     const names = f.parents.map(id => state.people[id]?.name || t('unnamed'));
     $('#mpop-title').textContent = names.join(' & ');
-    $('#m-from').value = f.married || ''; $('#m-to').value = f.ended || ''; $('#m-status').value = f.status || 'married';
+    setDateField($('#m-from'), f.married); setDateField($('#m-to'), f.ended); $('#m-status').value = f.status || 'married';
     $('#m-hint').textContent = statusHint(f.status || 'married');
     $('#m-order-row').hidden = !f.parents.some(id => parentFamilies(id).length > 1);
     const r = anchor.getBoundingClientRect();
@@ -1551,6 +1584,7 @@
     if (e.target.id === 'm-from') f.married = e.target.value;
     if (e.target.id === 'm-to') f.ended = e.target.value;
     if (e.target.id === 'm-status') { f.status = e.target.value; $('#m-hint').textContent = statusHint(f.status); }
+    touch();
   });
   mpop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); closeMarriage(); } e.stopPropagation(); });
   $('#m-close').addEventListener('click', closeMarriage);
@@ -1586,6 +1620,7 @@
     const r = state.relations.find(x => x.id === rpopId); if (!r) return;
     if (e.target.id === 'r-type') { r.type = e.target.value; $('#r-label').placeholder = t('rel_' + r.type); $('#r-hint').textContent = t('hint_rel_' + r.type); }
     if (e.target.id === 'r-label') r.label = e.target.value;
+    touch();
   });
   rpop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); closeRelation(); } e.stopPropagation(); });
   $('#r-close').addEventListener('click', closeRelation);
@@ -1841,8 +1876,8 @@
     const p = state.people[id]; if (!p) return;
     sheetId = id; sheetSnapshot = fresh ? null : snapshot();
     select(id, { scroll: false });
-    sh('sh-name').value = p.name; sh('sh-bname').value = p.birthName; sh('sh-place').value = p.birthplace || ''; sh('sh-prof').value = p.profession || '';
-    sh('sh-birth').value = p.birth; sh('sh-death').value = p.death; sh('sh-alive').checked = p.alive;
+    sh('sh-name').value = p.name; sh('sh-bname').value = p.birthName; sh('sh-place').value = p.birthplace || ''; sh('sh-prof').value = p.profession || ''; sh('sh-notes').value = p.notes || ''; sh('sh-notes').placeholder = t('notes_hint');
+    setDateField(sh('sh-birth'), p.birth); setDateField(sh('sh-death'), p.death); sh('sh-alive').checked = p.alive;
     sh('sh-name').placeholder = t('full_name'); sh('sh-bname').placeholder = t('birth_name');
     sh('sh-death-row').hidden = p.alive;
     sh('sh-fate').value = p.fate || ''; sh('sh-ended').checked = !!p.lineEnded;
@@ -1906,6 +1941,7 @@
       case 'sh-bname': p.birthName = e.target.value; break;
       case 'sh-place': p.birthplace = e.target.value; break;
       case 'sh-prof': p.profession = e.target.value; break;
+      case 'sh-notes': p.notes = e.target.value; break;
       case 'sh-birth': p.birth = e.target.value; break;
       case 'sh-death': p.death = e.target.value; break;
       case 'sh-fate': p.fate = e.target.value; break;
@@ -1919,11 +1955,11 @@
       case 'sh-ended': p.lineEnded = e.target.checked; break;
       case 'sh-alive': p.alive = e.target.checked; sh('sh-death-row').hidden = p.alive; if (p.alive) { p.death = ''; sh('sh-death').value = ''; } break;
     }
-    refreshCard(p.id);
+    refreshCard(p.id); touch();
   });
   sheet.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') { e.preventDefault(); closeSheet(); }
-    else if (e.key === 'Enter' && !e.target.matches('select')) { e.preventDefault(); closeSheet(); }
+    else if (e.key === 'Enter' && !e.target.matches('select, textarea')) { e.preventDefault(); closeSheet(); }
     e.stopPropagation();
   });
   sheet.addEventListener('pointerdown', (e) => { if (e.target === sheet) closeSheet(); });
@@ -2332,7 +2368,7 @@
     const data = deserialize(buf);
     if (!data || typeof data.people !== 'object' || typeof data.families !== 'object') throw new Error(t('not_tree'));
     state = { version: 1, people: data.people, families: data.families, relations: Array.isArray(data.relations) ? data.relations : [], indexPerson: null, households: [] };
-    for (const p of Object.values(state.people)) { p.alive = p.alive ?? !p.death; p.name ??= ''; p.birthName ??= ''; p.birthplace ??= ''; p.profession ??= ''; p.birth ??= ''; p.death ??= ''; p.photo ??= null; p.photoSrc ??= null; p.crop ??= null; p.fate ??= ''; p.lineEnded ??= false; p.gender ??= ''; p.illness ??= ''; p.substance ??= ''; }
+    for (const p of Object.values(state.people)) { p.alive = p.alive ?? !p.death; p.name ??= ''; p.birthName ??= ''; p.birthplace ??= ''; p.profession ??= ''; p.notes ??= ''; p.birth ??= ''; p.death ??= ''; p.photo ??= null; p.photoSrc ??= null; p.crop ??= null; p.fate ??= ''; p.lineEnded ??= false; p.gender ??= ''; p.illness ??= ''; p.substance ??= ''; }
     state.households = Array.isArray(data.households) ? data.households.map(h => ({ ...h, members: h.members.filter(id => state.people[id]) })).filter(h => h.members.length > 1) : [];
     state.indexPerson = data.indexPerson && state.people[data.indexPerson] ? data.indexPerson : null;
     for (const f of Object.values(state.families)) { f.married ??= ''; f.ended ??= ''; f.status ??= 'married'; f.parents ??= []; f.children ??= []; f.kinds ??= {}; }
