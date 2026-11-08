@@ -1273,55 +1273,60 @@
       }
       n.uw = n.ux[n.ux.length - 1] + CARD_W;
       n.ownCenter = n.ux[ownIdx] + CARD_W / 2;
+      if (strictOrder && comp) {
+        const f = childFamily(n.own), order = f ? byBirth(f.children) : [], i = order.indexOf(n.own);
+        const later = i >= 0 && i < order.length - 1, earlier = i > 0;
+        const segs = [...comp.values()].flat();
+        const minL = Math.min(...segs.map(sg => sg[0])), maxR = Math.max(...segs.map(sg => sg[1]));
+        const shiftX = later && !earlier ? Math.min(0, n.uw - maxR) : earlier && !later ? Math.max(0, -minL) : 0;
+        if (shiftX) { comp = shift(comp, shiftX, 0); for (const k of n.kids) k.dx += shiftX; }
+      }
       n.ext = union(comp, new Map([[0, [[0, n.uw]]]]));
       return n;
     }
     let occupied = new Map();
     const pending = [];
-    function placeAroundSibling(kids, anchor, row) {
-      const f = childFamily(anchor), ax = positions.get(anchor);
-      if (!f || !ax) return false;
-      const order = byBirth(f.children), ai = order.indexOf(anchor);
-      if (ai < 0 || !kids.some(k => order.includes(k.c.own))) return false;
+    function placeKidsStrict(n, x, row) {
       const rowY = row * (CARD_H + V_GAP);
-      const nodeFor = (id) => {
-        const k = kids.find(k => k.c.own === id); if (k) return k.c;
-        const e = pending.find(e => !e.done && e.a.own === id); if (!e) return null;
-        e.done = true; measure(e.a); return e.a;
-      };
       const placedX = (id) => { const p = positions.get(id); return p && p.y === rowY ? p.x : null; };
-      let edge = ax.x + CARD_W;
-      for (const id of order.slice(ai + 1)) {
-        const px = placedX(id); if (px !== null) { edge = Math.max(edge, px + CARD_W); continue; }
-        const node = nodeFor(id); if (!node) continue;
-        let kx = edge + H_GAP;
-        kx += settle(occupied, shift(node.ext, kx, row), 1);
-        place(node, kx, row, node.anchorId); edge = kx + node.uw;
+      const groups = new Map();
+      for (const k of n.kids) { const f = childFamily(k.c.own); const key = f ? f.id : k.c.own; if (!groups.has(key)) groups.set(key, { f, kids: [] }); groups.get(key).kids.push(k); }
+      for (const { f, kids } of groups.values()) {
+        const order = f ? byBirth(f.children) : [];
+        const complete = order.every(id => kids.some(k => k.c.own === id));
+        if (!f || complete) { for (const { c, dx } of kids) place(c, x + dx, row); continue; }
+        const nodeFor = (id) => {
+          const k = kids.find(k => k.c.own === id); if (k) return k.c;
+          const e = pending.find(e => !e.done && e.a.own === id); if (!e) return null;
+          e.done = true; measure(e.a); return e.a;
+        };
+        const p0 = order.findIndex(id => placedX(id) !== null);
+        let edge = p0 >= 0 ? placedX(order[p0]) + CARD_W : x + Math.min(...kids.map(k => k.dx)) - H_GAP;
+        for (const id of order.slice(p0 >= 0 ? p0 + 1 : 0)) {
+          const px = placedX(id); if (px !== null) { edge = Math.max(edge, px + CARD_W); continue; }
+          const node = nodeFor(id); if (!node) continue;
+          let kx = edge + H_GAP;
+          kx += settle(occupied, shift(node.ext, kx, row), 1);
+          place(node, kx, row, node.anchorId); edge = kx + node.uw;
+        }
+        if (p0 > 0) {
+          edge = placedX(order[p0]);
+          for (const id of order.slice(0, p0).reverse()) {
+            const px = placedX(id); if (px !== null) { edge = Math.min(edge, px); continue; }
+            const node = nodeFor(id); if (!node) continue;
+            let kx = edge - H_GAP - node.uw;
+            kx += settle(occupied, shift(node.ext, kx, row), -1);
+            place(node, kx, row, node.anchorId); edge = kx;
+          }
+        }
       }
-      edge = ax.x;
-      for (const id of order.slice(0, ai).reverse()) {
-        const px = placedX(id); if (px !== null) { edge = Math.min(edge, px); continue; }
-        const node = nodeFor(id); if (!node) continue;
-        let kx = edge - H_GAP - node.uw;
-        kx += settle(occupied, shift(node.ext, kx, row), -1);
-        place(node, kx, row, node.anchorId); edge = kx;
-      }
-      return true;
     }
     function place(n, x, row, anchor) {
       const y = row * (CARD_H + V_GAP);
       n.unit.forEach((id, i) => positions.set(id, { x: x + n.ux[i], y }));
       occupied = union(occupied, new Map([[row, [[x, x + n.uw]]]]));
-      const sibs = strictOrder && anchor ? n.kids.filter(k => childFamily(k.c.own) === childFamily(anchor)) : [];
-      const placedAround = sibs.length && placeAroundSibling(sibs, anchor, row + 1);
-      for (const { c, dx } of n.kids) {
-        if (!placedAround) { place(c, x + dx, row + 1); continue; }
-        if (sibs.some(k => k.c === c)) continue;
-        let kx = x + dx;
-        const ax = positions.get(anchor).x, dir = kx + c.ownCenter < ax + CARD_W / 2 ? -1 : 1;
-        kx += settle(occupied, shift(c.ext, kx, row + 1), dir);
-        place(c, kx, row + 1);
-      }
+      if (strictOrder) placeKidsStrict(n, x, row + 1);
+      else for (const { c, dx } of n.kids) place(c, x + dx, row + 1);
       const ownIdx = n.unit.indexOf(n.own);
       const list = n.ancestors.map(({ node: a, anchor }) => {
         const k = n.unit.indexOf(anchor);
@@ -1339,13 +1344,34 @@
         let dx = center - a.uw / 2;
         const push = settle(occupied, shift(a.ext, dx, row), dir), back = settle(occupied, shift(a.ext, dx, row), -dir);
         dx += Math.abs(back) < Math.abs(push) / 2 ? back : push;
-        const before = pending.length;
+        const before = pending.length, placedBefore = positions.size;
         place(a, dx, row, anchor);
+        blocks.push({ ids: [...positions.keys()].slice(placedBefore), center });
         for (let j = before; j < pending.length; j++) pending[j].order = Infinity;
       }
     }
+    const blocks = [];
+    function compactBlocks() {
+      for (const { ids, center } of blocks) {
+        const set = new Set(ids);
+        const mine = ids.map(id => positions.get(id)).filter(Boolean);
+        if (!mine.length) continue;
+        const bc = (Math.min(...mine.map(p => p.x)) + Math.max(...mine.map(p => p.x + CARD_W))) / 2;
+        const dir = Math.sign(center - bc); if (!dir) continue;
+        let room = Math.abs(center - bc);
+        for (const p of mine) for (const [id, q] of positions) {
+          if (set.has(id) || q.y !== p.y) continue;
+          const gap = dir > 0 ? q.x - (p.x + CARD_W) - H_GAP : p.x - (q.x + CARD_W) - H_GAP;
+          if (gap >= 0) room = Math.min(room, gap);
+        }
+        if (room > 0) for (const p of mine) p.x += dir * room;
+      }
+      blocks.length = 0;
+    }
 
-    const roots = people().filter(p => !childFamily(p.id));
+    const descCount = (pid, seen = new Set()) => { let n = 0; for (const c of childrenOf(pid)) if (!seen.has(c)) { seen.add(c); n += 1 + descCount(c, seen); } return n; };
+    const bySize = (list) => list.map(p => [p, descCount(p.id)]).sort((a, b) => b[1] - a[1]).map(([p]) => p);
+    const roots = bySize(people().filter(p => !childFamily(p.id)));
     const cluster = (pid) => { const seen = new Set([pid]); for (const a of seen) for (const sp of spousesOf(a)) seen.add(sp); return [...seen]; };
     const topRoots = roots.filter(p => cluster(p.id).every(id => !childFamily(id)));
     let x = 0;
@@ -1356,7 +1382,7 @@
         const n = measure(root);
         const before = positions.size;
         place(n, x, 0);
-        placeAncestors(); pending.length = 0;
+        placeAncestors(); pending.length = 0; compactBlocks();
         let R = -Infinity, L = Infinity;
         for (const p of [...positions.values()].slice(before)) { L = Math.min(L, p.x); R = Math.max(R, p.x + CARD_W); }
         if (L < x) { for (const p of [...positions.values()].slice(before)) p.x += x - L; R += x - L; }
