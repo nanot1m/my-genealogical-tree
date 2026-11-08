@@ -184,6 +184,12 @@ test.describe('birth order', () => {
     await expect(badge('B')).toHaveText('1'); await expect(badge('C')).toHaveText('2'); await expect(badge('A')).toHaveText('3');
     const fams = familiesByName(await draftState(page));
     expect(fams.find(f => f.parents.includes('Mom')).children).toEqual(['A', 'C', 'B']);
+    await page.keyboard.press('g'); await page.locator('#lg-badges').uncheck(); await page.keyboard.press('Escape');
+    await expect(badge('A')).toBeHidden();
+    await page.reload(); await page.click('#w-continue');
+    await expect(badge('A')).toBeHidden();
+    await page.keyboard.press('g'); await page.locator('#lg-badges').check(); await page.keyboard.press('Escape');
+    await expect(badge('A')).toBeVisible();
   });
 });
 

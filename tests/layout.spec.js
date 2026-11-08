@@ -188,6 +188,15 @@ test.describe('wide real-world tree (anonymized)', () => {
     return n;
   });
 
+  test('strict sibling order: no overlaps on the wide tree', async ({ page }) => {
+    await openApp(page, {}); await page.evaluate(() => localStorage.setItem('familytree.strictOrder', '1'));
+    const fs = await import('node:fs');
+    const state = JSON.parse(fs.readFileSync(new URL('./fixtures/wide-tree.json', import.meta.url), 'utf8'));
+    await page.evaluate((d) => localStorage.setItem('familytree.draft', JSON.stringify(d)), { state, fileName: 'w.ftree', dirty: true });
+    await page.reload(); await page.click('#w-continue'); await page.waitForTimeout(600);
+    expect(await overlapCount(page)).toBe(0);
+  });
+
   test('no overlaps, no card stranded far from its spouse or siblings', async ({ page }) => {
     await load(page);
     expect(await overlapCount(page)).toBe(0);
@@ -212,4 +221,18 @@ test.describe('wide real-world tree (anonymized)', () => {
     await load(page, 'gap');
     expect(await crossingsLeft(page)).toBe(0);
   });
+});
+
+test('strict sibling order keeps 1-2-3 left to right even when the middle child is married', async ({ page }) => {
+  await newTree(page);
+  await firstPerson(page, 'Mom');
+  await addRelative(page, 'Mom', 'c', 'First'); await addRelative(page, 'Mom', 'c', 'Second'); await addRelative(page, 'Mom', 'c', 'Third');
+  await addRelative(page, 'First', 'm', 'FirstW'); await addRelative(page, 'Second', 'm', 'SecondW');
+  const kids = async () => rows(await positions(page))[1].filter(n => ['First', 'Second', 'Third'].includes(n));
+  expect(await kids()).toEqual(['First', 'Third', 'Second']);
+  await page.keyboard.press('g'); await page.click('#legend [data-s="1"]'); await page.keyboard.press('Escape');
+  expect(await kids()).toEqual(['First', 'Second', 'Third']);
+  expect(await overlapCount(page)).toBe(0);
+  await page.reload(); await page.click('#w-continue');
+  expect(await kids()).toEqual(['First', 'Second', 'Third']);
 });
