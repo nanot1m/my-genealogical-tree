@@ -1222,9 +1222,9 @@
     emptyEl.hidden = people().length > 0;
     $('#actions').classList.toggle('show', !!selectedId && !editingId);
     document.body.classList.toggle('has-selection', !!selectedId);
-    $('#filename').textContent = fileName;
+    $('#filename').textContent = shownName(fileName);
     $('#filename').classList.toggle('dirty', dirty);
-    document.title = (dirty ? '• ' : '') + fileName + ' — ' + t('app');
+    document.title = (dirty ? '• ' : '') + shownName(fileName) + ' — ' + t('app');
   }
 
   function initials(name) {
@@ -2094,7 +2094,7 @@
     const w = b.w + 2 * M, h = b.h + 2 * M + 36;
     const mm = (px) => (px * 0.264583).toFixed(2) + 'mm';
     const css = document.querySelector('style').textContent;
-    const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><title>${esc(fileName)}</title><style>${css}
+    const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><title>${esc(shownName(fileName))}</title><style>${css}
       @page { size: ${mm(w)} ${mm(h)}; margin: 0; }
       :root { color-scheme: light; --bg: #fff; --card: #fff; --panel: #fff; --panel-2: #f1f3f8; --border: #e3e6ee; --border-strong: #cfd4e0; --text: #1b2030; --muted: #7c859b; --line: #b7bed0; --shadow-sm: none; --shadow: none; }
       html, body { overflow: visible; background: #fff; width: ${w}px; height: ${h}px; }
@@ -2106,7 +2106,7 @@
       .marriage.empty { display: none; }
       .relbadge { cursor: default; }
       .pdf-title { position: absolute; left: ${M}px; top: 12px; font-size: 14px; font-weight: 600; color: #5b6377; }
-    </style></head><body><div id="viewport"><div class="pdf-title">${esc(fileName)}</div><div id="world">${edgesSvg.outerHTML}${badgesEl.outerHTML}<div id="cards">${cardsEl.innerHTML}</div></div></div>
+    </style></head><body><div id="viewport"><div class="pdf-title">${esc(shownName(fileName))}</div><div id="world">${edgesSvg.outerHTML}${badgesEl.outerHTML}<div id="cards">${cardsEl.innerHTML}</div></div></div>
     <script>window.onload = () => setTimeout(() => { window.print(); }, 150);<\/script></body></html>`;
     const win = window.open('', '_blank');
     if (!win) return toast(t('save_failed'));
@@ -2241,7 +2241,7 @@
     const c = viewport.clientWidth / 2, m = viewport.clientHeight / 2;
     ({
       new: newTree, open, save: () => save(false), saveas: () => save(true), undo, redo, pdf: exportPdf, download,
-      filemenu: () => openMenu(b, fileName, [
+      filemenu: () => openMenu(b, shownName(fileName), [
         { label: t('new'), run: newTree }, { label: t('open'), run: open }, { label: t('save'), run: () => save(false) }, { label: t('saveas'), run: () => save(true) },
         ...(hasFS ? [] : [{ label: t('download'), run: download }]), { label: t('export_pdf'), run: exportPdf },
       ]),
@@ -2264,6 +2264,7 @@
 
   const hasFS = 'showSaveFilePicker' in window;
   const EXT = '.ftree';
+  const shownName = (n) => (n || '').replace(/\.(ftree|json)$/i, '');
   const pickerOpts = { suggestedName: 'family-tree' + EXT, types: [{ description: 'Family tree', accept: { 'application/octet-stream': [EXT] } }] };
   const openTypes = [{ description: 'Family tree', accept: { 'application/octet-stream': [EXT], 'application/json': ['.json'] } }];
   const MAGIC = [0x46, 0x54, 0x52, 0x45, 0x45, 0x01];
@@ -2336,7 +2337,7 @@
         dirty = false; render(); scheduleDraft(); toast(t('saved_local'));
         return;
       }
-      dirty = false; render(); toast(t('saved') + ' ' + fileName);
+      dirty = false; render(); toast(t('saved') + ' ' + shownName(fileName));
     } catch (err) { if (err.name !== 'AbortError') toast(t('save_failed') + ': ' + err.message); }
   }
 
@@ -2447,12 +2448,12 @@
     $('#w-open').textContent = t(hasFS ? 'open_file' : 'import_file');
     const cont = $('#w-continue');
     cont.hidden = !(dirty && people().length);
-    cont.textContent = `${t('continue_draft')} · ${fileName}`;
+    cont.textContent = `${t('continue_draft')} · ${shownName(fileName)}`;
     const box = $('#w-recent');
     box.innerHTML = list.length ? '' : `<div class="none">${esc(t('no_recent'))}</div>`;
     for (const r of list) {
       const b = document.createElement('button'); b.className = 'recent';
-      b.innerHTML = `<span class="ic">🌳</span><span class="nm">${esc(r.name)}</span><span class="dt">${esc(new Date(r.time).toLocaleDateString(lang))}</span><span class="x" title="${esc(t(hasFS ? 'forget' : 'delete'))}">×</span>`;
+      b.innerHTML = `<span class="ic">🌳</span><span class="nm">${esc(shownName(r.name))}</span><span class="dt">${esc(new Date(r.time).toLocaleDateString(lang))}</span><span class="x" title="${esc(t(hasFS ? 'forget' : 'delete'))}">×</span>`;
       b.addEventListener('click', async (e) => {
         if (e.target.classList.contains('x')) {
           if (!hasFS && !confirm(t('delete_tree'))) return;
@@ -2494,7 +2495,7 @@
       const blob = serialize();
       if (hasFS) { const w = await fileHandle.createWritable(); await w.write(blob); await w.close(); }
       else await saveToLibrary(blob, false);
-      dirty = false; $('#filename').classList.remove('dirty'); document.title = fileName + ' — ' + t('app');
+      dirty = false; $('#filename').classList.remove('dirty'); document.title = shownName(fileName) + ' — ' + t('app');
       scheduleDraft();
     } catch (err) {
       if (!autosave.warned) { autosave.warned = true; toast(t('autosave_failed') + ': ' + err.message); }

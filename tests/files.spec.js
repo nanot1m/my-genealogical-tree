@@ -15,7 +15,7 @@ test.describe('binary file format', () => {
     await addRelative(page, null, 'm', 'Ivan');
     await addRelative(page, 'Anna Müller', 'c', 'Kid');
     await page.click('[data-act=save]');
-    await expect(page.locator('#filename')).toHaveText('mytree.ftree');
+    await expect(page.locator('#filename')).toHaveText('mytree');
     const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-act=download]')]);
     const path = testInfo.outputPath('mytree.ftree');
     await dl.saveAs(path);
@@ -29,13 +29,13 @@ test.describe('binary file format', () => {
     await page.locator('#fileInput').setInputFiles(path);
     await expect(cards(page)).toHaveCount(3);
     await expect(cardOf(page, 'Anna Müller').locator('.photo img')).toHaveCount(1);
-    await expect(page.locator('#filename')).toHaveText('mytree.ftree');
+    await expect(page.locator('#filename')).toHaveText('mytree');
 
     const legacy = testInfo.outputPath('legacy.json');
     fs.writeFileSync(legacy, JSON.stringify({ people: { a: { id: 'a', name: 'Old Guy', birth: '1900-01-01' } }, families: {} }));
     await page.locator('#fileInput').setInputFiles(legacy);
     await expect(cardOf(page, 'Old Guy')).toBeVisible();
-    await expect(page.locator('#filename')).toHaveText('legacy.ftree');
+    await expect(page.locator('#filename')).toHaveText('legacy');
   });
 
   test('iOS-style picker has no accept filter', async ({ page }) => {
@@ -89,7 +89,7 @@ test.describe('file handles and launch screen (File System Access API)', () => {
     await page.click('#w-new');
     await firstPerson(page, 'Persisted');
     await page.keyboard.press('Meta+s');
-    await expect(page.locator('#filename')).toHaveText('test.ftree');
+    await expect(page.locator('#filename')).toHaveText('test');
     await expect(page.locator('#filename')).not.toHaveClass(/dirty/);
     await page.waitForTimeout(600);
     await page.reload();
@@ -98,7 +98,7 @@ test.describe('file handles and launch screen (File System Access API)', () => {
 
     await page.evaluate(() => localStorage.setItem('mockPrompt', '1'));
     await page.reload();
-    await expect(page.locator('#w-recent .recent .nm')).toHaveText(['test.ftree']);
+    await expect(page.locator('#w-recent .recent .nm')).toHaveText(['test']);
     await page.click('#w-recent .recent');
     await expect(cardOf(page, 'Persisted')).toBeVisible();
     expect(await page.evaluate(() => window.__asked)).toBe(true);
