@@ -173,6 +173,8 @@
   }
   .marriage:hover { border-color: var(--love); box-shadow: 0 2px 10px rgba(229,72,143,.25); }
   .marriage .h { color: var(--love); font-size: 10px; }
+  .ord { position: absolute; left: -7px; top: -7px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 9px; background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); font-size: 10.5px; font-weight: 600; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  body.compact .ord { left: calc(50% - 50px); top: 0; }
   .marriage.empty { padding: 2px 6px; }
 
   #mpop { position: absolute; z-index: 25; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-lg); padding: 12px 14px; width: 320px; max-width: calc(100vw - 16px); display: none; font-size: 13px; animation: pop .14s cubic-bezier(.2,.8,.2,1); }
@@ -239,6 +241,8 @@
   #sheet .seg { display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--card); }
   #sheet .seg button { flex: 1; border: none; border-radius: 0; background: transparent; color: var(--muted); padding: 8px 6px; font-size: 14px; }
   #sheet .seg button + button { border-left: 1px solid var(--border); }
+  #sh-order-row { margin-top: 10px; }
+  #sheet .seg button:disabled { opacity: .45; cursor: default; }
   #sheet .seg button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
   #sheet .sh-check { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13.5px; color: var(--text); cursor: pointer; }
   #sheet .sh-check input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); flex: none; }
@@ -613,6 +617,8 @@
         <label id="sh-twin-row"><span data-i18n="twin_of"></span><select id="sh-twin"></select></label>
       </div>
       <label class="sh-check" id="sh-identical-row"><input type="checkbox" id="sh-identical"><span data-i18n="identical"></span></label>
+      <div class="sh-grid" id="sh-order-row"><label class="wide"><span data-i18n="birth_order"></span><div class="seg" id="sh-order"><button type="button" data-ord="-1" data-i18n="earlier"></button><button type="button" data-ord="1" data-i18n="later"></button></div></label></div>
+      <p class="sh-hint" id="sh-order-hint" data-i18n="order_dated_hint"></p>
       <p class="sh-hint" id="sh-family-hint" data-i18n="no_parents_hint"></p>
     </section>
     <section>
@@ -670,7 +676,7 @@
       tip_parent: 'Add parent (P)', tip_sibling_l: 'Add sibling (⇧←)', tip_sibling_r: 'Add sibling (S)', tip_child: 'Add child (C)', tip_spouse: 'Add spouse (M)',
       marriage_dates: 'Marriage dates', present: 'present', b: 'b.', years: 'y',
       add_child_menu: 'Add child…', with: 'With', no_partner: 'no partner',
-      two_parents: 'This person already has two parents', replace: 'Replace', order: 'Order', earlier: '← Earlier', later: 'Later →', deleted: 'Deleted · ⌘Z to undo', nothing_undo: 'Nothing to undo', nothing_redo: 'Nothing to redo',
+      two_parents: 'This person already has two parents', replace: 'Replace', order: 'Order', birth_order: 'Birth order', order_dated_hint: 'Siblings with birth dates are ordered by date', earlier: '← Earlier', later: 'Later →', deleted: 'Deleted · ⌘Z to undo', nothing_undo: 'Nothing to undo', nothing_redo: 'Nothing to redo',
       autosave_failed: 'Autosave failed', saved: 'Saved', opened: 'Opened', save_failed: 'Save failed', open_failed: 'Open failed', not_tree: 'Not a family tree file',
       discard: 'Discard unsaved changes?', file_name: 'File name', unlink_confirm: 'Unlink this couple? Their children stay attached to the first parent.',
       restored: 'Restored unsaved draft',
@@ -703,7 +709,7 @@
       tip_parent: 'Добавить родителя (P)', tip_sibling_l: 'Добавить брата/сестру (⇧←)', tip_sibling_r: 'Добавить брата/сестру (S)', tip_child: 'Добавить ребёнка (C)', tip_spouse: 'Добавить супруга (M)',
       marriage_dates: 'Даты брака', present: 'н. в.', b: 'р.', years: 'л.',
       add_child_menu: 'Добавить ребёнка…', with: 'С', no_partner: 'без партнёра',
-      two_parents: 'У этого человека уже два родителя', replace: 'Заменить', order: 'Порядок', earlier: '← Раньше', later: 'Позже →', deleted: 'Удалено · ⌘Z — отменить', nothing_undo: 'Нечего отменять', nothing_redo: 'Нечего повторять',
+      two_parents: 'У этого человека уже два родителя', replace: 'Заменить', order: 'Порядок', birth_order: 'Порядок рождения', order_dated_hint: 'Братья и сёстры с датами рождения упорядочены по дате', earlier: '← Раньше', later: 'Позже →', deleted: 'Удалено · ⌘Z — отменить', nothing_undo: 'Нечего отменять', nothing_redo: 'Нечего повторять',
       autosave_failed: 'Автосохранение не удалось', saved: 'Сохранено', opened: 'Открыто', save_failed: 'Ошибка сохранения', open_failed: 'Ошибка открытия', not_tree: 'Это не файл семейного древа',
       discard: 'Отменить несохранённые изменения?', file_name: 'Имя файла', unlink_confirm: 'Разорвать связь пары? Дети останутся у первого родителя.',
       restored: 'Восстановлен несохранённый черновик',
@@ -736,7 +742,7 @@
       tip_parent: 'Elternteil hinzufügen (P)', tip_sibling_l: 'Geschwister hinzufügen (⇧←)', tip_sibling_r: 'Geschwister hinzufügen (S)', tip_child: 'Kind hinzufügen (C)', tip_spouse: 'Partner hinzufügen (M)',
       marriage_dates: 'Ehedaten', present: 'heute', b: 'geb.', years: 'J.',
       add_child_menu: 'Kind hinzufügen…', with: 'Mit', no_partner: 'ohne Partner',
-      two_parents: 'Diese Person hat bereits zwei Eltern', replace: 'Ersetzen', order: 'Reihenfolge', earlier: '← Früher', later: 'Später →', deleted: 'Gelöscht · ⌘Z zum Rückgängigmachen', nothing_undo: 'Nichts rückgängig zu machen', nothing_redo: 'Nichts zu wiederholen',
+      two_parents: 'Diese Person hat bereits zwei Eltern', replace: 'Ersetzen', order: 'Reihenfolge', birth_order: 'Geburtsreihenfolge', order_dated_hint: 'Geschwister mit Geburtsdatum werden nach Datum sortiert', earlier: '← Früher', later: 'Später →', deleted: 'Gelöscht · ⌘Z zum Rückgängigmachen', nothing_undo: 'Nichts rückgängig zu machen', nothing_redo: 'Nichts zu wiederholen',
       autosave_failed: 'Automatisches Speichern fehlgeschlagen', saved: 'Gespeichert', opened: 'Geöffnet', save_failed: 'Speichern fehlgeschlagen', open_failed: 'Öffnen fehlgeschlagen', not_tree: 'Keine Stammbaum-Datei',
       discard: 'Ungespeicherte Änderungen verwerfen?', file_name: 'Dateiname', unlink_confirm: 'Dieses Paar trennen? Die Kinder bleiben beim ersten Elternteil.',
       restored: 'Ungespeicherten Entwurf wiederhergestellt',
@@ -989,6 +995,13 @@
     else if (hb) hb.members.push(a);
     else state.households.push({ id: uid('h'), members: [a, b] });
     return null;
+  }
+  function birthOrder(pid) { const f = childFamily(pid); return f && f.children.length > 1 ? byBirth(f.children).indexOf(pid) + 1 : 0; }
+  function moveChild(pid, dir) {
+    const f = childFamily(pid); if (!f) return;
+    const i = f.children.indexOf(pid), j = i + dir;
+    if (i < 0 || j < 0 || j >= f.children.length) return;
+    [f.children[i], f.children[j]] = [f.children[j], f.children[i]];
   }
   function kindOf(pid) { const f = childFamily(pid); return (f && f.kinds && f.kinds[pid]) || { type: 'bio', twin: '', identical: false }; }
   function setKind(pid, patch) { const f = childFamily(pid); if (!f) return; f.kinds ??= {}; f.kinds[pid] = { ...kindOf(pid), ...patch }; }
@@ -1403,6 +1416,7 @@
           <div class="cam">📷</div>
           <button class="photo-x ${p.photo ? 'has-photo' : ''}" title="${t('remove_photo')}">×</button>
         </div>
+        ${birthOrder(p.id) ? `<span class="ord" title="${t('birth_order')}">${birthOrder(p.id)}</span>` : ''}
         <div class="info">
           <div class="name ${p.name ? '' : 'empty'}" title="${esc(fullName(p))}"><span class="nm">${esc(p.name) || t('unnamed')}</span>${p.birthName ? ` <span class="nee">${t('nee')} ${esc(p.birthName)}</span>` : ''}</div>
           <div class="dates ${dt ? '' : 'empty'}">${esc(dt)}${p.fate ? `<span class="fate-chip">${t('fate_' + p.fate)}</span>` : ''}</div>
@@ -2129,6 +2143,7 @@
     sh('sh-illness').value = p.illness || ''; sh('sh-substance').value = p.substance || '';
     const hasParents = !!childFamily(id);
     sh('sh-kind-row').hidden = sh('sh-twin-row').hidden = sh('sh-identical-row').hidden = !hasParents;
+    refreshOrderRow(id);
     sh('sh-family-hint').hidden = hasParents;
     if (hasParents) {
       const k = kindOf(id);
@@ -2201,7 +2216,17 @@
       case 'sh-ended': p.lineEnded = e.target.checked; break;
       case 'sh-alive': p.alive = e.target.checked; sh('sh-death-row').hidden = p.alive; if (p.alive) { p.death = ''; sh('sh-death').value = ''; } break;
     }
-    refreshCard(p.id); touch();
+    refreshCard(p.id); refreshOrderRow(p.id); touch();
+  });
+  function refreshOrderRow(id) {
+    const p = state.people[id], f = childFamily(id), sibs = f ? f.children.length : 0;
+    sh('sh-order-row').hidden = sibs < 2;
+    sh('sh-order-hint').hidden = sibs < 2 || !p.birth;
+    for (const b of sh('sh-order').children) b.disabled = !!p.birth;
+  }
+  sh('sh-order').addEventListener('click', (e) => {
+    const b = e.target.closest('button'), p = state.people[sheetId]; if (!b || !p || b.disabled) return;
+    moveChild(p.id, +b.dataset.ord); render(); touch();
   });
   function setGenderSeg(g) { for (const b of sh('sh-gender').children) b.classList.toggle('on', b.dataset.v === g); }
   sh('sh-gender').addEventListener('click', (e) => {

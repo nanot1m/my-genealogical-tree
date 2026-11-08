@@ -161,6 +161,32 @@ test.describe('replacing parents and marriage order', () => {
   });
 });
 
+test.describe('birth order', () => {
+  test('badge shows order among siblings; undated siblings can be moved, dated ones follow dates', async ({ page }) => {
+    await newTree(page);
+    await firstPerson(page, 'Mom');
+    await addRelative(page, 'Mom', 'c', 'A');
+    await addRelative(page, 'Mom', 'c', 'B');
+    await addRelative(page, 'Mom', 'c', 'C');
+    const badge = (n) => cardOf(page, n).locator('.ord');
+    await expect(badge('A')).toHaveText('1'); await expect(badge('B')).toHaveText('2'); await expect(badge('C')).toHaveText('3');
+    await expect(cardOf(page, 'Mom').locator('.ord')).toHaveCount(0);
+    await cardOf(page, 'C').dblclick();
+    await expect(page.locator('#sh-order-row')).toBeVisible();
+    await page.click('#sh-order [data-ord="-1"]');
+    await expect(badge('C')).toHaveText('2'); await expect(badge('B')).toHaveText('3');
+    await page.keyboard.press('Escape');
+    await cardOf(page, 'A').dblclick(); await page.fill('#sh-birth', '1990-01-01');
+    await expect(page.locator('#sh-order [data-ord="1"]')).toBeDisabled();
+    await expect(page.locator('#sh-order-hint')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await cardOf(page, 'B').dblclick(); await page.fill('#sh-birth', '1980-01-01'); await page.keyboard.press('Escape');
+    await expect(badge('B')).toHaveText('1'); await expect(badge('C')).toHaveText('2'); await expect(badge('A')).toHaveText('3');
+    const fams = familiesByName(await draftState(page));
+    expect(fams.find(f => f.parents.includes('Mom')).children).toEqual(['A', 'C', 'B']);
+  });
+});
+
 test.describe('linking existing people', () => {
   test.setTimeout(120_000);
   test('L enters link mode, spouse/child/parent links, cycle and duplicate rejection', async ({ page }) => {
