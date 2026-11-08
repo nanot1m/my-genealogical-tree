@@ -93,6 +93,16 @@ test.describe('replacing parents and marriage order', () => {
     await expect(page.locator('.marriage').first()).toContainText('1950 – † 2007');
   });
 
+  test('two marriages form a chain even when a spouse has another partner in the row', async ({ page }) => {
+    await newTree(page);
+    await firstPerson(page, 'Hub');
+    await addRelative(page, null, 'm', 'First');
+    await addRelative(page, 'Hub', 'm', 'Second');
+    await addRelative(page, 'Second', 'm', 'Other');
+    const r = rows(await positions(page));
+    expect(r[0]).toEqual(['First', 'Hub', 'Second', 'Other']);
+  });
+
   test('three or more marriages: person anchored at the edge, later marriages routed below the row', async ({ page }) => {
     await newTree(page);
     await firstPerson(page, 'Hub');

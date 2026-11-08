@@ -160,3 +160,33 @@ test('Cmd+F finds a person by name and centers the view on them', async ({ page 
   await page.keyboard.press('Escape');
   await expect(page.locator('#search')).toBeHidden();
 });
+
+test('shift-click selects several people and highlights their nearest common ancestors', async ({ page }) => {
+  await newTree(page);
+  await firstPerson(page, 'Grandpa');
+  await addRelative(page, null, 'm', 'Grandma');
+  await addRelative(page, 'Grandpa', 'c', 'Aunt');
+  await addRelative(page, 'Grandpa', 'c', 'Dad');
+  await addRelative(page, 'Aunt', 'c', 'Cousin');
+  await addRelative(page, 'Dad', 'c', 'Me');
+  await addRelative(page, 'Me', 'c', 'Kid');
+  await select(page, 'Me');
+  await cardOf(page, 'Cousin').click({ modifiers: ['Shift'] });
+  await expect(page.locator('#toast')).toHaveText('Cousins (1. degree)');
+  await expect(cardOf(page, 'Grandpa')).toHaveClass(/common/);
+  await expect(cardOf(page, 'Grandma')).toHaveClass(/common/);
+  await expect(cardOf(page, 'Dad')).toHaveClass(/onpath/);
+  await expect(cardOf(page, 'Kid')).not.toHaveClass(/onpath|common|multi/);
+  await expect(page.locator('#actions')).not.toHaveClass(/show/);
+  await cardOf(page, 'Kid').click({ modifiers: ['Meta'] });
+  await expect(page.locator('#toast')).toHaveText('Common ancestors: Grandpa, Grandma');
+  await cardOf(page, 'Kid').click({ modifiers: ['Meta'] });
+  await cardOf(page, 'Cousin').click({ modifiers: ['Meta'] });
+  await expect(cardOf(page, 'Me')).toHaveClass(/selected/);
+  await expect(page.locator('body')).not.toHaveClass(/has-multi/);
+  await select(page, 'Dad');
+  await cardOf(page, 'Me').click({ modifiers: ['Shift'] });
+  await expect(page.locator('#toast')).toHaveText('Direct line, 1 generation(s) apart');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('body')).not.toHaveClass(/has-multi/);
+});
