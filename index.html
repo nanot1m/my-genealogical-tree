@@ -115,7 +115,8 @@
   body.compact .card.multi { background: color-mix(in srgb, var(--card) 70%, transparent); }
   body.compact .card.common { background: color-mix(in srgb, #e39b12 12%, transparent); }
   body.has-multi .card:not(.multi):not(.common):not(.onpath) { opacity: .35; }
-  body.has-multi #edges, body.has-multi #badges { opacity: .55; }
+  body.has-multi #edges path:not(.hi):not(.rel), body.has-multi #badges { opacity: .45; }
+  #edges path.hi { stroke: var(--accent); stroke-width: 3; }
   .card.editing { cursor: default; }
   .photo {
     position: relative; flex: 0 0 64px; width: 64px; height: 64px; border-radius: 50%;
@@ -826,7 +827,7 @@
   let CARD_W = 280, CARD_H = 112, COUPLE_GAP = 76;
   const H_GAP = 36, V_GAP = 96, TREE_GAP = 100;
   const COMPACT_KEY = 'familytree.compact', CROSS_KEY = 'familytree.cross';
-  let crossMode = ['jump', 'gap'].includes(localStorage.getItem(CROSS_KEY)) ? localStorage.getItem(CROSS_KEY) : 'default';
+  let crossMode = ['default', 'jump', 'gap'].includes(localStorage.getItem(CROSS_KEY)) ? localStorage.getItem(CROSS_KEY) : 'gap';
   function setCrossMode(m) { crossMode = m; localStorage.setItem(CROSS_KEY, m); renderLegend(); render(); }
   let compact = false;
   function setCompact(on) {
@@ -847,7 +848,7 @@
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const badgesEl = document.getElementById('badges');
   let selectedId = null;
-  let multi = new Set();
+  let multi = new Set(), hiPeople = new Set();
   let editingId = null;
   let editSnapshot = null;
   let undoStack = [], redoStack = [];
@@ -1477,7 +1478,14 @@
     }
   }
   function renderEdges(pos = positions) {
-    const d = [], dPartners = [], dPast = [], dPartnersPast = [], dSlash = [], dEnded = [], rels = [], dAdopted = [], dFoster = [], dArrow = [], dHouse = [];
+    const d = [], dPartners = [], dPast = [], dPartnersPast = [], dSlash = [], dEnded = [], rels = [], dAdopted = [], dFoster = [], dArrow = [], dHouse = [], dHi = [];
+    const lineBuckets = [d, dPartners, dPast, dPartnersPast, dAdopted, dFoster];
+    const capture = (on, fn) => {
+      if (!on) return fn();
+      const before = lineBuckets.map(b => b.length);
+      fn();
+      lineBuckets.forEach((b, i) => dHi.push(...b.slice(before[i])));
+    };
     const isPast = (f) => !!f.ended || f.status === 'divorced' || f.status === 'separated';
     const hull = (pts) => {
       pts = [...pts].sort((a, b) => a.x - b.x || a.y - b.y);
@@ -1523,8 +1531,9 @@
     for (const f of fams) {
       const ps = f.parents.filter(id => pos.has(id)).map(mid).sort((a, b) => a.cx - b.cx);
       const cs = f.children.filter(id => pos.has(id)).map(mid);
+      const hiFam = hiPeople.size > 0 && f.parents.some(id => hiPeople.has(id)) && f.children.some(id => hiPeople.has(id));
       let origin = null;
-      if (ps.length === 2) {
+      if (ps.length === 2) capture(hiFam, () => {
         const [a, b] = ps;
         const adjacent = Math.abs(a.top - b.top) < 1 && ![...pos.values()].some(q => Math.abs(q.y - a.top) < 1 && q.x > a.x && q.x < b.x);
         const past = isPast(f);
@@ -1542,7 +1551,7 @@
           marriages.push({ f, x: origin.x, y: stepY, past });
           slashes(origin.x, stepY, f.status);
         }
-      } else if (ps.length === 1) origin = { x: ps[0].cx, y: ps[0].bottom };
+      }); else if (ps.length === 1) origin = { x: ps[0].cx, y: ps[0].bottom };
       if (!cs.length) continue;
       const rowTop = Math.min(...cs.map(c => c.top));
       const xs = cs.map(c => c.cx);
@@ -1568,13 +1577,15 @@
         return false;
       };
       if (origin) {
-        d.push(rounded([origin, { x: origin.x, y: busY }, { x: sorted[0].cx, y: busY }]));
-        d.push(`M${Math.min(origin.x, sorted[0].cx)} ${busY} L${Math.max(origin.x, sorted[sorted.length - 1].cx)} ${busY}`);
-        for (const c of sorted) drop(c, origin.x);
+        capture(hiFam, () => {
+          d.push(rounded([origin, { x: origin.x, y: busY }, { x: sorted[0].cx, y: busY }]));
+          d.push(`M${Math.min(origin.x, sorted[0].cx)} ${busY} L${Math.max(origin.x, sorted[sorted.length - 1].cx)} ${busY}`);
+        });
+        for (const c of sorted) capture(hiFam && hiPeople.has(c.id), () => drop(c, origin.x));
       } else {
         const f0 = sorted[0], fn = sorted[sorted.length - 1];
-        d.push(`M${f0.cx} ${busY} L${fn.cx} ${busY}`);
-        for (const c of sorted) drop(c, f0.cx);
+        capture(hiFam, () => d.push(`M${f0.cx} ${busY} L${fn.cx} ${busY}`));
+        for (const c of sorted) capture(hiFam && hiPeople.has(c.id), () => drop(c, f0.cx));
       }
     }
     for (const p of people()) {
@@ -1621,8 +1632,8 @@
       relBadges.push({ r, x: (p1.x + 2 * cx + p2.x) / 4, y: (p1.y + 2 * cy + p2.y) / 4 });
     }
     const defs = `<defs><marker id="arrow-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="currentColor" style="color: var(--text)"/></marker></defs>`;
-    if (crossMode !== 'default') applyCrossings([d, dAdopted, dFoster, dPartners, dPast, dPartnersPast], crossMode);
-    edgesSvg.innerHTML = defs + `<path class="house" d="${dHouse.join(' ')}"/><path d="${d.join(' ')}"/><path class="adopted" d="${dAdopted.join(' ')}"/><path class="foster" d="${dFoster.join(' ')}"/><path d="${dArrow.join(' ')}"/><path class="partners" d="${dPartners.join(' ')}"/><path class="past" d="${dPast.join(' ')}"/><path class="partners past" d="${dPartnersPast.join(' ')}"/><path class="slash" d="${dSlash.join(' ')}"/><path class="ended" d="${dEnded.join(' ')}"/>` + rels.join('');
+    if (crossMode !== 'default') applyCrossings([d, dAdopted, dFoster, dPartners, dPast, dPartnersPast, dHi], crossMode);
+    edgesSvg.innerHTML = defs + `<path class="house" d="${dHouse.join(' ')}"/><path d="${d.join(' ')}"/><path class="adopted" d="${dAdopted.join(' ')}"/><path class="foster" d="${dFoster.join(' ')}"/><path d="${dArrow.join(' ')}"/><path class="partners" d="${dPartners.join(' ')}"/><path class="past" d="${dPast.join(' ')}"/><path class="partners past" d="${dPartnersPast.join(' ')}"/><path class="slash" d="${dSlash.join(' ')}"/><path class="ended" d="${dEnded.join(' ')}"/><path class="hi" d="${dHi.join(' ')}"/>` + rels.join('');
     badgesEl.innerHTML = '';
     for (const { h, x, y } of houseBadges) {
       const el = document.createElement('div');
@@ -1959,7 +1970,7 @@
   const cardEl = (id) => cardsEl.querySelector(`.card[data-id="${id}"]`);
   function clearMulti() {
     if (!multi.size && !document.body.classList.contains('has-multi')) return;
-    multi = new Set(); document.body.classList.remove('has-multi');
+    multi = new Set(); hiPeople = new Set(); document.body.classList.remove('has-multi'); renderEdges();
     cardsEl.querySelectorAll('.multi, .common, .onpath').forEach(c => c.classList.remove('multi', 'common', 'onpath'));
   }
   function toggleMulti(id) {
@@ -1983,7 +1994,9 @@
     document.body.classList.add('has-multi');
     cardsEl.querySelectorAll('.selected, .multi, .common, .onpath').forEach(c => c.classList.remove('selected', 'multi', 'common', 'onpath'));
     for (const id of ids) cardEl(id)?.classList.add('multi');
-    for (const c of nearest) { cardEl(c)?.classList.add('common'); for (const d of depths) for (const x of d.keys()) if (x !== c && ancestorsOf(x).has(c)) cardEl(x)?.classList.add('onpath'); }
+    hiPeople = new Set([...ids, ...nearest]);
+    for (const c of nearest) { cardEl(c)?.classList.add('common'); for (const d of depths) for (const x of d.keys()) if (x !== c && ancestorsOf(x).has(c)) { cardEl(x)?.classList.add('onpath'); hiPeople.add(x); } }
+    renderEdges();
     if (!silent) toast(relationText(ids, depths, nearest));
   }
   function relationText(ids, depths, nearest) {

@@ -205,7 +205,7 @@ test.describe('wide real-world tree (anonymized)', () => {
   });
 
   test('plain mode has crossings, jump and gap modes resolve every one', async ({ page }) => {
-    await load(page);
+    await load(page, 'default');
     expect(await crossingsLeft(page)).toBeGreaterThan(0);
     await load(page, 'jump');
     expect(await crossingsLeft(page)).toBe(0);

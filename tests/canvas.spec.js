@@ -177,6 +177,7 @@ test('shift-click selects several people and highlights their nearest common anc
   await expect(cardOf(page, 'Grandma')).toHaveClass(/common/);
   await expect(cardOf(page, 'Dad')).toHaveClass(/onpath/);
   await expect(cardOf(page, 'Kid')).not.toHaveClass(/onpath|common|multi/);
+  expect((await page.locator('#edges path.hi').getAttribute('d')).length).toBeGreaterThan(20);
   await expect(page.locator('#actions')).not.toHaveClass(/show/);
   await cardOf(page, 'Kid').click({ modifiers: ['Meta'] });
   await expect(page.locator('#toast')).toHaveText('Common ancestors: Grandpa, Grandma');

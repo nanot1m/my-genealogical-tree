@@ -126,6 +126,7 @@ test.describe('replacing parents and marriage order', () => {
     await addRelative(page, 'Hub', 'm', 'S2');
     await addRelative(page, 'Hub', 'm', 'S3');
     const allD = () => page.locator('#edges path:not(.rel)').evaluateAll(ps => ps.map(x => x.getAttribute('d') || '').join(' '));
+    await page.keyboard.press('g'); await page.click('#legend [data-x=default]'); await page.keyboard.press('Escape');
     const plain = await allD();
     expect(plain).not.toMatch(/A\d/);
     await page.keyboard.press('g');
