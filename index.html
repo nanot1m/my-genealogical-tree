@@ -395,6 +395,10 @@
   #zoomlvl { min-width: 46px; text-align: center; font-variant-numeric: tabular-nums; font-size: 12.5px; color: var(--muted); }
   kbd { display: inline-block; min-width: 18px; text-align: center; padding: 1px 5px; border-radius: 5px; background: var(--panel-2); border: 1px solid var(--border); border-bottom-width: 2px; font-family: inherit; font-size: 11px; color: var(--text); }
 
+  #relbar { position: absolute; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom)); transform: translateX(-50%); display: none; max-width: calc(100vw - 32px); background: var(--panel); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 9px 14px; font-size: 13.5px; z-index: 20; }
+  #relbar b { font-weight: 650; }
+  body.has-multi #relbar { display: block; }
+  body.has-multi #toast { bottom: 72px; }
   #toast {
     position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%) translateY(10px); background: #1b2030; color: #fff; padding: 9px 14px;
     border-radius: 10px; font-size: 13px; font-weight: 500; box-shadow: var(--shadow-lg); opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 20;
@@ -533,6 +537,7 @@
   <button data-sel="delete" class="danger" data-i18n="delete"></button>
 </div>
 <div id="toast"></div>
+<div id="relbar"></div>
 <button type="button" id="update" data-i18n="update_ready"></button>
 <div id="mpop">
   <h4 id="mpop-title">Marriage</h4>
@@ -655,7 +660,7 @@
       new: 'New', open: 'Open', save: 'Save', saveas: 'Save as', fit: 'Fit',
       new_t: 'New (⌘N)', open_t: 'Open (⌘O)', save_t: 'Save (⌘S)', saveas_t: 'Save as (⇧⌘S)', fit_t: 'Fit to screen (F)', compact: 'Compact', compact_t: 'Compact cards (V)', help_t: 'Shortcuts (?)',
       undo_t: 'Undo (⌘Z)', redo_t: 'Redo (⇧⌘Z)', zoomin_t: 'Zoom in (+)', zoomout_t: 'Zoom out (−)',
-      hint_nav: 'navigate', rel_none: 'No common ancestors', rel_common: 'Common ancestors', rel_direct: 'Direct line, {n} generation(s) apart', rel_siblings: 'Siblings', rel_half: 'Half-siblings', rel_auntie: 'Aunt/uncle and niece/nephew ({n} generation(s))', rel_cousins: 'Cousins ({n}. degree)', rel_removed: ', {r} generation(s) removed', search_ph: 'Find a person…', no_match: 'No matches', hint_edit: 'edit', hint_add: 'add parent / child / sibling / spouse', hint_del: 'delete', hint_help: 'all shortcuts',
+      hint_nav: 'navigate', rel_none: 'No common ancestors', rel_common: 'Common ancestors', rel_sentence: '{a} is the {term} of {b}', rel_removed: '({r} generation(s) removed)', great: 'great-', half: 'half-', ordinals: ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'], kin_parent_m: 'father', kin_parent_f: 'mother', kin_parent_x: 'parent', kin_child_m: 'son', kin_child_f: 'daughter', kin_child_x: 'child', kin_grandparent_m: 'grandfather', kin_grandparent_f: 'grandmother', kin_grandparent_x: 'grandparent', kin_grandchild_m: 'grandson', kin_grandchild_f: 'granddaughter', kin_grandchild_x: 'grandchild', kin_sibling_m: 'brother', kin_sibling_f: 'sister', kin_sibling_x: 'sibling', kin_uncle_m: 'uncle', kin_uncle_f: 'aunt', kin_uncle_x: 'uncle/aunt', kin_nephew_m: 'nephew', kin_nephew_f: 'niece', kin_nephew_x: 'nephew/niece', kin_cousin_m: '{n} cousin', kin_cousin_f: '{n} cousin', kin_cousin_x: '{n} cousin', search_ph: 'Find a person…', no_match: 'No matches', hint_edit: 'edit', hint_add: 'add parent / child / sibling / spouse', hint_del: 'delete', hint_help: 'all shortcuts',
       edit: 'Edit', photo: 'Photo', add_parent: '+ Parent', add_sibling: '+ Sibling', add_child: '+ Child', add_spouse: '+ Spouse', delete: 'Delete',
       married: 'Married', until: 'Until', unlink: 'Unlink', done: 'Done', empty: 'Click to add the first person',
       untitled: 'Untitled tree', app: 'Family Tree',
@@ -688,7 +693,7 @@
       new: 'Новое', open: 'Открыть', save: 'Сохранить', saveas: 'Сохранить как', fit: 'Вписать',
       new_t: 'Новое дерево (⌘N)', open_t: 'Открыть (⌘O)', save_t: 'Сохранить (⌘S)', saveas_t: 'Сохранить как (⇧⌘S)', fit_t: 'Вписать в экран (F)', compact: 'Компактно', compact_t: 'Компактные карточки (V)', help_t: 'Горячие клавиши (?)',
       undo_t: 'Отменить (⌘Z)', redo_t: 'Повторить (⇧⌘Z)', zoomin_t: 'Приблизить (+)', zoomout_t: 'Отдалить (−)',
-      hint_nav: 'навигация', rel_none: 'Общих предков нет', rel_common: 'Общие предки', rel_direct: 'Прямая линия, поколений: {n}', rel_siblings: 'Родные брат/сестра', rel_half: 'Сводные брат/сестра', rel_auntie: 'Дядя/тётя и племянник(ца), поколений: {n}', rel_cousins: 'Кузены {n}-й степени', rel_removed: ', разница поколений: {r}', search_ph: 'Найти человека…', no_match: 'Ничего не найдено', hint_edit: 'редактировать', hint_add: 'родитель / ребёнок / брат-сестра / супруг', hint_del: 'удалить', hint_help: 'все клавиши',
+      hint_nav: 'навигация', rel_none: 'Общих предков нет', rel_common: 'Общие предки', rel_sentence: '{a} — {term} {b}', rel_removed: '(разница поколений: {r})', great: 'пра', half: 'сводн. ', ordinals: ['двоюродный', 'троюродный', 'четвероюродный', 'пятиюродный', 'шестиюродный'], kin_parent_m: 'отец', kin_parent_f: 'мать', kin_parent_x: 'родитель', kin_child_m: 'сын', kin_child_f: 'дочь', kin_child_x: 'ребёнок', kin_grandparent_m: 'дед', kin_grandparent_f: 'бабушка', kin_grandparent_x: 'дед/бабушка', kin_grandchild_m: 'внук', kin_grandchild_f: 'внучка', kin_grandchild_x: 'внук/внучка', kin_sibling_m: 'брат', kin_sibling_f: 'сестра', kin_sibling_x: 'брат/сестра', kin_uncle_m: 'дядя', kin_uncle_f: 'тётя', kin_uncle_x: 'дядя/тётя', kin_nephew_m: 'племянник', kin_nephew_f: 'племянница', kin_nephew_x: 'племянник(ца)', kin_cousin_m: '{n} брат', kin_cousin_f: '{n} сестра', kin_cousin_x: '{n} брат/сестра', search_ph: 'Найти человека…', no_match: 'Ничего не найдено', hint_edit: 'редактировать', hint_add: 'родитель / ребёнок / брат-сестра / супруг', hint_del: 'удалить', hint_help: 'все клавиши',
       edit: 'Изменить', photo: 'Фото', add_parent: '+ Родитель', add_sibling: '+ Брат/сестра', add_child: '+ Ребёнок', add_spouse: '+ Супруг', delete: 'Удалить',
       married: 'Брак с', until: 'До', unlink: 'Разорвать', done: 'Готово', empty: 'Нажмите, чтобы добавить первого человека',
       untitled: 'Новое дерево', app: 'Семейное древо',
@@ -721,7 +726,7 @@
       new: 'Neu', open: 'Öffnen', save: 'Speichern', saveas: 'Speichern unter', fit: 'Einpassen',
       new_t: 'Neu (⌘N)', open_t: 'Öffnen (⌘O)', save_t: 'Speichern (⌘S)', saveas_t: 'Speichern unter (⇧⌘S)', fit_t: 'An Bildschirm anpassen (F)', compact: 'Kompakt', compact_t: 'Kompakte Karten (V)', help_t: 'Tastenkürzel (?)',
       undo_t: 'Rückgängig (⌘Z)', redo_t: 'Wiederholen (⇧⌘Z)', zoomin_t: 'Vergrößern (+)', zoomout_t: 'Verkleinern (−)',
-      hint_nav: 'navigieren', rel_none: 'Keine gemeinsamen Vorfahren', rel_common: 'Gemeinsame Vorfahren', rel_direct: 'Direkte Linie, {n} Generation(en)', rel_siblings: 'Geschwister', rel_half: 'Halbgeschwister', rel_auntie: 'Tante/Onkel und Nichte/Neffe ({n} Generation(en))', rel_cousins: 'Cousins {n}. Grades', rel_removed: ', {r} Generation(en) versetzt', search_ph: 'Person suchen…', no_match: 'Keine Treffer', hint_edit: 'bearbeiten', hint_add: 'Elternteil / Kind / Geschwister / Partner', hint_del: 'löschen', hint_help: 'alle Kürzel',
+      hint_nav: 'navigieren', rel_none: 'Keine gemeinsamen Vorfahren', rel_common: 'Gemeinsame Vorfahren', rel_sentence: '{a} ist {term} von {b}', rel_removed: '({r} Generation(en) versetzt)', great: 'Ur', half: 'Halb', ordinals: ['ersten', 'zweiten', 'dritten', 'vierten', 'fünften', 'sechsten'], kin_parent_m: 'Vater', kin_parent_f: 'Mutter', kin_parent_x: 'Elternteil', kin_child_m: 'Sohn', kin_child_f: 'Tochter', kin_child_x: 'Kind', kin_grandparent_m: 'großvater', kin_grandparent_f: 'großmutter', kin_grandparent_x: 'großelternteil', kin_grandchild_m: 'enkel', kin_grandchild_f: 'enkelin', kin_grandchild_x: 'enkelkind', kin_sibling_m: 'bruder', kin_sibling_f: 'schwester', kin_sibling_x: 'geschwister', kin_uncle_m: 'Onkel', kin_uncle_f: 'Tante', kin_uncle_x: 'Onkel/Tante', kin_nephew_m: 'Neffe', kin_nephew_f: 'Nichte', kin_nephew_x: 'Neffe/Nichte', kin_cousin_m: 'Cousin {n} Grades', kin_cousin_f: 'Cousine {n} Grades', kin_cousin_x: 'Cousin(e) {n} Grades', search_ph: 'Person suchen…', no_match: 'Keine Treffer', hint_edit: 'bearbeiten', hint_add: 'Elternteil / Kind / Geschwister / Partner', hint_del: 'löschen', hint_help: 'alle Kürzel',
       edit: 'Bearbeiten', photo: 'Foto', add_parent: '+ Elternteil', add_sibling: '+ Geschwister', add_child: '+ Kind', add_spouse: '+ Partner', delete: 'Löschen',
       married: 'Heirat', until: 'Bis', unlink: 'Trennen', done: 'Fertig', empty: 'Klicken, um die erste Person hinzuzufügen',
       untitled: 'Unbenannter Stammbaum', app: 'Stammbaum',
@@ -1998,17 +2003,35 @@
     hiPeople = new Set([...ids, ...nearest]);
     for (const c of nearest) { cardEl(c)?.classList.add('common'); for (const d of depths) for (const x of d.keys()) if (x !== c && ancestorsOf(x).has(c)) { cardEl(x)?.classList.add('onpath'); hiPeople.add(x); } }
     renderEdges();
-    if (!silent) toast(relationText(ids, depths, nearest));
+    $('#relbar').innerHTML = relationText(ids, depths, nearest);
+  }
+  function kinTerm(role, gen, g, half) {
+    const raw = kinTermRaw(role, gen, g, half);
+    return lang === 'de' ? raw[0].toUpperCase() + raw.slice(1) : raw;
+  }
+  function kinTermRaw(role, gen, g, half) {
+    const G = (k) => t(k + '_' + (g === 'm' ? 'm' : g === 'f' ? 'f' : 'x'));
+    const great = (n) => n > 0 ? t('great').repeat(n) : '';
+    if (role === 'parent') return gen === 1 ? G('kin_parent') : great(gen - 2) + G('kin_grandparent');
+    if (role === 'child') return gen === 1 ? G('kin_child') : great(gen - 2) + G('kin_grandchild');
+    if (role === 'sibling') return (half ? t('half') : '') + G('kin_sibling');
+    if (role === 'uncle') return great(gen - 2) + G('kin_uncle');
+    if (role === 'nephew') return great(gen - 2) + G('kin_nephew');
+    return G('kin_cousin').replace('{n}', t('ordinals')[gen - 1] || (gen + '.'));
   }
   function relationText(ids, depths, nearest) {
+    const name = (id) => `<b>${esc(state.people[id]?.name || t('unnamed'))}</b>`;
     if (!nearest.length) return t('rel_none');
-    if (ids.length !== 2) return t('rel_common') + ': ' + nearest.map(id => state.people[id]?.name || t('unnamed')).join(', ');
-    const [a, b] = depths.map(d => Math.min(...nearest.map(c => d.get(c))));
-    const lo = Math.min(a, b), hi = Math.max(a, b);
-    if (lo === 0) return t('rel_direct').replace('{n}', hi);
-    if (lo === 1 && hi === 1) return t(nearest.length > 1 ? 'rel_siblings' : 'rel_half');
-    if (lo === 1) return t('rel_auntie').replace('{n}', hi - 1);
-    return t('rel_cousins').replace('{n}', lo - 1) + (hi > lo ? t('rel_removed').replace('{r}', hi - lo) : '');
+    if (ids.length !== 2) return t('rel_common') + ': ' + nearest.map(name).join(', ');
+    const [da, db] = depths.map(d => Math.min(...nearest.map(c => d.get(c))));
+    const [a, b] = da <= db ? ids : [ids[1], ids[0]];
+    const lo = Math.min(da, db), hi = Math.max(da, db);
+    const ga = state.people[a]?.gender, gb = state.people[b]?.gender;
+    const sentence = (subj, term, obj) => t('rel_sentence').replace('{a}', name(subj)).replace('{term}', term).replace('{b}', name(obj));
+    if (lo === 0) return sentence(a, kinTerm('parent', hi, ga), b) + ' · ' + sentence(b, kinTerm('child', hi, gb), a);
+    if (lo === 1 && hi === 1) return sentence(a, kinTerm('sibling', 1, ga, nearest.length < 2), b);
+    if (lo === 1) return sentence(a, kinTerm('uncle', hi, ga), b) + ' · ' + sentence(b, kinTerm('nephew', hi, gb), a);
+    return sentence(a, kinTerm('cousin', lo - 1, ga), b) + (hi > lo ? ' ' + t('rel_removed').replace('{r}', hi - lo) : '');
   }
   let linkFrom = null;
   function startLink(id) {
