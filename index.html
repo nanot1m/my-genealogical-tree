@@ -1900,6 +1900,7 @@
     if (fresh || !isCoarse) { sh('sh-name').focus(); if (fresh) sh('sh-name').select(); }
   }
   const sheetDocked = matchMedia('(max-width: 760px), (pointer: coarse)');
+  new ResizeObserver(() => placeSheet()).observe(sheet.querySelector('.sheet'));
   function placeSheet() {
     if (!sheetId) return;
     const box = sheet.querySelector('.sheet'), pos = positions.get(sheetId);
