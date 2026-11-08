@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openApp, newTree, firstPerson, addRelative, positions, rows, overlapCount, select } from './helpers.js';
+import { openApp, newTree, firstPerson, addRelative, cardOf, positions, rows, overlapCount, select } from './helpers.js';
 
 const center = (pos, name) => { const p = pos.find(x => x.name === name); return p.x + 140; };
 
@@ -135,4 +135,81 @@ test('a late spouse stays next to the person even when earlier children have wid
   expect(wife.y).toBe(hub.y);
   expect(Math.abs(wife.x - hub.x)).toBeLessThanOrEqual(2 * 356 + 1);
   expect(await overlapCount(page)).toBe(0);
+});
+
+test('compact view: V toggles column cards, narrows the tree, persists across reload', async ({ page }) => {
+  await newTree(page);
+  await firstPerson(page, 'Anna');
+  await addRelative(page, null, 'm', 'Boris');
+  await addRelative(page, 'Anna', 'c', 'Clara');
+  await addRelative(page, 'Anna', 'c', 'Dima');
+  const width = async () => { const pos = await positions(page); return Math.max(...pos.map(p => p.x)) - Math.min(...pos.map(p => p.x)); };
+  const wide = await width();
+  await page.keyboard.press('v');
+  await expect(page.locator('body')).toHaveClass(/compact/);
+  await page.waitForTimeout(600);
+  const photo = await cardOf(page, 'Anna').locator('.photo').boundingBox(), info = await cardOf(page, 'Anna').locator('.info').boundingBox();
+  expect(photo.y + photo.height).toBeLessThanOrEqual(info.y + 1);
+  expect(await width()).toBeLessThan(wide);
+  expect(await overlapCount(page)).toBe(0);
+  await page.reload();
+  await page.click('#w-continue');
+  await expect(page.locator('body')).toHaveClass(/compact/);
+  await page.click('[data-act=compact]');
+  await expect(page.locator('body')).not.toHaveClass(/compact/);
+});
+
+test.describe('wide real-world tree (anonymized)', () => {
+  const load = async (page, cross) => {
+    const fs = await import('node:fs');
+    const state = JSON.parse(fs.readFileSync(new URL('./fixtures/wide-tree.json', import.meta.url), 'utf8'));
+    await openApp(page, { draft: { state, fileName: 'wide.ftree', dirty: true } });
+    if (cross) { await page.evaluate((c) => localStorage.setItem('familytree.cross', c), cross); await page.reload(); }
+    await page.click('#w-continue');
+    await page.waitForTimeout(600);
+  };
+  const crossingsLeft = (page) => page.evaluate(() => {
+    const segs = [];
+    for (const p of document.querySelectorAll('#edges path:not(.rel):not(.house)')) {
+      let cur = null;
+      for (const m of (p.getAttribute('d') || '').matchAll(/([MLQA])([^MLQA]*)/g)) {
+        const n = m[2].trim().split(/[\s,]+/).map(Number);
+        if (m[1] === 'M') cur = { x: n[0], y: n[1] };
+        else if (m[1] === 'L') { segs.push({ x1: cur.x, y1: cur.y, x2: n[0], y2: n[1] }); cur = { x: n[0], y: n[1] }; }
+        else cur = { x: n[n.length - 2], y: n[n.length - 1] };
+      }
+    }
+    const hs = segs.filter(s => s.y1 === s.y2 && s.x1 !== s.x2), vs = segs.filter(s => s.x1 === s.x2 && s.y1 !== s.y2);
+    let n = 0;
+    for (const h of hs) for (const v of vs) {
+      const hx1 = Math.min(h.x1, h.x2) + 1, hx2 = Math.max(h.x1, h.x2) - 1, vy1 = Math.min(v.y1, v.y2) + 1, vy2 = Math.max(v.y1, v.y2) - 1;
+      if (v.x1 > hx1 && v.x1 < hx2 && h.y1 > vy1 && h.y1 < vy2) n++;
+    }
+    return n;
+  });
+
+  test('no overlaps, no card stranded far from its spouse or siblings', async ({ page }) => {
+    await load(page);
+    expect(await overlapCount(page)).toBe(0);
+    const far = await page.evaluate(() => {
+      const st = JSON.parse(localStorage.getItem('familytree.draft')).state, out = [];
+      const at = (id) => { const el = [...document.querySelectorAll('.card')].find(c => c.dataset.id === id); return el && { x: parseFloat(el.style.left), y: parseFloat(el.style.top) }; };
+      for (const f of Object.values(st.families)) {
+        if (f.parents.length !== 2) continue;
+        const [a, b] = f.parents.map(at); if (!a || !b) continue;
+        if (a.y === b.y && Math.abs(a.x - b.x) > 3 * 356 + 1) out.push(f.id);
+      }
+      return out;
+    });
+    expect(far).toEqual([]);
+  });
+
+  test('plain mode has crossings, jump and gap modes resolve every one', async ({ page }) => {
+    await load(page);
+    expect(await crossingsLeft(page)).toBeGreaterThan(0);
+    await load(page, 'jump');
+    expect(await crossingsLeft(page)).toBe(0);
+    await load(page, 'gap');
+    expect(await crossingsLeft(page)).toBe(0);
+  });
 });

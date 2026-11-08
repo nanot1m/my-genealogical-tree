@@ -108,6 +108,29 @@ test.describe('replacing parents and marriage order', () => {
     expect(ys[2]).toBeGreaterThan(ys[1]);
   });
 
+  test('line crossing styles: jumps add arcs, gaps split the crossed line, choice persists', async ({ page }) => {
+    await newTree(page);
+    await firstPerson(page, 'Hub');
+    await addRelative(page, null, 'm', 'S1');
+    await addRelative(page, 'Hub', 'c', 'K1');
+    await addRelative(page, 'Hub', 'm', 'S2');
+    await addRelative(page, 'Hub', 'm', 'S3');
+    const allD = () => page.locator('#edges path:not(.rel)').evaluateAll(ps => ps.map(x => x.getAttribute('d') || '').join(' '));
+    const plain = await allD();
+    expect(plain).not.toMatch(/A\d/);
+    await page.keyboard.press('g');
+    await page.click('#legend [data-x=jump]');
+    await expect(page.locator('#legend [data-x=jump]')).toHaveClass(/on/);
+    expect(await allD()).toMatch(/A6 6 0 0 [01]/);
+    await page.click('#legend [data-x=gap]');
+    const gaps = await allD();
+    expect(gaps).not.toMatch(/A\d/);
+    expect((gaps.match(/M/g) || []).length).toBeGreaterThan((plain.match(/M/g) || []).length);
+    await page.reload(); await page.click('#w-continue');
+    expect(await allD()).not.toMatch(/A\d/);
+    expect((await allD()).match(/M/g).length).toBe((gaps.match(/M/g) || []).length);
+  });
+
   test('marriage order can be changed from the badge', async ({ page }) => {
     await newTree(page);
     await firstPerson(page, 'John');
