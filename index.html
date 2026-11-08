@@ -156,7 +156,7 @@
   #mpop h4 { margin: 0 0 8px; font-size: 13px; }
   #mpop .row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
   #mpop label { width: 54px; color: var(--muted); font-size: 12px; }
-  #mpop input[type=date] { flex: 1; font: inherit; font-size: 13px; padding: 3px 6px; border: 1px solid var(--border); border-radius: 6px; outline: none; min-width: 0; background: var(--card); color: var(--text); }
+  #mpop input[type=text] { flex: 1; font: inherit; font-size: 13px; padding: 3px 6px; border: 1px solid var(--border); border-radius: 6px; outline: none; min-width: 0; background: var(--card); color: var(--text); }
   #mpop input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
   #mpop .foot { display: flex; justify-content: space-between; margin-top: 10px; }
   #mpop button { border: none; background: var(--panel-2); color: var(--text); border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 12px; font-weight: 500; }
@@ -201,8 +201,9 @@
   #sheet .sh-names { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
   #sheet .sh-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
   #sheet .sh-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); min-width: 0; }
+  #sheet .sh-grid label.wide { grid-column: 1 / -1; }
   #sheet .sh-grid label > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #sheet input[type=text], #sheet input[type=date], #sheet select { font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; outline: none; width: 100%; min-width: 0; background: var(--card); color: var(--text); }
+  #sheet input[type=text], #sheet select { font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; outline: none; width: 100%; min-width: 0; background: var(--card); color: var(--text); }
   #sheet input:focus, #sheet select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
   #sheet #sh-name { font-weight: 600; }
   #sheet .sh-check { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13.5px; color: var(--text); cursor: pointer; }
@@ -220,7 +221,7 @@
     #sheet .sheet { position: relative; right: auto; top: auto; bottom: auto; width: 100%; max-width: 520px; max-height: 90vh; border-radius: 20px 20px 0 0; padding: 8px 20px calc(16px + env(safe-area-inset-bottom)); animation: sheet-up .22s cubic-bezier(.2,.8,.2,1); }
     #sheet .grab { display: block; }
     #sheet #sh-close { display: none; }
-    #sheet input[type=text], #sheet input[type=date], #sheet select { font-size: 16px; padding: 10px 12px; }
+    #sheet input[type=text], #sheet select { font-size: 16px; padding: 10px 12px; }
   }
   #update { position: absolute; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; display: none; border: none; border-radius: 12px; padding: 10px 16px; font: inherit; font-size: 14px; font-weight: 500; background: var(--accent); color: #fff; box-shadow: var(--shadow-lg); cursor: pointer; white-space: nowrap; }
   #update.show { display: block; }
@@ -486,9 +487,10 @@
 <div id="mpop">
   <h4 id="mpop-title">Marriage</h4>
   <div class="row"><label data-i18n="status"></label><select id="m-status"><option value="married" data-i18n="st_married"></option><option value="partners" data-i18n="st_partners"></option><option value="separated" data-i18n="st_separated"></option><option value="divorced" data-i18n="st_divorced"></option><option value="reconciled_sep" data-i18n="st_reconciled_sep"></option><option value="reconciled_div" data-i18n="st_reconciled_div"></option></select></div>
-  <div class="row"><label data-i18n="married"></label><input type="date" id="m-from"></div>
-  <div class="row"><label data-i18n="until"></label><input type="date" id="m-to"></div>
+  <div class="row"><label data-i18n="married"></label><input type="text" id="m-from" inputmode="numeric" placeholder="1980 · 1980-06 · 1980-06-15" autocomplete="off"></div>
+  <div class="row"><label data-i18n="until"></label><input type="text" id="m-to" inputmode="numeric" placeholder="1980 · 1980-06 · 1980-06-15" autocomplete="off"></div>
   <p class="hint" id="m-hint"></p>
+  <div class="row" id="m-order-row"><label data-i18n="order"></label><button type="button" id="m-earlier" data-i18n="earlier"></button><button type="button" id="m-later" data-i18n="later"></button></div>
   <div class="foot"><button class="danger" id="m-unlink" data-i18n="unlink"></button><button id="m-close" data-i18n="done"></button></div>
 </div>
 <div id="menu"></div>
@@ -533,6 +535,7 @@
         </div>
       </div>
       <div class="sh-grid">
+        <label class="wide"><span data-i18n="profession"></span><input type="text" id="sh-prof" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other"></label>
         <label><span data-i18n="gender"></span><select id="sh-gender"><option value="" data-i18n="g_"></option><option value="m" data-i18n="g_m"></option><option value="f" data-i18n="g_f"></option><option value="x" data-i18n="g_x"></option></select></label>
         <label><span data-i18n="fate"></span><select id="sh-fate"><option value="" data-i18n="fate_none"></option><option value="pregnancy" data-i18n="fate_pregnancy"></option><option value="miscarriage" data-i18n="fate_miscarriage"></option><option value="abortion" data-i18n="fate_abortion"></option><option value="stillborn" data-i18n="fate_stillborn"></option></select></label>
       </div>
@@ -540,8 +543,9 @@
     <section>
       <h5 data-i18n="sec_dates"></h5>
       <div class="sh-grid">
-        <label><span data-i18n="born"></span><input type="date" id="sh-birth"></label>
-        <label id="sh-death-row"><span data-i18n="died"></span><input type="date" id="sh-death"></label>
+        <label><span data-i18n="born"></span><input type="text" id="sh-birth" inputmode="numeric" placeholder="1980 · 1980-06 · 1980-06-15" autocomplete="off"></label>
+        <label><span data-i18n="birthplace"></span><input type="text" id="sh-place" autocomplete="off" autocapitalize="words" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other"></label>
+        <label id="sh-death-row"><span data-i18n="died"></span><input type="text" id="sh-death" inputmode="numeric" placeholder="1980 · 1980-06 · 1980-06-15" autocomplete="off"></label>
       </div>
       <label class="sh-check"><input type="checkbox" id="sh-alive"><span data-i18n="living"></span></label>
     </section>
@@ -600,12 +604,12 @@
       edit: 'Edit', photo: 'Photo', add_parent: '+ Parent', add_sibling: '+ Sibling', add_child: '+ Child', add_spouse: '+ Spouse', delete: 'Delete',
       married: 'Married', until: 'Until', unlink: 'Unlink', done: 'Done', empty: 'Click to add the first person',
       untitled: 'Untitled tree', app: 'Family Tree',
-      unnamed: 'Unnamed', add_dates: 'Add dates', full_name: 'Full name', birth_name: 'Birth surname', nee: 'née', born: 'Born', died: 'Died', living: 'Living',
+      unnamed: 'Unnamed', add_dates: 'Add dates', full_name: 'Full name', birth_name: 'Birth surname', birthplace: 'Birthplace', profession: 'Profession', nee: 'née', born: 'Born', died: 'Died', living: 'Living',
       set_photo: 'Set photo', remove_photo: 'Remove photo',
       tip_parent: 'Add parent (P)', tip_sibling_l: 'Add sibling (⇧←)', tip_sibling_r: 'Add sibling (S)', tip_child: 'Add child (C)', tip_spouse: 'Add spouse (M)',
       marriage_dates: 'Marriage dates', present: 'present', b: 'b.', years: 'y',
       add_child_menu: 'Add child…', with: 'With', no_partner: 'no partner',
-      two_parents: 'This person already has two parents', deleted: 'Deleted · ⌘Z to undo', nothing_undo: 'Nothing to undo', nothing_redo: 'Nothing to redo',
+      two_parents: 'This person already has two parents', replace: 'Replace', order: 'Order', earlier: '← Earlier', later: 'Later →', deleted: 'Deleted · ⌘Z to undo', nothing_undo: 'Nothing to undo', nothing_redo: 'Nothing to redo',
       autosave_failed: 'Autosave failed', saved: 'Saved', opened: 'Opened', save_failed: 'Save failed', open_failed: 'Open failed', not_tree: 'Not a family tree file',
       discard: 'Discard unsaved changes?', file_name: 'File name', unlink_confirm: 'Unlink this couple? Their children stay attached to the first parent.',
       restored: 'Restored unsaved draft',
@@ -633,12 +637,12 @@
       edit: 'Изменить', photo: 'Фото', add_parent: '+ Родитель', add_sibling: '+ Брат/сестра', add_child: '+ Ребёнок', add_spouse: '+ Супруг', delete: 'Удалить',
       married: 'Брак с', until: 'До', unlink: 'Разорвать', done: 'Готово', empty: 'Нажмите, чтобы добавить первого человека',
       untitled: 'Новое дерево', app: 'Семейное древо',
-      unnamed: 'Без имени', add_dates: 'Добавить даты', full_name: 'Имя и фамилия', birth_name: 'Девичья фамилия', nee: 'урожд.', born: 'Род.', died: 'Ум.', living: 'Жив(а)',
+      unnamed: 'Без имени', add_dates: 'Добавить даты', full_name: 'Имя и фамилия', birth_name: 'Девичья фамилия', birthplace: 'Место рождения', profession: 'Профессия', nee: 'урожд.', born: 'Род.', died: 'Ум.', living: 'Жив(а)',
       set_photo: 'Выбрать фото', remove_photo: 'Удалить фото',
       tip_parent: 'Добавить родителя (P)', tip_sibling_l: 'Добавить брата/сестру (⇧←)', tip_sibling_r: 'Добавить брата/сестру (S)', tip_child: 'Добавить ребёнка (C)', tip_spouse: 'Добавить супруга (M)',
       marriage_dates: 'Даты брака', present: 'н. в.', b: 'р.', years: 'л.',
       add_child_menu: 'Добавить ребёнка…', with: 'С', no_partner: 'без партнёра',
-      two_parents: 'У этого человека уже два родителя', deleted: 'Удалено · ⌘Z — отменить', nothing_undo: 'Нечего отменять', nothing_redo: 'Нечего повторять',
+      two_parents: 'У этого человека уже два родителя', replace: 'Заменить', order: 'Порядок', earlier: '← Раньше', later: 'Позже →', deleted: 'Удалено · ⌘Z — отменить', nothing_undo: 'Нечего отменять', nothing_redo: 'Нечего повторять',
       autosave_failed: 'Автосохранение не удалось', saved: 'Сохранено', opened: 'Открыто', save_failed: 'Ошибка сохранения', open_failed: 'Ошибка открытия', not_tree: 'Это не файл семейного древа',
       discard: 'Отменить несохранённые изменения?', file_name: 'Имя файла', unlink_confirm: 'Разорвать связь пары? Дети останутся у первого родителя.',
       restored: 'Восстановлен несохранённый черновик',
@@ -666,12 +670,12 @@
       edit: 'Bearbeiten', photo: 'Foto', add_parent: '+ Elternteil', add_sibling: '+ Geschwister', add_child: '+ Kind', add_spouse: '+ Partner', delete: 'Löschen',
       married: 'Heirat', until: 'Bis', unlink: 'Trennen', done: 'Fertig', empty: 'Klicken, um die erste Person hinzuzufügen',
       untitled: 'Unbenannter Stammbaum', app: 'Stammbaum',
-      unnamed: 'Ohne Namen', add_dates: 'Daten hinzufügen', full_name: 'Vollständiger Name', birth_name: 'Geburtsname', nee: 'geb.', born: 'Geb.', died: 'Gest.', living: 'Lebt',
+      unnamed: 'Ohne Namen', add_dates: 'Daten hinzufügen', full_name: 'Vollständiger Name', birth_name: 'Geburtsname', birthplace: 'Geburtsort', profession: 'Beruf', nee: 'geb.', born: 'Geb.', died: 'Gest.', living: 'Lebt',
       set_photo: 'Foto wählen', remove_photo: 'Foto entfernen',
       tip_parent: 'Elternteil hinzufügen (P)', tip_sibling_l: 'Geschwister hinzufügen (⇧←)', tip_sibling_r: 'Geschwister hinzufügen (S)', tip_child: 'Kind hinzufügen (C)', tip_spouse: 'Partner hinzufügen (M)',
       marriage_dates: 'Ehedaten', present: 'heute', b: 'geb.', years: 'J.',
       add_child_menu: 'Kind hinzufügen…', with: 'Mit', no_partner: 'ohne Partner',
-      two_parents: 'Diese Person hat bereits zwei Eltern', deleted: 'Gelöscht · ⌘Z zum Rückgängigmachen', nothing_undo: 'Nichts rückgängig zu machen', nothing_redo: 'Nichts zu wiederholen',
+      two_parents: 'Diese Person hat bereits zwei Eltern', replace: 'Ersetzen', order: 'Reihenfolge', earlier: '← Früher', later: 'Später →', deleted: 'Gelöscht · ⌘Z zum Rückgängigmachen', nothing_undo: 'Nichts rückgängig zu machen', nothing_redo: 'Nichts zu wiederholen',
       autosave_failed: 'Automatisches Speichern fehlgeschlagen', saved: 'Gespeichert', opened: 'Geöffnet', save_failed: 'Speichern fehlgeschlagen', open_failed: 'Öffnen fehlgeschlagen', not_tree: 'Keine Stammbaum-Datei',
       discard: 'Ungespeicherte Änderungen verwerfen?', file_name: 'Dateiname', unlink_confirm: 'Dieses Paar trennen? Die Kinder bleiben beim ersten Elternteil.',
       restored: 'Ungespeicherten Entwurf wiederhergestellt',
@@ -789,7 +793,26 @@
   function childFamily(pid) { return Object.values(state.families).find(f => f.children.includes(pid)); }
   function parentFamilies(pid) {
     return Object.values(state.families).filter(f => f.parents.includes(pid))
-      .sort((a, b) => (a.married || '9999').localeCompare(b.married || '9999'));
+      .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity) || (a.married || '9999').localeCompare(b.married || '9999'));
+  }
+  function moveMarriage(fid, dir) {
+    const f = fam(fid); if (!f) return;
+    const pid = f.parents.find(id => parentFamilies(id).length > 1); if (!pid) return;
+    const fams = parentFamilies(pid), i = fams.indexOf(f), j = i + dir;
+    if (j < 0 || j >= fams.length) return;
+    [fams[i], fams[j]] = [fams[j], fams[i]];
+    fams.forEach((x, k) => { x.order = k; });
+  }
+  function replaceParent(child, oldParent, newParent) {
+    const cf = childFamily(child);
+    const keep = cf.parents.filter(x => x !== oldParent);
+    const kind = cf.kinds?.[child];
+    cf.children = cf.children.filter(x => x !== child); if (cf.kinds) delete cf.kinds[child];
+    if (!cf.children.length && cf.parents.length < 2) delete state.families[cf.id];
+    const want = [newParent, ...keep];
+    let f = Object.values(state.families).find(x => x.parents.length === want.length && want.every(id => x.parents.includes(id)));
+    if (f) f.children.push(child); else f = newFamily(want, [child]);
+    if (kind) { f.kinds ??= {}; f.kinds[child] = kind; }
   }
   function parentsOf(pid) { const f = childFamily(pid); return f ? f.parents : []; }
   function childrenOf(pid) { return parentFamilies(pid).flatMap(f => f.children); }
@@ -797,7 +820,7 @@
   function siblingsOf(pid) { const f = childFamily(pid); return f ? f.children : [pid]; }
 
   function newPerson() {
-    const p = { id: uid('p'), name: '', birthName: '', birth: '', death: '', alive: true, photo: null, photoSrc: null, crop: null, fate: '', lineEnded: false, gender: '', illness: '', substance: '' };
+    const p = { id: uid('p'), name: '', birthName: '', birthplace: '', profession: '', birth: '', death: '', alive: true, photo: null, photoSrc: null, crop: null, fate: '', lineEnded: false, gender: '', illness: '', substance: '' };
     state.people[p.id] = p;
     return p;
   }
@@ -807,11 +830,12 @@
     return f;
   }
 
-  function addParent(pid) {
+  function addParent(pid, replacing) {
     const f = childFamily(pid);
-    if (f && f.parents.length >= 2) return null;
+    if (f && f.parents.length >= 2 && !replacing) return null;
     const p = newPerson();
-    if (f) f.parents.push(p.id); else newFamily([p.id], [pid]);
+    if (replacing) replaceParent(pid, replacing, p.id);
+    else if (f) f.parents.push(p.id); else newFamily([p.id], [pid]);
     return p;
   }
   function addChild(pid, familyId) {
@@ -864,7 +888,7 @@
     if (ancestorsOf(parent).has(child)) return t('cycle');
     const cf = childFamily(child);
     if (cf) {
-      if (cf.parents.length >= 2) return (state.people[child].name || t('unnamed')) + ' ' + t('two_parents_t');
+      if (cf.parents.length >= 2) return cf.parents.map(old => ({ label: t('replace') + ' ' + (state.people[old]?.name || t('unnamed')), run: () => replaceParent(child, old, parent) }));
       cf.parents.push(parent); return null;
     }
     const f = familyId ? fam(familyId) : parentFamilies(parent)[0];
@@ -1200,16 +1224,21 @@
     const parts = name.trim().split(/\s+/).filter(Boolean);
     return parts.length ? parts.slice(0, 2).map(s => s[0].toUpperCase()).join('') : '';
   }
+  const dateParts = (s) => { const m = /^(\d{4})(?:-(\d{1,2})(?:-(\d{1,2}))?)?$/.exec((s || '').trim()); return m ? [+m[1], m[2] ? +m[2] : null, m[3] ? +m[3] : null] : null; };
   function fmtDate(s) {
     if (!s) return '';
-    const d = new Date(s + 'T00:00:00');
-    return isNaN(d) ? s : d.toLocaleDateString(lang, { year: 'numeric', month: 'short', day: 'numeric' }).replace(/\s*г\.$/, '');
+    const parts = dateParts(s); if (!parts) return s;
+    const [y, m, d] = parts;
+    const date = new Date(y, (m || 1) - 1, d || 1);
+    const opts = { year: 'numeric', ...(m && { month: d ? 'short' : 'long' }), ...(d && { day: 'numeric' }) };
+    return date.toLocaleDateString(lang, opts).replace(/\s*г\.$/, '');
   }
   function ageOf(birth, ref) {
-    const b = new Date(birth + 'T00:00:00'), r = ref ? new Date(ref + 'T00:00:00') : new Date();
-    if (isNaN(b) || isNaN(r)) return null;
-    let a = r.getFullYear() - b.getFullYear();
-    if (r.getMonth() < b.getMonth() || (r.getMonth() === b.getMonth() && r.getDate() < b.getDate())) a--;
+    const b = dateParts(birth); if (!b) return null;
+    const now = new Date(), r = ref ? dateParts(ref) : [now.getFullYear(), now.getMonth() + 1, now.getDate()];
+    if (!r) return null;
+    let a = r[0] - b[0];
+    if (b[1] && r[1] && (r[1] < b[1] || (r[1] === b[1] && b[2] && r[2] && r[2] < b[2]))) a--;
     return a >= 0 ? a : null;
   }
   function datesText(p) {
@@ -1502,6 +1531,7 @@
     $('#mpop-title').textContent = names.join(' & ');
     $('#m-from').value = f.married || ''; $('#m-to').value = f.ended || ''; $('#m-status').value = f.status || 'married';
     $('#m-hint').textContent = statusHint(f.status || 'married');
+    $('#m-order-row').hidden = !f.parents.some(id => parentFamilies(id).length > 1);
     const r = anchor.getBoundingClientRect();
     mpop.classList.add('show');
     const w = mpop.offsetWidth, h = mpop.offsetHeight;
@@ -1524,6 +1554,7 @@
   });
   mpop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); closeMarriage(); } e.stopPropagation(); });
   $('#m-close').addEventListener('click', closeMarriage);
+  for (const [id, dir] of [['#m-earlier', -1], ['#m-later', 1]]) $(id).addEventListener('click', () => { moveMarriage(mpopFamily, dir); render(); });
   $('#m-unlink').addEventListener('click', () => {
     const fid = mpopFamily; const f = fam(fid); if (!f) return;
     if (f.children.length && !confirm(t('unlink_confirm'))) return;
@@ -1741,7 +1772,13 @@
   function finishLink(targetId, anchor) {
     const a = linkFrom, b = targetId; cancelLink();
     if (!a || a === b || !state.people[a] || !state.people[b]) return;
-    const apply = (fn) => { let err = null; mutate(() => { err = fn(); }); if (err) { undoStack.pop(); toast(err); } else { toast(t('linked')); select(a); } };
+    const apply = (fn) => {
+      let err = null; mutate(() => { err = fn(); });
+      if (!err) { toast(t('linked')); select(a); return; }
+      undoStack.pop();
+      if (Array.isArray(err)) openMenu(anchor, t('two_parents'), err.map(it => ({ ...it, run: () => apply(it.run) })));
+      else toast(err);
+    };
     const relItems = ['close', 'fused', 'conflict', 'distant', 'cutoff', 'focused'].map(type => ({ label: (type === 'focused' ? '→ ' : '↔ ') + t('rel_' + type), hint: t('hint_rel_' + type), run: () => apply(() => addRelation(a, b, type)) }));
     const childOpts = () => {
       const fams = parentFamilies(a);
@@ -1804,7 +1841,7 @@
     const p = state.people[id]; if (!p) return;
     sheetId = id; sheetSnapshot = fresh ? null : snapshot();
     select(id, { scroll: false });
-    sh('sh-name').value = p.name; sh('sh-bname').value = p.birthName;
+    sh('sh-name').value = p.name; sh('sh-bname').value = p.birthName; sh('sh-place').value = p.birthplace || ''; sh('sh-prof').value = p.profession || '';
     sh('sh-birth').value = p.birth; sh('sh-death').value = p.death; sh('sh-alive').checked = p.alive;
     sh('sh-name').placeholder = t('full_name'); sh('sh-bname').placeholder = t('birth_name');
     sh('sh-death-row').hidden = p.alive;
@@ -1867,6 +1904,8 @@
     switch (e.target.id) {
       case 'sh-name': p.name = e.target.value; if (!p.photo) refreshSheetPhoto(); break;
       case 'sh-bname': p.birthName = e.target.value; break;
+      case 'sh-place': p.birthplace = e.target.value; break;
+      case 'sh-prof': p.profession = e.target.value; break;
       case 'sh-birth': p.birth = e.target.value; break;
       case 'sh-death': p.death = e.target.value; break;
       case 'sh-fate': p.fate = e.target.value; break;
@@ -2044,6 +2083,9 @@
 
   function createRelative(id, kind, anchor, familyId) {
     spawnFrom = id;
+    if (kind === 'parent' && !familyId && parentsOf(id).length >= 2) {
+      return openMenu(anchor || cardEl(id), t('two_parents'), parentsOf(id).map(old => ({ label: t('replace') + ' ' + (state.people[old]?.name || t('unnamed')), run: () => createRelative(id, 'parent', null, old) })));
+    }
     if (kind === 'child' && !familyId) {
       const fams = parentFamilies(id);
       if (fams.length > 1) {
@@ -2055,7 +2097,7 @@
       }
     }
     const p = mutate(() => {
-      if (kind === 'parent') return addParent(id);
+      if (kind === 'parent') return addParent(id, familyId);
       if (kind === 'child') return addChild(id, familyId);
       if (kind === 'spouse') return addSpouse(id);
       return addSibling(id, kind === 'sibling-left' ? 'left' : 'right');
@@ -2290,7 +2332,7 @@
     const data = deserialize(buf);
     if (!data || typeof data.people !== 'object' || typeof data.families !== 'object') throw new Error(t('not_tree'));
     state = { version: 1, people: data.people, families: data.families, relations: Array.isArray(data.relations) ? data.relations : [], indexPerson: null, households: [] };
-    for (const p of Object.values(state.people)) { p.alive = p.alive ?? !p.death; p.name ??= ''; p.birthName ??= ''; p.birth ??= ''; p.death ??= ''; p.photo ??= null; p.photoSrc ??= null; p.crop ??= null; p.fate ??= ''; p.lineEnded ??= false; p.gender ??= ''; p.illness ??= ''; p.substance ??= ''; }
+    for (const p of Object.values(state.people)) { p.alive = p.alive ?? !p.death; p.name ??= ''; p.birthName ??= ''; p.birthplace ??= ''; p.profession ??= ''; p.birth ??= ''; p.death ??= ''; p.photo ??= null; p.photoSrc ??= null; p.crop ??= null; p.fate ??= ''; p.lineEnded ??= false; p.gender ??= ''; p.illness ??= ''; p.substance ??= ''; }
     state.households = Array.isArray(data.households) ? data.households.map(h => ({ ...h, members: h.members.filter(id => state.people[id]) })).filter(h => h.members.length > 1) : [];
     state.indexPerson = data.indexPerson && state.people[data.indexPerson] ? data.indexPerson : null;
     for (const f of Object.values(state.families)) { f.married ??= ''; f.ended ??= ''; f.status ??= 'married'; f.parents ??= []; f.children ??= []; f.kinds ??= {}; }

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { newTree, firstPerson, cardOf, draftState, PHOTO } from './helpers.js';
+import { openApp, newTree, firstPerson, cardOf, draftState, PHOTO } from './helpers.js';
 
 test.describe('card fields', () => {
   test('name, birth surname, dates, living toggle and age', async ({ page }) => {
@@ -18,6 +18,48 @@ test.describe('card fields', () => {
     await page.fill('#sh-death', '2020-01-01');
     await page.keyboard.press('Enter');
     await expect(cardOf(page, 'Mary Smith').locator('.dates')).toContainText('Mar 4, 1950 – Jan 1, 2020 (69)');
+  });
+
+  test('birthplace and profession are saved but not shown on the card', async ({ page }) => {
+    await newTree(page);
+    await firstPerson(page, 'Ivan');
+    await cardOf(page, 'Ivan').dblclick();
+    await page.fill('#sh-place', 'Kazan'); await page.fill('#sh-prof', 'Engineer');
+    await page.keyboard.press('Enter');
+    await expect(cardOf(page, 'Ivan')).not.toContainText('Kazan');
+    await expect(cardOf(page, 'Ivan')).not.toContainText('Engineer');
+    expect(Object.values((await draftState(page)).people)[0]).toEqual(expect.objectContaining({ birthplace: 'Kazan', profession: 'Engineer' }));
+    await cardOf(page, 'Ivan').dblclick();
+    await expect(page.locator('#sh-place')).toHaveValue('Kazan');
+    await expect(page.locator('#sh-prof')).toHaveValue('Engineer');
+  });
+
+  test('partial dates: year only and year-month', async ({ page }) => {
+    await newTree(page);
+    await firstPerson(page, 'Old Man', '1900');
+    await expect(cardOf(page, 'Old Man').locator('.dates')).toContainText('b. 1900');
+    await expect(cardOf(page, 'Old Man').locator('.dates')).toContainText(/\d+ y/);
+    await cardOf(page, 'Old Man').dblclick();
+    await page.locator('#sh-alive').uncheck();
+    await page.fill('#sh-death', '1980-06');
+    await page.keyboard.press('Enter');
+    await expect(cardOf(page, 'Old Man').locator('.dates')).toHaveText('1900 – June 1980 (80)');
+  });
+
+  test('files saved with full dates and no marriage order render as before', async ({ page }) => {
+    const draft = { state: { people: {
+      a: { id: 'a', name: 'Ann', birth: '1950-03-04', death: '2020-01-01', alive: false },
+      b: { id: 'b', name: 'Bob', birth: '1948-01-01', alive: true },
+      c: { id: 'c', name: 'Cid', birth: '', alive: true },
+    }, families: {
+      f1: { id: 'f1', parents: ['b', 'c'], children: [], married: '1990-01-01', ended: '', status: 'married' },
+      f2: { id: 'f2', parents: ['b', 'a'], children: [], married: '1970-05-05', ended: '1980-01-01', status: 'divorced' },
+    }, relations: [] }, fileName: 'old.ftree', dirty: true };
+    await openApp(page, { draft });
+    await page.click('#w-continue');
+    await expect(cardOf(page, 'Ann').locator('.dates')).toHaveText('Mar 4, 1950 – Jan 1, 2020 (69)');
+    await expect(page.locator('.marriage', { hasText: '¹' })).toContainText('1970 – 1980');
+    await expect(page.locator('.marriage', { hasText: '²' })).toContainText('1990');
   });
 
   test('Tab cycles fields, Escape finishes, edits are a single undo step', async ({ page }) => {

@@ -47,6 +47,57 @@ test.describe('spouses and marriages', () => {
   });
 });
 
+test.describe('replacing parents and marriage order', () => {
+  test('linking a third parent offers to replace one; siblings keep their parents', async ({ page }) => {
+    await newTree(page);
+    await firstPerson(page, 'Dad');
+    await addRelative(page, null, 'm', 'Mom');
+    await addRelative(page, 'Dad', 'c', 'Kid');
+    await addRelative(page, 'Dad', 'c', 'Sib');
+    await addRelative(page, 'Mom', 'm', 'Step');
+    await select(page, 'Step'); await page.keyboard.press('l'); await cardOf(page, 'Kid').click();
+    await page.locator('#menu button', { hasText: 'Set as child' }).click();
+    await expect(page.locator('#menu button')).toHaveText(['Replace Dad', 'Replace Mom']);
+    await page.locator('#menu button', { hasText: 'Replace Dad' }).click();
+    await expect(page.locator('#toast')).toHaveText('Linked');
+    const fams = familiesByName(await draftState(page));
+    expect(fams.find(f => f.children.includes('Kid'))).toEqual(expect.objectContaining({ parents: ['Mom', 'Step'] }));
+    expect(fams.find(f => f.children.includes('Sib'))).toEqual(expect.objectContaining({ parents: ['Dad', 'Mom'], children: ['Sib'] }));
+  });
+
+  test('P on a child with two parents replaces the chosen one with a new person', async ({ page }) => {
+    await newTree(page);
+    await firstPerson(page, 'Kid');
+    await addRelative(page, 'Kid', 'p', 'Dad');
+    await addRelative(page, 'Kid', 'p', 'Mom');
+    await select(page, 'Kid'); await page.keyboard.press('p');
+    await expect(page.locator('#menu button')).toHaveText(['Replace Dad', 'Replace Mom']);
+    await page.keyboard.press('2');
+    await page.keyboard.type('New Mom'); await page.keyboard.press('Enter');
+    const fams = familiesByName(await draftState(page));
+    expect(fams.find(f => f.children.includes('Kid')).parents.sort()).toEqual(['Dad', 'New Mom']);
+    expect(fams.find(f => f.parents.includes('Mom')).children).toEqual([]);
+  });
+
+  test('marriage order can be changed from the badge', async ({ page }) => {
+    await newTree(page);
+    await firstPerson(page, 'John');
+    await addRelative(page, null, 'm', 'Mary');
+    await addRelative(page, 'John', 'm', 'Second');
+    await addRelative(page, 'John', 'm', 'Third');
+    await page.locator('.marriage', { hasText: '³' }).click();
+    await expect(page.locator('#mpop-title')).toHaveText('John & Third');
+    await expect(page.locator('#m-order-row')).toBeVisible();
+    await page.click('#m-earlier'); await page.click('#m-earlier');
+    await page.keyboard.press('Enter');
+    await select(page, 'John'); await page.keyboard.press('c');
+    await expect(page.locator('#menu button')).toHaveText(['With Third', 'With Mary', 'With Second']);
+    await page.keyboard.press('Escape');
+    const r = rows(await positions(page));
+    expect(r[0].indexOf('Third')).toBeLessThan(r[0].indexOf('Mary'));
+  });
+});
+
 test.describe('linking existing people', () => {
   test.setTimeout(120_000);
   test('L enters link mode, spouse/child/parent links, cycle and duplicate rejection', async ({ page }) => {
