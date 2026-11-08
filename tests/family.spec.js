@@ -173,9 +173,9 @@ test.describe('genogram markers', () => {
     await firstPerson(page, 'Anna');
     await addRelative(page, null, 'm', 'Boris');
     const edit = async (name, fn) => { await select(page, name); await cardOf(page, name).dblclick(); await fn(); await page.keyboard.press('Enter'); await page.waitForTimeout(150); };
-    await edit('Anna', async () => { await page.selectOption('#sh-gender', 'f'); });
+    await edit('Anna', async () => { await page.click('#sh-gender [data-v=f]'); });
     await edit('Boris', async () => {
-      await page.selectOption('#sh-gender', 'm');
+      await page.click('#sh-gender [data-v=m]');
       await page.locator('#sh-alive').uncheck();
       await page.fill('#sh-death', '2010-01-01');
       await page.locator('#sh-index').check();
