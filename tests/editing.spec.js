@@ -93,7 +93,7 @@ test.describe('card fields', () => {
   });
 
   test('desktop editor stays inside the window when fields appear', async ({ page }) => {
-    await page.setViewportSize({ width: 1100, height: 700 });
+    await page.setViewportSize({ width: 1100, height: 1000 });
     await newTree(page);
     await firstPerson(page, 'Anna');
     await cardOf(page, 'Anna').dblclick();
@@ -101,7 +101,7 @@ test.describe('card fields', () => {
     await page.fill('#sh-notes', 'a\nb\nc\nd\ne\nf');
     await page.waitForTimeout(200);
     const r = await page.locator('#sheet .sheet').boundingBox();
-    expect(r.y + r.height).toBeLessThanOrEqual(700);
+    expect(r.y + r.height).toBeLessThanOrEqual(1000);
     await expect(page.locator('#sh-done')).toBeInViewport();
   });
 

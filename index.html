@@ -1317,7 +1317,7 @@
         </div>
         <div class="info">
           <div class="name ${p.name ? '' : 'empty'}" title="${esc(fullName(p))}"><span class="nm">${esc(p.name) || t('unnamed')}</span>${p.birthName ? ` <span class="nee">${t('nee')} ${esc(p.birthName)}</span>` : ''}</div>
-          <div class="dates ${dt ? '' : 'empty'}">${esc(dt) || t('add_dates')}${p.fate ? `<span class="fate-chip">${t('fate_' + p.fate)}</span>` : ''}</div>
+          <div class="dates ${dt ? '' : 'empty'}">${esc(dt)}${p.fate ? `<span class="fate-chip">${t('fate_' + p.fate)}</span>` : ''}</div>
         </div>
         ${canAddParent ? `<button class="plus top" data-add="parent" data-tip="${t('tip_parent')}">+</button>` : ''}
         <button class="plus left" data-add="sibling-left" data-tip="${t('tip_sibling_l')}">+</button>
