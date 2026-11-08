@@ -1576,15 +1576,16 @@
         if (kinds[c.id]?.type === 'adopted') dArrow.push(`M${c.cx - 5} ${c.top - 9} L${c.cx} ${c.top - 1} L${c.cx + 5} ${c.top - 9}`);
         return false;
       };
+      const hiXs = hiFam ? sorted.filter(c => hiPeople.has(c.id)).map(c => c.cx) : [];
       if (origin) {
-        capture(hiFam, () => {
-          d.push(rounded([origin, { x: origin.x, y: busY }, { x: sorted[0].cx, y: busY }]));
-          d.push(`M${Math.min(origin.x, sorted[0].cx)} ${busY} L${Math.max(origin.x, sorted[sorted.length - 1].cx)} ${busY}`);
-        });
+        d.push(rounded([origin, { x: origin.x, y: busY }, { x: sorted[0].cx, y: busY }]));
+        d.push(`M${Math.min(origin.x, sorted[0].cx)} ${busY} L${Math.max(origin.x, sorted[sorted.length - 1].cx)} ${busY}`);
+        if (hiXs.length) dHi.push(`M${origin.x} ${origin.y} L${origin.x} ${busY}`, `M${Math.min(origin.x, ...hiXs)} ${busY} L${Math.max(origin.x, ...hiXs)} ${busY}`);
         for (const c of sorted) capture(hiFam && hiPeople.has(c.id), () => drop(c, origin.x));
       } else {
         const f0 = sorted[0], fn = sorted[sorted.length - 1];
-        capture(hiFam, () => d.push(`M${f0.cx} ${busY} L${fn.cx} ${busY}`));
+        d.push(`M${f0.cx} ${busY} L${fn.cx} ${busY}`);
+        if (hiXs.length > 1) dHi.push(`M${Math.min(...hiXs)} ${busY} L${Math.max(...hiXs)} ${busY}`);
         for (const c of sorted) capture(hiFam && hiPeople.has(c.id), () => drop(c, f0.cx));
       }
     }
