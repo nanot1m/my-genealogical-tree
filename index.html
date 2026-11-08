@@ -398,6 +398,7 @@
   #relbar { position: absolute; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom)); transform: translateX(-50%); display: none; max-width: calc(100vw - 32px); background: var(--panel); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 9px 14px; font-size: 13.5px; z-index: 20; }
   #relbar b { font-weight: 650; }
   body.has-multi #relbar { display: block; }
+  body.has-multi #bottom { display: none; }
   body.has-multi #toast { bottom: 72px; }
   #toast {
     position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%) translateY(10px); background: #1b2030; color: #fff; padding: 9px 14px;
@@ -693,7 +694,7 @@
       new: 'Новое', open: 'Открыть', save: 'Сохранить', saveas: 'Сохранить как', fit: 'Вписать',
       new_t: 'Новое дерево (⌘N)', open_t: 'Открыть (⌘O)', save_t: 'Сохранить (⌘S)', saveas_t: 'Сохранить как (⇧⌘S)', fit_t: 'Вписать в экран (F)', compact: 'Компактно', compact_t: 'Компактные карточки (V)', help_t: 'Горячие клавиши (?)',
       undo_t: 'Отменить (⌘Z)', redo_t: 'Повторить (⇧⌘Z)', zoomin_t: 'Приблизить (+)', zoomout_t: 'Отдалить (−)',
-      hint_nav: 'навигация', rel_none: 'Общих предков нет', rel_common: 'Общие предки', rel_sentence: '{a} — {term} {b}', rel_removed: '(разница поколений: {r})', great: 'пра', half: 'сводн. ', ordinals: ['двоюродный', 'троюродный', 'четвероюродный', 'пятиюродный', 'шестиюродный'], kin_parent_m: 'отец', kin_parent_f: 'мать', kin_parent_x: 'родитель', kin_child_m: 'сын', kin_child_f: 'дочь', kin_child_x: 'ребёнок', kin_grandparent_m: 'дед', kin_grandparent_f: 'бабушка', kin_grandparent_x: 'дед/бабушка', kin_grandchild_m: 'внук', kin_grandchild_f: 'внучка', kin_grandchild_x: 'внук/внучка', kin_sibling_m: 'брат', kin_sibling_f: 'сестра', kin_sibling_x: 'брат/сестра', kin_uncle_m: 'дядя', kin_uncle_f: 'тётя', kin_uncle_x: 'дядя/тётя', kin_nephew_m: 'племянник', kin_nephew_f: 'племянница', kin_nephew_x: 'племянник(ца)', kin_cousin_m: '{n} брат', kin_cousin_f: '{n} сестра', kin_cousin_x: '{n} брат/сестра', search_ph: 'Найти человека…', no_match: 'Ничего не найдено', hint_edit: 'редактировать', hint_add: 'родитель / ребёнок / брат-сестра / супруг', hint_del: 'удалить', hint_help: 'все клавиши',
+      hint_nav: 'навигация', rel_none: 'Общих предков нет', rel_common: 'Общие предки', rel_sentence: '{a} — {term} {b}', rel_removed: '(разница поколений: {r})', great: 'пра', half: 'сводн. ', ordinals: ['двоюродный', 'троюродный', 'четвероюродный', 'пятиюродный', 'шестиюродный'], ordinals_f: ['двоюродная', 'троюродная', 'четвероюродная', 'пятиюродная', 'шестиюродная'], kin_parent_m: 'отец', kin_parent_f: 'мать', kin_parent_x: 'родитель', kin_child_m: 'сын', kin_child_f: 'дочь', kin_child_x: 'ребёнок', kin_grandparent_m: 'дед', kin_grandparent_f: 'бабушка', kin_grandparent_x: 'дед/бабушка', kin_grandchild_m: 'внук', kin_grandchild_f: 'внучка', kin_grandchild_x: 'внук/внучка', kin_sibling_m: 'брат', kin_sibling_f: 'сестра', kin_sibling_x: 'брат/сестра', kin_uncle_m: 'дядя', kin_uncle_f: 'тётя', kin_uncle_x: 'дядя/тётя', kin_nephew_m: 'племянник', kin_nephew_f: 'племянница', kin_nephew_x: 'племянник(ца)', kin_cousin_m: '{n} брат', kin_cousin_f: '{n} сестра', kin_cousin_x: '{n} брат/сестра (кузен)', search_ph: 'Найти человека…', no_match: 'Ничего не найдено', hint_edit: 'редактировать', hint_add: 'родитель / ребёнок / брат-сестра / супруг', hint_del: 'удалить', hint_help: 'все клавиши',
       edit: 'Изменить', photo: 'Фото', add_parent: '+ Родитель', add_sibling: '+ Брат/сестра', add_child: '+ Ребёнок', add_spouse: '+ Супруг', delete: 'Удалить',
       married: 'Брак с', until: 'До', unlink: 'Разорвать', done: 'Готово', empty: 'Нажмите, чтобы добавить первого человека',
       untitled: 'Новое дерево', app: 'Семейное древо',
@@ -2017,7 +2018,8 @@
     if (role === 'sibling') return (half ? t('half') : '') + G('kin_sibling');
     if (role === 'uncle') return great(gen - 2) + G('kin_uncle');
     if (role === 'nephew') return great(gen - 2) + G('kin_nephew');
-    return G('kin_cousin').replace('{n}', t('ordinals')[gen - 1] || (gen + '.'));
+    const ords = (g === 'f' && I18N[lang].ordinals_f) || t('ordinals');
+    return G('kin_cousin').replace('{n}', ords[gen - 1] || (gen + '.'));
   }
   function relationText(ids, depths, nearest) {
     const name = (id) => `<b>${esc(state.people[id]?.name || t('unnamed'))}</b>`;

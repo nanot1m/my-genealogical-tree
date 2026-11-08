@@ -200,4 +200,8 @@ test('shift-click selects several people and highlights their nearest common anc
   await expect(page.locator('#relbar')).toContainText('great-grandfather');
   await select(page, 'Aunt'); await cardOf(page, 'Me').click({ modifiers: ['Shift'] });
   await expect(page.locator('#relbar')).toHaveText('Aunt is the uncle/aunt of Me · Me is the niece of Aunt');
+  await expect(page.locator('#bottom')).toBeHidden();
+  await page.selectOption('#lang', 'ru');
+  await select(page, 'Me'); await cardOf(page, 'Cousin').click({ modifiers: ['Shift'] });
+  await expect(page.locator('#relbar')).toHaveText('Me — двоюродная сестра Cousin');
 });
