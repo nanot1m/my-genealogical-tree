@@ -291,9 +291,10 @@ function layoutPass(pref) {
         if (!swapped) break;
       }
     }
-    for (let iter = 0; iter < 12; iter++) {
+    const ordered = [...units].sort((a, b) => b.y - a.y);
+    for (let iter = 0; iter < 40; iter++) {
       let moved = 0;
-      for (const u of units) {
+      for (const u of ordered) {
         let sum = 0, w = 0;
         for (const id of u.ids) for (const f of parentFamilies(id)) {
           const kids = f.children.filter(c => positions.has(c) && !husbandOf(c)); if (!kids.length) continue;
@@ -306,7 +307,7 @@ function layoutPass(pref) {
           if (ps.length) { sum += ps.reduce((a, b) => a + cx(b), 0) / ps.length - cx(id); w += 1; }
         }
         if (!w) continue;
-        let d = (sum / w) * 0.5;
+        let d = sum / w;
         const row = byRow.get(u.y), i = row.indexOf(u);
         const left = row[i - 1], right = row[i + 1];
         const lo = left ? left.right + H_GAP - positions.get(u.ids[0]).x : -Infinity;
