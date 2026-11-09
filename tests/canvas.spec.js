@@ -205,3 +205,19 @@ test('shift-click selects several people and highlights their nearest common anc
   await select(page, 'Me'); await cardOf(page, 'Cousin').click({ modifiers: ['Shift'] });
   await expect(page.locator('#relbar')).toHaveText('Me — двоюродная сестра Cousin');
 });
+
+test('viewport position and zoom survive a reload', async ({ page }) => {
+  await newTree(page);
+  await firstPerson(page, 'Anna');
+  await addRelative(page, null, 'c', 'Kid');
+  await page.mouse.move(700, 450);
+  await page.mouse.wheel(0, -240);
+  await page.mouse.wheel(300, 120);
+  await page.waitForTimeout(500);
+  const transform = () => page.evaluate(() => document.getElementById('world').style.transform);
+  const before = await transform();
+  await page.reload();
+  await page.click('#w-continue');
+  await page.waitForTimeout(300);
+  expect(await transform()).toBe(before);
+});

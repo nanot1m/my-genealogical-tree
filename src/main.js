@@ -285,8 +285,17 @@ document.addEventListener('pointerdown', (e) => {
   if (rpop.classList.contains('show') && !rpop.contains(e.target) && !e.target.closest('.relbadge')) closeRelation();
 }, true);
 
+const VIEWS_KEY = 'familytree.views';
+const viewKey = () => libraryId || fileName;
+function saveView() {
+  try { const all = JSON.parse(localStorage.getItem(VIEWS_KEY) || '{}'); all[viewKey()] = view; localStorage.setItem(VIEWS_KEY, JSON.stringify(all)); } catch (_) {}
+}
+function restoreView() {
+  try { const v = JSON.parse(localStorage.getItem(VIEWS_KEY) || '{}')[viewKey()]; if (!v || !isFinite(v.x) || !isFinite(v.y) || !(v.s > 0)) return false; view = { x: v.x, y: v.y, s: v.s }; applyView(); return true; } catch (_) { return false; }
+}
 function applyView() {
   world.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.s})`;
+  clearTimeout(saveView.t); saveView.t = setTimeout(saveView, 300);
   placeSheet();
   let g = GRID * view.s; while (g < 16) g *= 2;
   viewport.style.backgroundSize = `${g}px ${g}px`;
@@ -1082,7 +1091,7 @@ function loadData(buf, name) {
   state.indexPerson = data.indexPerson && state.people[data.indexPerson] ? data.indexPerson : null;
   for (const f of Object.values(state.families)) { f.married ??= ''; f.ended ??= ''; f.status ??= 'married'; f.parents ??= []; f.children ??= []; f.kinds ??= {}; }
   fileName = name.replace(/\.json$/, EXT); fileHandle = null; libraryId = null; dirty = name.endsWith('.json'); undoStack = []; redoStack = []; selectedId = null; editingId = null;
-  render(); fitView(); scheduleDraft(); toast(t('opened') + ' ' + name);
+  render(); if (!restoreView()) fitView(); scheduleDraft(); toast(t('opened') + ' ' + name);
 }
 function newTree() {
   if (dirty && !confirm(t('discard'))) return;
@@ -1236,7 +1245,7 @@ const restored = restoreDraft();
 applyI18n(); renderLegend();
 render();
 document.getElementById('lang').addEventListener('change', (e) => setLang(e.target.value));
-if (restored) fitView(); else resetView();
+if (restored) { if (!restoreView()) fitView(); } else resetView();
 $('[data-act=download]').hidden = hasFS;
 navigator.storage?.persist?.().catch(() => {});
 let appVersion = null, updateReady = false, reloading = false;
