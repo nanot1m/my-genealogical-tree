@@ -108,10 +108,8 @@ function layoutPass(pref) {
   function sideOrder(ids) {
     const isMale = (id) => state.people[id]?.gender === 'm';
     const wifeWithBranches = (id) => isMale(id) && spousesOf(id).some(w => !isMale(w) && childFamily(w));
-    const inlawHusband = (id) => !isMale(id) && !husbandOf(id) && spousesOf(id).some(h => isMale(h));
-    const left = ids.filter(inlawHusband), right = ids.filter(wifeWithBranches);
-    const mid = ids.filter(id => !left.includes(id) && !right.includes(id));
-    return [...left, ...mid, ...right];
+    const right = ids.filter(wifeWithBranches);
+    return [...ids.filter(id => !right.includes(id)), ...right];
   }
   function marriageChain(unit, pid, ownSpouses) {
     if (unit.length < 3) return null;
