@@ -1046,6 +1046,8 @@
     if (i < 0 || j < 0 || j >= f.children.length) return;
     [f.children[i], f.children[j]] = [f.children[j], f.children[i]];
   }
+  function husbandOf(id) { const p = state.people[id]; if (!p || p.gender === 'm') return null; return spousesOf(id).find(h => state.people[h]?.gender === 'm' && childFamily(h)) || null; }
+  function coupled(a, b) { if (a === b) return false; const sa = spousesOf(a); if (sa.includes(b)) return true; const sb = spousesOf(b); return sa.some(x => sb.includes(x)); }
   function kindOf(pid) { const f = childFamily(pid); return (f && f.kinds && f.kinds[pid]) || { type: 'bio', twin: '', identical: false }; }
   function setKind(pid, patch) { const f = childFamily(pid); if (!f) return; f.kinds ??= {}; f.kinds[pid] = { ...kindOf(pid), ...patch }; }
   function nearestRelative(pid) {
@@ -1168,9 +1170,9 @@
       const ownIdx = n.unit.indexOf(n.own);
       if (side < 0 && ownIdx === 0 && n.unit.length > 1) n.unit.reverse();
       if (side > 0 && ownIdx > 0) n.unit.reverse();
-      if (side === 0 && n.unit.length === 2) {
+      if (n.unit.length === 2) {
         const [a, b] = n.unit.map(id => state.people[id]?.gender);
-        if (a === 'f' && b === 'm') n.unit.reverse();
+        if (a !== 'm' && b === 'm') n.unit.reverse();
       }
       for (const g of n.groups) {
         g.children = spreadMarried(g.children, side);
@@ -1188,6 +1190,14 @@
       }
     }
 
+    function sideOrder(ids) {
+      const isMale = (id) => state.people[id]?.gender === 'm';
+      const wifeWithBranches = (id) => isMale(id) && spousesOf(id).some(w => !isMale(w) && childFamily(w));
+      const inlawHusband = (id) => !isMale(id) && !husbandOf(id) && spousesOf(id).some(h => isMale(h));
+      const left = ids.filter(inlawHusband), right = ids.filter(wifeWithBranches);
+      const mid = ids.filter(id => !left.includes(id) && !right.includes(id));
+      return [...left, ...mid, ...right];
+    }
     function marriageChain(unit, pid, ownSpouses) {
       if (unit.length < 3) return null;
       const adj = new Map(unit.map(id => [id, []]));
@@ -1226,7 +1236,8 @@
           if (tw && ids.includes(tw) && Math.abs(ids.indexOf(tw) - ids.indexOf(id)) > 1) { ids.splice(ids.indexOf(tw), 1); ids.splice(ids.indexOf(id) + 1, 0, tw); }
         }
         const fixed = !!p || ids.every(id => state.people[id]?.birth);
-        const kids = []; for (const id of ids) if (!claimed.has(id)) kids.push(buildNode(id));
+        ids = sideOrder(ids);
+        const kids = []; for (const id of ids) { if (claimed.has(id)) continue; const h = husbandOf(id); if (h && !claimed.has(h)) continue; kids.push(buildNode(id)); }
         kids.forEach(c => { c.fixed = fixed; });
         if (kids.length) n.groups.push({ f, children: kids });
       }
@@ -1324,7 +1335,7 @@
         let cur = null;
         for (const id of ids) {
           const p = positions.get(id);
-          const joined = cur && cur.ids.some(o => spousesOf(o).includes(id));
+          const joined = cur && cur.ids.some(o => coupled(o, id));
           if (joined) { cur.ids.push(id); cur.right = p.x + CARD_W; }
           else { cur = { y, ids: [id], right: p.x + CARD_W }; units.push(cur); }
           unitOf.set(id, cur);
@@ -1336,7 +1347,7 @@
       const target = (u) => {
         let sum = 0, w = 0;
         for (const id of u.ids) for (const f of parentFamilies(id)) {
-          const kids = f.children.filter(c => positions.has(c)); if (!kids.length) continue;
+          const kids = f.children.filter(c => positions.has(c) && !husbandOf(c)); if (!kids.length) continue;
           const inUnit = f.parents.filter(x => u.ids.includes(x));
           const from = inUnit.reduce((a, b) => a + cx(b), 0) / inUnit.length;
           sum += kids.reduce((a, b) => a + cx(b), 0) / kids.length - from; w += 1;
@@ -1372,7 +1383,7 @@
         for (const u of units) {
           let sum = 0, w = 0;
           for (const id of u.ids) for (const f of parentFamilies(id)) {
-            const kids = f.children.filter(c => positions.has(c)); if (!kids.length) continue;
+            const kids = f.children.filter(c => positions.has(c) && !husbandOf(c)); if (!kids.length) continue;
             const inUnit = f.parents.filter(x => u.ids.includes(x));
             const from = inUnit.reduce((a, b) => a + cx(b), 0) / inUnit.length;
             sum += kids.reduce((a, b) => a + cx(b), 0) / kids.length - from; w += 1;
@@ -1401,14 +1412,16 @@
       const rowY = row * (CARD_H + V_GAP);
       const placedX = (id) => { const p = positions.get(id); return p && p.y === rowY ? p.x : null; };
       const unitBounds = (id, y = rowY) => {
-        let lo = positions.get(id).x, hi = lo + CARD_W; const seen = new Set([id]); const q = [id];
-        while (q.length) { const cur = q.pop(); for (const sp of spousesOf(cur)) { const p = positions.get(sp); if (!p || seen.has(sp) || p.y !== y) continue; const near = Math.abs(p.x - lo) <= CARD_W + COUPLE_GAP + 1 || Math.abs(p.x - hi) <= COUPLE_GAP + 1; if (!near) continue; seen.add(sp); q.push(sp); lo = Math.min(lo, p.x); hi = Math.max(hi, p.x + CARD_W); } }
-        return [lo, hi];
+        const rowCards = [...positions.entries()].filter(([, p]) => p.y === y).sort((a, b) => a[1].x - b[1].x);
+        let i = rowCards.findIndex(([cid]) => cid === id), j = i; const members = [id];
+        while (i > 0 && members.some(m => coupled(m, rowCards[i - 1][0]))) { i--; members.push(rowCards[i][0]); }
+        while (j < rowCards.length - 1 && members.some(m => coupled(m, rowCards[j + 1][0]))) { j++; members.push(rowCards[j][0]); }
+        return [rowCards[i][1].x, rowCards[j][1].x + CARD_W];
       };
       const groups = new Map();
       for (const k of n.kids) { const f = childFamily(k.c.own); const key = f ? f.id : k.c.own; if (!groups.has(key)) groups.set(key, { f, kids: [] }); groups.get(key).kids.push(k); }
       for (const { f, kids } of groups.values()) {
-        const order = f ? byBirth(f.children) : [];
+        const order = f ? sideOrder(byBirth(f.children).filter(id => kids.some(k => k.c.own === id) || !husbandOf(id))) : [];
         const complete = order.every(id => kids.some(k => k.c.own === id));
         if (!f || complete) { for (const { c, dx } of kids) place(c, x + dx, row); continue; }
         const nodeFor = (id) => {
@@ -1417,6 +1430,11 @@
           e.done = true; measure(e.a); return e.a;
         };
         const p0 = order.findIndex(id => placedX(id) !== null);
+        const anchorSide = (() => {
+          if (p0 < 0) return null; const a = order[p0], [lo, hi] = unitBounds(a), ax = positions.get(a).x;
+          if (hi - lo <= CARD_W + 1) return null;
+          return ax <= lo + 1 ? 'left' : ax + CARD_W >= hi - 1 ? 'right' : null;
+        })();
         const FAR = 2 * (CARD_W + H_GAP);
         const extBounds = (node) => { const segs = [...node.ext.values()].flat(); return { l: Math.min(...segs.map(v => v[0])), r: Math.max(...segs.map(v => v[1])) }; };
         const insertColumn = (node, cut, dir) => {
@@ -1436,7 +1454,9 @@
         };
         let edge = p0 >= 0 ? unitBounds(order[p0])[1] : x + Math.min(...kids.map(k => k.dx)) - H_GAP;
         let leftEdge = p0 >= 0 ? unitBounds(order[p0])[0] : edge + H_GAP;
-        for (const id of order.slice(p0 >= 0 ? p0 + 1 : 0)) {
+        const rightIds = anchorSide === 'left' ? [] : anchorSide === 'right' ? order.filter((id, i) => i !== p0) : order.slice(p0 >= 0 ? p0 + 1 : 0);
+        const leftIds = anchorSide === 'left' ? order.filter((id, i) => i !== p0).reverse() : anchorSide === 'right' ? [] : order.slice(0, Math.max(0, p0)).reverse();
+        for (const id of rightIds) {
           const px = placedX(id); if (px !== null) { const [lo, hi] = unitBounds(id); edge = Math.max(edge, hi); leftEdge = Math.min(leftEdge, lo); continue; }
           const node = nodeFor(id); if (!node) continue;
           let kx = edge + H_GAP;
@@ -1447,9 +1467,9 @@
           }
           kx += pushR; place(node, kx, row, node.anchorId); edge = kx + node.uw;
         }
-        if (p0 > 0) {
+        if (leftIds.length) {
           let ledge = leftEdge, redge = edge;
-          for (const id of order.slice(0, p0).reverse()) {
+          for (const id of leftIds) {
             const px = placedX(id); if (px !== null) { const [lo, hi] = unitBounds(id); ledge = Math.min(ledge, lo); redge = Math.max(redge, hi); continue; }
             const node = nodeFor(id); if (!node) continue;
             let kx = ledge - H_GAP - node.uw;
@@ -1472,7 +1492,7 @@
       const ownIdx = n.unit.indexOf(n.own);
       const list = n.ancestors.map(({ node: a, anchor }) => {
         const k = n.unit.indexOf(anchor);
-        const dir = n.side < 0 ? -1 : n.side > 0 ? 1 : k < ownIdx ? -1 : k > ownIdx ? 1 : (k === 0 ? -1 : 1);
+        const dir = n.unit.length > 1 ? (k === 0 ? -1 : k === n.unit.length - 1 ? 1 : (k < ownIdx ? -1 : 1)) : (n.side < 0 ? -1 : n.side > 0 ? 1 : -1);
         return { a, k, dir };
       }).sort((p, q) => (p.dir < 0 ? q.k - p.k : p.k - q.k));
       for (const { a, k, dir } of list) { a.anchorId = n.unit[k]; pending.push({ a, row: row - 1, center: x + n.ux[k] + CARD_W / 2, dir, order: row, anchor: n.unit[k] }); }
@@ -1515,7 +1535,7 @@
       for (const p of positions.values()) occupied = union(occupied, new Map([[Math.round(p.y / (CARD_H + V_GAP)), [[p.x, p.x + CARD_W]]]]));
     }
 
-    const descCount = (pid, seen = new Set()) => { let n = 0; for (const c of childrenOf(pid)) if (!seen.has(c)) { seen.add(c); n += 1 + descCount(c, seen); } return n; };
+    const descCount = (pid, seen = new Set()) => { let n = 0; for (const c of childrenOf(pid)) if (!seen.has(c) && !husbandOf(c)) { seen.add(c); n += 1 + descCount(c, seen); } return n; };
     const bySize = (list) => list.map(p => [p, descCount(p.id)]).sort((a, b) => b[1] - a[1]).map(([p]) => p);
     const roots = bySize(people().filter(p => !childFamily(p.id)));
     const cluster = (pid) => { const seen = new Set([pid]); for (const a of seen) for (const sp of spousesOf(a)) seen.add(sp); return [...seen]; };
@@ -1710,14 +1730,15 @@
       for (const pc of p.pieces) {
         if (pc.cmd === 'M') { out += `M${pc.x} ${pc.y}`; continue; }
         if (pc.cmd !== 'L') { out += `${pc.cmd}${pc.raw}`; continue; }
-        const cuts = [...new Set(pc.cuts)].sort((a, b) => a - b).filter((c, i, arr) => !i || c - arr[i - 1] > 2 * R);
-        if (!cuts.length) { out += ` L${pc.x2} ${pc.y2}`; continue; }
+        const sorted = [...new Set(pc.cuts)].sort((a, b) => a - b), groups = [];
+        for (const c of sorted) { const g = groups[groups.length - 1]; if (g && c - g[1] <= 2 * R) g[1] = c; else groups.push([c, c]); }
+        if (!groups.length) { out += ` L${pc.x2} ${pc.y2}`; continue; }
         if (mode === 'jump') {
           const dir = Math.sign(pc.x2 - pc.x1);
-          for (const cx of (dir > 0 ? cuts : cuts.reverse())) out += ` L${cx - R * dir} ${pc.y1} A${R} ${R} 0 0 ${dir > 0 ? 1 : 0} ${cx + R * dir} ${pc.y1}`;
+          for (const [a, b] of (dir > 0 ? groups : groups.reverse())) { const [s0, s1] = dir > 0 ? [a - R, b + R] : [b + R, a - R]; out += ` L${s0} ${pc.y1} A${(Math.abs(s1 - s0)) / 2} ${R} 0 0 ${dir > 0 ? 1 : 0} ${s1} ${pc.y1}`; }
         } else {
           const dir = Math.sign(pc.y2 - pc.y1);
-          for (const cy of (dir > 0 ? cuts : cuts.reverse())) out += ` L${pc.x1} ${cy - R * dir} M${pc.x1} ${cy + R * dir}`;
+          for (const [a, b] of (dir > 0 ? groups : groups.reverse())) { const [s0, s1] = dir > 0 ? [a - R, b + R] : [b + R, a - R]; out += ` L${pc.x1} ${s0} M${pc.x1} ${s1}`; }
         }
         out += ` L${pc.x2} ${pc.y2}`;
       }
