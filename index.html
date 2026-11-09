@@ -1314,6 +1314,53 @@
       n.ext = union(comp, new Map([[0, [[0, n.uw]]]]));
       return n;
     }
+    function relaxRows() {
+      const rows = new Map();
+      for (const [id, p] of positions) { if (!rows.has(p.y)) rows.set(p.y, []); rows.get(p.y).push(id); }
+      const units = [];
+      const unitOf = new Map();
+      for (const [y, ids] of rows) {
+        ids.sort((a, b) => positions.get(a).x - positions.get(b).x);
+        let cur = null;
+        for (const id of ids) {
+          const p = positions.get(id);
+          const joined = cur && cur.ids.some(o => spousesOf(o).includes(id));
+          if (joined) { cur.ids.push(id); cur.right = p.x + CARD_W; }
+          else { cur = { y, ids: [id], right: p.x + CARD_W }; units.push(cur); }
+          unitOf.set(id, cur);
+        }
+      }
+      const cx = (id) => positions.get(id).x + CARD_W / 2;
+      const byRow = new Map();
+      for (const u of units) { if (!byRow.has(u.y)) byRow.set(u.y, []); byRow.get(u.y).push(u); }
+      for (let iter = 0; iter < 12; iter++) {
+        let moved = 0;
+        for (const u of units) {
+          let sum = 0, w = 0;
+          for (const id of u.ids) for (const f of parentFamilies(id)) {
+            const kids = f.children.filter(c => positions.has(c)); if (!kids.length) continue;
+            const inUnit = f.parents.filter(x => u.ids.includes(x));
+            const from = inUnit.reduce((a, b) => a + cx(b), 0) / inUnit.length;
+            sum += kids.reduce((a, b) => a + cx(b), 0) / kids.length - from; w += 1;
+          }
+          if (!w) for (const id of u.ids) {
+            const ps = parentsOf(id).filter(a => positions.has(a));
+            if (ps.length) { sum += ps.reduce((a, b) => a + cx(b), 0) / ps.length - cx(id); w += 1; }
+          }
+          if (!w) continue;
+          let d = (sum / w) * 0.5;
+          const row = byRow.get(u.y), i = row.indexOf(u);
+          const left = row[i - 1], right = row[i + 1];
+          const lo = left ? left.right + H_GAP - positions.get(u.ids[0]).x : -Infinity;
+          const hi = right ? positions.get(right.ids[0]).x - H_GAP - u.right : Infinity;
+          d = Math.max(lo, Math.min(hi, d));
+          if (Math.abs(d) < 0.5) continue;
+          for (const id of u.ids) positions.get(id).x += d;
+          u.right += d; moved++;
+        }
+        if (!moved) break;
+      }
+    }
     let occupied = new Map();
     const pending = [];
     function placeKidsStrict(n, x, row) {
@@ -1454,6 +1501,7 @@
         occupied = new Map();
       }
     }
+    relaxRows();
     if (positions.size) {
       let L = Infinity, R = -Infinity, T = Infinity;
       for (const p of positions.values()) { L = Math.min(L, p.x); R = Math.max(R, p.x + CARD_W); T = Math.min(T, p.y); }
