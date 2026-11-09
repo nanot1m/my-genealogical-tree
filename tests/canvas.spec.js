@@ -204,6 +204,11 @@ test('shift-click selects several people and highlights their nearest common anc
   await page.selectOption('#lang', 'ru');
   await select(page, 'Me'); await cardOf(page, 'Cousin').click({ modifiers: ['Shift'] });
   await expect(page.locator('#relbar')).toHaveText('Me — двоюродная сестра Cousin');
+  await select(page, 'Cousin'); await cardOf(page, 'Kid').click({ modifiers: ['Shift'] });
+  await expect(page.locator('#relbar')).toHaveText('Cousin — двоюродный дядя Kid · Kid — двоюродный племянник Cousin');
+  await page.selectOption('#lang', 'en');
+  await select(page, 'Cousin'); await cardOf(page, 'Kid').click({ modifiers: ['Shift'] });
+  await expect(page.locator('#relbar')).toHaveText('Cousin is the first cousin once removed of Kid');
 });
 
 test('viewport position and zoom survive a reload', async ({ page }) => {

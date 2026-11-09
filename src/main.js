@@ -524,7 +524,16 @@ function relationText(ids, depths, nearest) {
   if (lo === 0) return sentence(a, kinTerm('parent', hi, ga), b) + ' · ' + sentence(b, kinTerm('child', hi, gb), a);
   if (lo === 1 && hi === 1) return sentence(a, kinTerm('sibling', 1, ga, nearest.length < 2), b);
   if (lo === 1) return sentence(a, kinTerm('uncle', hi, ga), b) + ' · ' + sentence(b, kinTerm('nephew', hi, gb), a);
-  return sentence(a, kinTerm('cousin', lo - 1, ga), b) + (hi > lo ? ' ' + t('rel_removed').replace('{r}', hi - lo) : '');
+  if (hi === lo) return sentence(a, kinTerm('cousin', lo - 1, ga), b);
+  const r = hi - lo, deg = lo - 1;
+  if (lang === 'ru') {
+    const ordM = t('ordinals')[deg - 1] || `${deg + 1}-юродный`, ordF = I18N.ru.ordinals_f[deg - 1] || ordM;
+    const up = ga === 'f' ? ordF + ' ' + (r === 1 ? 'тётя' : 'пра'.repeat(r - 2) + 'бабушка') : ordM + ' ' + (r === 1 ? 'дядя' : 'пра'.repeat(r - 2) + 'дед');
+    const down = gb === 'f' ? ordF + ' ' + (r === 1 ? 'племянница' : 'пра'.repeat(r - 2) + 'внучка') : ordM + ' ' + (r === 1 ? 'племянник' : 'пра'.repeat(r - 2) + 'внук');
+    return sentence(a, up, b) + ' · ' + sentence(b, down, a);
+  }
+  const removed = r === 1 ? t('removed_once') : r === 2 ? t('removed_twice') : t('removed_n').replace('{r}', r);
+  return sentence(a, kinTerm('cousin', deg, ga) + ' ' + removed, b);
 }
 let linkFrom = null;
 function startLink(id) {
