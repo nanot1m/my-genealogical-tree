@@ -541,3 +541,9 @@ export const I18N = {
     ],
   },
 };
+
+export const LANG_KEY = 'familytree.lang';
+export let lang = localStorage.getItem(LANG_KEY) || (navigator.language || 'en').slice(0, 2);
+if (!I18N[lang]) lang = 'en';
+export function setLangValue(l) { lang = l; }
+export const t = (k) => I18N[lang][k] ?? I18N.en[k] ?? k;
