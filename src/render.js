@@ -1,6 +1,6 @@
 import { t, lang } from './i18n.js';
 import { $, esc, rounded, year, initials, hueOf, dateParts, ageOf } from './util.js';
-import { state, people, fam, childFamily, parentFamilies, parentsOf, childrenOf, spousesOf, siblingsOf, husbandOf, birthOrder, byBirth, kindOf } from './model.js';
+import { state, people, fam, childFamily, parentFamilies, parentsOf, childrenOf, spousesOf, siblingsOf, husbandOf, birthOrder, byBirth, kindOf, descendantsOf, isCollapsed } from './model.js';
 import { computeLayout } from './layout.js';
 import { applyCrossings } from './crossings.js';
 
@@ -38,6 +38,7 @@ export function render() {
 export function renderCards() {
   const seen = new Set();
   for (const p of people()) {
+    if (!ctx.positions.has(p.id)) continue;
     let el = cardEl(p.id);
     if (el && el.classList.contains('leave')) { el.remove(); el = null; }
     const fresh = !el;
@@ -71,6 +72,7 @@ export function cardHTML(p) {
         <button class="photo-x ${p.photo ? 'has-photo' : ''}" title="${t('remove_photo')}">×</button>
       </div>
       ${birthOrder(p.id) ? `<span class="ord" title="${t('birth_order')}">${birthOrder(p.id)}</span>` : ''}
+      ${childrenOf(p.id).length ? (isCollapsed(p.id) ? `<button class="fold on" title="${t('expand')}">▸ ${descendantsOf(p.id).size}</button>` : `<button class="fold" title="${t('collapse')}">▾</button>`) : ''}
       <div class="info">
         <div class="name ${p.name ? '' : 'empty'}" title="${esc(fullName(p))}"><span class="nm">${esc(p.name) || t('unnamed')}</span>${p.birthName ? ` <span class="nee">${t('nee')} ${esc(p.birthName)}</span>` : ''}</div>
         <div class="dates ${dt ? '' : 'empty'}">${esc(dt)}${p.fate ? `<span class="fate-chip">${t('fate_' + p.fate)}</span>` : ''}</div>

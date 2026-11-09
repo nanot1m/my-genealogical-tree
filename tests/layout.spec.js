@@ -200,8 +200,8 @@ test.describe('wide real-world tree (anonymized)', () => {
     expect(split).toEqual([]);
     expect(g('Person 181').x).toBeGreaterThan(g('Person 171').x);
     expect(g('Person 177').y).toBe(g('Person 78').y);
-    expect(g('Person 177').x).toBeLessThan(g('Person 78').x);
-    expect(g('Person 78').x - g('Person 177').x).toBeLessThan(6 * (150 + 40));
+    expect(g('Person 177').x).toBeGreaterThan(g('Person 78').x);
+    expect(g('Person 177').x - g('Person 78').x).toBeLessThan(6 * (150 + 40));
     expect(g('Person 78').x).toBeLessThan(g('Person 79').x);
   });
 

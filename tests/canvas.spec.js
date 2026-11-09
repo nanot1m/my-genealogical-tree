@@ -226,3 +226,28 @@ test('viewport position and zoom survive a reload', async ({ page }) => {
   await page.waitForTimeout(300);
   expect(await transform()).toBe(before);
 });
+
+test('collapsing a branch hides descendants, survives reload, and search expands it', async ({ page }) => {
+  await newTree(page);
+  await firstPerson(page, 'Grandpa');
+  await addRelative(page, 'Grandpa', 'c', 'Dad');
+  await addRelative(page, 'Dad', 'c', 'Me');
+  await addRelative(page, 'Me', 'c', 'Kid');
+  await addRelative(page, 'Me', 'm', 'Wife');
+  await select(page, 'Dad');
+  await page.keyboard.press('h');
+  await expect(cards(page)).toHaveCount(2);
+  await expect(cardOf(page, 'Dad').locator('.fold')).toHaveText('▸ 2');
+  await expect(page.locator('#actions [data-sel=fold]')).toHaveText('Expand branch');
+  await page.waitForTimeout(600);
+  await page.reload(); await page.click('#w-continue');
+  await expect(cards(page)).toHaveCount(2);
+  await page.keyboard.press('Meta+f'); await page.keyboard.type('Kid'); await page.keyboard.press('Enter');
+  await expect(cards(page)).toHaveCount(5);
+  await expect(cardOf(page, 'Kid')).toHaveClass(/selected/);
+  await cardOf(page, 'Dad').hover();
+  await cardOf(page, 'Dad').locator('.fold').click();
+  await expect(cards(page)).toHaveCount(2);
+  await page.keyboard.press('Meta+z');
+  await expect(cards(page)).toHaveCount(5);
+});

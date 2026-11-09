@@ -2,7 +2,7 @@ import { $, sh } from './util.js';
 import { initRender, render, renderCards, cardHTML, applyPositions, animatePositions, fullName, renderEdges, marriageOrdinal, marriageText, statusHint, datesText, fmtDate, refreshCard, setSpawnFrom, reduceMotion, badgesEl, viewport, world, edgesSvg, cardsEl, emptyEl, cardEl } from './render.js';
 import { initPdf, exportPdf } from './pdf.js';
 import { t, lang, setLangValue, LANG_KEY } from './i18n.js';
-import { state, setState, people, fam, emptyState, childFamily, parentFamilies, moveMarriage, replaceParent, parentsOf, childrenOf, spousesOf, siblingsOf, newPerson, newFamily, addParent, addChild, addSpouse, addSibling, deletePerson, ancestorsOf, linkSpouse, linkChild, addRelation, joinHousehold, birthOrder, moveChild, husbandOf, coupled, kindOf, setKind, nearestRelative, byBirth } from './model.js';
+import { state, setState, people, fam, emptyState, isCollapsed, toggleCollapsed, hiddenSet, childFamily, parentFamilies, moveMarriage, replaceParent, parentsOf, childrenOf, spousesOf, siblingsOf, newPerson, newFamily, addParent, addChild, addSpouse, addSibling, deletePerson, ancestorsOf, linkSpouse, linkChild, addRelation, joinHousehold, birthOrder, moveChild, husbandOf, coupled, kindOf, setKind, nearestRelative, byBirth } from './model.js';
 import { computeLayout } from './layout.js';
 import { I18N } from './i18n.js';
 import { uid, esc, dateParts, isExactDate, rounded, year, initials, hueOf, dataUrlToBytes, bytesToDataUrl, ageOf } from './util.js';
@@ -363,7 +363,20 @@ function renderSearch() {
   sIdx = Math.min(sIdx, Math.max(0, sHits.length - 1));
   sList.innerHTML = q && !sHits.length ? `<div class="none">${t('no_match')}</div>` : sHits.map((p, i) => `<button type="button" data-id="${p.id}" class="${i === sIdx ? 'on' : ''}">${esc(fullName(p))}<small>${esc(datesText(p))}</small></button>`).join('');
 }
-function pickSearch(id) { closeSearch(); select(id); centerOn(id); }
+function pickSearch(id) {
+  closeSearch();
+  if (hiddenSet().has(id)) mutate(() => { state.collapsed = (state.collapsed || []).filter(c => !ancestorsOf(id).has(c) && !spousesOf(id).some(sp => ancestorsOf(sp).has(c))); });
+  select(id); centerOn(id);
+}
+function toggleFold(id) {
+  if (!childrenOf(id).length) return;
+  const before = positions.get(id);
+  mutate(() => toggleCollapsed(id));
+  const after = positions.get(id);
+  if (before && after) { view.x -= (after.x - before.x) * view.s; view.y -= (after.y - before.y) * view.s; applyView(); }
+  if (hiddenSet().has(selectedId)) select(id);
+  if (selectedId) $('#actions [data-sel=fold]').textContent = t(isCollapsed(selectedId) ? 'expand' : 'collapse');
+}
 sq.addEventListener('input', () => { sIdx = 0; renderSearch(); });
 sq.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeSearch();
@@ -458,6 +471,7 @@ function select(id, opts = {}) {
   if (mpopFamily) closeMarriage();
   selectedId = id;
   if (!opts.keepMulti) clearMulti();
+  if (id) { const fb = $('#actions [data-sel=fold]'); fb.hidden = !childrenOf(id).length; fb.textContent = t(isCollapsed(id) ? 'expand' : 'collapse'); }
   $('#actions').classList.toggle('show', !!id);
   document.body.classList.toggle('has-selection', !!id);
   cardsEl.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected'));
@@ -602,6 +616,7 @@ cardsEl.addEventListener('click', (e) => {
   if (linkFrom) { e.preventDefault(); if (id !== linkFrom) finishLink(id, card); return; }
   const plus = e.target.closest('.plus');
   if (plus) { createRelative(id, plus.dataset.add, plus); return; }
+  if (e.target.closest('.fold')) { toggleFold(id); return; }
   if (e.shiftKey || e.metaKey || e.ctrlKey) { e.preventDefault(); toggleMulti(id); return; }
   const wasSelected = selectedId === id;
   if (!wasSelected) select(id, { scroll: false });
@@ -946,6 +961,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'g' || e.key === 'G') { $('#help').classList.remove('show'); return $('#legend').classList.toggle('show'); }
   if (e.key === 'f' || e.key === 'F') return fitView();
   if (e.key === 'v' || e.key === 'V') return toggleCompact();
+  if ((e.key === 'h' || e.key === 'H') && selectedId) return toggleFold(selectedId);
   if (e.key === '0') return resetView();
   if (e.key === '+' || e.key === '=') return zoomAt(1.2, viewport.clientWidth / 2, viewport.clientHeight / 2, true);
   if (e.key === '-' || e.key === '_') return zoomAt(1 / 1.2, viewport.clientWidth / 2, viewport.clientHeight / 2, true);
@@ -994,6 +1010,7 @@ $('#actions').addEventListener('click', (e) => {
   const a = b.dataset.sel;
   if (a === 'edit') startEditing(selectedId);
   else if (a === 'link') startLink(selectedId);
+  else if (a === 'fold') toggleFold(selectedId);
   else if (a === 'photo') photoAction(selectedId, b);
   else if (a === 'delete') removeSelected();
   else createRelative(selectedId, a, b);
@@ -1016,7 +1033,7 @@ function serialize() {
     const { photo, photoSrc, ...rest } = p;
     people[p.id] = { ...rest, thumbRef: ref(photo), photoRef: ref(photoSrc) };
   }
-  const meta = new TextEncoder().encode(JSON.stringify({ version: 1, people, families: state.families, relations: state.relations, indexPerson: state.indexPerson || null, households: state.households || [], blobs: blobs.map(b => b.mime) }));
+  const meta = new TextEncoder().encode(JSON.stringify({ version: 1, people, families: state.families, relations: state.relations, indexPerson: state.indexPerson || null, households: state.households || [], collapsed: state.collapsed || [], blobs: blobs.map(b => b.mime) }));
   const head = new Uint8Array(MAGIC.length + 4); head.set(MAGIC);
   new DataView(head.buffer).setUint32(MAGIC.length, meta.length, true);
   const parts = [head, meta];
@@ -1094,7 +1111,7 @@ fileInput.addEventListener('change', async () => {
 function loadData(buf, name) {
   const data = deserialize(buf);
   if (!data || typeof data.people !== 'object' || typeof data.families !== 'object') throw new Error(t('not_tree'));
-  setState({ version: 1, people: data.people, families: data.families, relations: Array.isArray(data.relations) ? data.relations : [], indexPerson: null, households: [] });
+  setState({ version: 1, people: data.people, families: data.families, relations: Array.isArray(data.relations) ? data.relations : [], indexPerson: null, households: [], collapsed: Array.isArray(data.collapsed) ? data.collapsed.filter(id => data.people[id]) : [] });
   for (const p of Object.values(state.people)) { p.alive = p.alive ?? !p.death; p.name ??= ''; p.birthName ??= ''; p.birthplace ??= ''; p.profession ??= ''; p.notes ??= ''; p.birth ??= ''; p.death ??= ''; p.photo ??= null; p.photoSrc ??= null; p.crop ??= null; p.fate ??= ''; p.lineEnded ??= false; p.gender ??= ''; p.illness ??= ''; p.substance ??= ''; }
   state.households = Array.isArray(data.households) ? data.households.map(h => ({ ...h, members: h.members.filter(id => state.people[id]) })).filter(h => h.members.length > 1) : [];
   state.indexPerson = data.indexPerson && state.people[data.indexPerson] ? data.indexPerson : null;
@@ -1238,7 +1255,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && dir
 function restoreDraft() {
   try {
     const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
-    if (d && d.state && Object.keys(d.state.people).length) { setState(d.state); state.relations ??= []; state.indexPerson ??= null; state.households ??= []; fileName = d.fileName || fileName; dirty = !!d.dirty; libraryId = d.libraryId || null; return true; }
+    if (d && d.state && Object.keys(d.state.people).length) { setState(d.state); state.relations ??= []; state.indexPerson ??= null; state.households ??= []; state.collapsed ??= []; fileName = d.fileName || fileName; dirty = !!d.dirty; libraryId = d.libraryId || null; return true; }
   } catch (_) {}
   return false;
 }

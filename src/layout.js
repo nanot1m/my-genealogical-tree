@@ -1,10 +1,12 @@
-import { state, people, fam, childFamily, parentFamilies, parentsOf, childrenOf, spousesOf, siblingsOf, husbandOf, coupled, byBirth, ancestorsOf } from './model.js';
+import { state, people, fam, childFamily, parentFamilies, parentsOf, childrenOf, spousesOf, siblingsOf, husbandOf, coupled, byBirth, ancestorsOf, hiddenSet } from './model.js';
 
 let CARD_W, CARD_H, COUPLE_GAP, H_GAP, V_GAP, TREE_GAP, strictOrder;
+let hidden = new Set();
 let positions = new Map();
 
 export function computeLayout(cfg) {
   ({ CARD_W, CARD_H, COUPLE_GAP, H_GAP, V_GAP, TREE_GAP, strictOrder } = cfg);
+  hidden = hiddenSet();
   let best = null, pref = new Map();
   for (let pass = 0; pass < 4; pass++) {
     const pos = layoutPass(pref);
@@ -105,12 +107,6 @@ function layoutPass(pref) {
     }
   }
 
-  function sideOrder(ids) {
-    const isMale = (id) => state.people[id]?.gender === 'm';
-    const wifeWithBranches = (id) => isMale(id) && spousesOf(id).some(w => !isMale(w) && childFamily(w));
-    const right = ids.filter(wifeWithBranches);
-    return [...ids.filter(id => !right.includes(id)), ...right];
-  }
   function marriageChain(unit, pid, ownSpouses) {
     if (unit.length < 3) return null;
     const adj = new Map(unit.map(id => [id, []]));
@@ -128,7 +124,7 @@ function layoutPass(pref) {
   function buildNode(pid) {
     const unit = [pid]; claimed.add(pid);
     for (let i = 0; i < unit.length; i++) {
-      for (const f of parentFamilies(unit[i])) for (const sp of f.parents) if (!claimed.has(sp)) { claimed.add(sp); unit.push(sp); }
+      for (const f of parentFamilies(unit[i])) for (const sp of f.parents) if (!claimed.has(sp) && !hidden.has(sp)) { claimed.add(sp); unit.push(sp); }
     }
     const ownSpouses = parentFamilies(pid).flatMap(f => f.parents.filter(x => x !== pid)).filter(x => unit.includes(x));
     const chain = marriageChain(unit, pid, ownSpouses);
@@ -137,11 +133,11 @@ function layoutPass(pref) {
     const n = { own: pid, unit, groups: [], ancestors: [] };
     for (const m of unit) {
       const f = childFamily(m); if (!f) continue;
-      const top = f.parents.find(id => !claimed.has(id)); if (!top) continue;
+      const top = f.parents.find(id => !claimed.has(id) && !hidden.has(id)); if (!top) continue;
       n.ancestors.push({ node: buildNode(top), anchor: m });
     }
     for (const f of [...new Set(unit.flatMap(parentFamilies))]) {
-      let ids = byBirth(f.children.filter(id => !claimed.has(id)));
+      let ids = byBirth(f.children.filter(id => !claimed.has(id) && !hidden.has(id)));
       const p = pref.get(f.id);
       if (p) ids = [...ids].sort((a, b) => p.indexOf(a) - p.indexOf(b));
       for (const id of [...ids]) {
@@ -149,7 +145,6 @@ function layoutPass(pref) {
         if (tw && ids.includes(tw) && Math.abs(ids.indexOf(tw) - ids.indexOf(id)) > 1) { ids.splice(ids.indexOf(tw), 1); ids.splice(ids.indexOf(id) + 1, 0, tw); }
       }
       const fixed = !!p || ids.every(id => state.people[id]?.birth);
-      ids = sideOrder(ids);
       const kids = []; for (const id of ids) { if (claimed.has(id)) continue; const h = husbandOf(id); if (h && !claimed.has(h)) continue; kids.push(buildNode(id)); }
       kids.forEach(c => { c.fixed = fixed; });
       if (kids.length) n.groups.push({ f, children: kids });
@@ -335,7 +330,7 @@ function layoutPass(pref) {
     const groups = new Map();
     for (const k of n.kids) { const f = childFamily(k.c.own); const key = f ? f.id : k.c.own; if (!groups.has(key)) groups.set(key, { f, kids: [] }); groups.get(key).kids.push(k); }
     for (const { f, kids } of groups.values()) {
-      const order = f ? sideOrder(byBirth(f.children).filter(id => kids.some(k => k.c.own === id) || !husbandOf(id))) : [];
+      const order = f ? byBirth(f.children).filter(id => !hidden.has(id) && (kids.some(k => k.c.own === id) || !husbandOf(id))) : [];
       const complete = order.every(id => kids.some(k => k.c.own === id));
       if (!f || complete) { for (const { c, dx } of kids) place(c, x + dx, row); continue; }
       const nodeFor = (id) => {
@@ -409,17 +404,17 @@ function layoutPass(pref) {
       const dir = n.unit.length > 1 ? (k === 0 ? -1 : k === n.unit.length - 1 ? 1 : (k < ownIdx ? -1 : 1)) : (n.side < 0 ? -1 : n.side > 0 ? 1 : -1);
       return { a, k, dir };
     }).sort((p, q) => (p.dir < 0 ? q.k - p.k : p.k - q.k));
-    for (const { a, k, dir } of list) { a.anchorId = n.unit[k]; pending.push({ a, row: row - 1, center: x + n.ux[k] + CARD_W / 2, dir, order: row, anchor: n.unit[k] }); }
+    for (const { a, k, dir } of list) { a.anchorId = n.unit[k]; pending.push({ a, row: row - 1, center: x + n.ux[k] + CARD_W / 2, dir, order: row, anchor: n.unit[k], sided: n.unit.length > 1 }); }
   }
   function placeAncestors() {
     pending.sort((p, q) => p.order - q.order);
     for (let i = 0; i < pending.length; i++) {
-      const { a, row, center, dir, anchor } = pending[i];
+      const { a, row, center, dir, anchor, sided } = pending[i];
       if (pending[i].done) continue;
       measure(a);
       let dx = center - a.uw / 2;
       const push = settle(occupied, shift(a.ext, dx, row), dir), back = settle(occupied, shift(a.ext, dx, row), -dir);
-      dx += Math.abs(back) < Math.abs(push) / 2 ? back : push;
+      dx += !sided && Math.abs(back) < Math.abs(push) / 2 ? back : push;
       const before = pending.length, placedBefore = positions.size;
       place(a, dx, row, anchor);
       blocks.push({ ids: [...positions.keys()].slice(placedBefore), center });
@@ -462,11 +457,11 @@ function layoutPass(pref) {
   }
   const sideOf = (pid) => sideSets.husband.has(pid) ? -1 : sideSets.wife.has(pid) ? 1 : 0;
   const bySize = (list) => list.map(p => [p, descCount(p.id), sideOf(p.id)]).sort((a, b) => a[2] - b[2] || b[1] - a[1]).map(([p]) => p);
-  const roots = bySize(people().filter(p => !childFamily(p.id)));
+  const roots = bySize(people().filter(p => !childFamily(p.id) && !hidden.has(p.id)));
   const cluster = (pid) => { const seen = new Set([pid]); for (const a of seen) for (const sp of spousesOf(a)) seen.add(sp); return [...seen]; };
   const topRoots = roots.filter(p => cluster(p.id).every(id => !childFamily(id)));
   let x = 0;
-  for (const list of [topRoots, roots, people()]) {
+  for (const list of [topRoots, roots, people().filter(p => !hidden.has(p.id))]) {
     for (const p of list) {
       if (claimed.has(p.id)) continue;
       const root = buildNode(p.id); assignSides(root, 0);

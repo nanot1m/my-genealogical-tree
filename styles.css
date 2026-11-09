@@ -482,3 +482,8 @@ body.has-selection #bottom { display: none; }
   #help .panel { width: calc(100vw - 24px); padding: 18px; }
   #help .grid { grid-template-columns: 1fr; }
 }
+
+.fold { position: absolute; right: -8px; bottom: -11px; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 11px; border: 1px solid var(--border-strong); background: var(--card); color: var(--muted); font-size: 11px; font-weight: 600; cursor: pointer; display: none; align-items: center; justify-content: center; gap: 3px; z-index: 3; }
+.card:hover .fold, .card.selected .fold, .fold.on { display: inline-flex; }
+.fold.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+body.compact .fold { right: 4px; bottom: auto; top: 70px; }
