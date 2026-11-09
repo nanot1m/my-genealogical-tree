@@ -3,7 +3,6 @@ import { initRender, render, renderCards, cardHTML, applyPositions, animatePosit
 import { initPdf, exportPdf } from './pdf.js';
 import { t, lang, setLangValue, LANG_KEY } from './i18n.js';
 import { state, setState, people, fam, emptyState, isCollapsed, toggleCollapsed, hiddenSet, childFamily, parentFamilies, moveMarriage, replaceParent, parentsOf, childrenOf, spousesOf, siblingsOf, newPerson, newFamily, addParent, addChild, addSpouse, addSibling, deletePerson, ancestorsOf, linkSpouse, linkChild, addRelation, joinHousehold, birthOrder, moveChild, husbandOf, coupled, kindOf, setKind, nearestRelative, byBirth } from './model.js';
-import { computeLayout } from './layout.js';
 import { I18N } from './i18n.js';
 import { uid, esc, dateParts, isExactDate, rounded, year, initials, hueOf, dataUrlToBytes, bytesToDataUrl, ageOf } from './util.js';
 import { applyCrossings } from './crossings.js';
@@ -70,10 +69,6 @@ function renderLegend() {
       ['jump', `<path d="M10 22 H50 A6 6 0 0 1 62 22 H102 M56 4 V40"/>`],
       ['gap', `<path d="M10 22 H102 M56 4 V16 M56 28 V40"/>`],
     ].map(([m, svg]) => `<button type="button" data-x="${m}" class="${crossMode === m ? 'on' : ''}"><svg viewBox="0 0 112 44">${svg}</svg><span>${esc(t('x_' + m))}</span></button>`).join('') + '</div>'
-    + `<h3>${esc(t('lg_sibs'))}</h3><div class="xsel">` + [
-      ['0', `<rect class="c" x="4" y="14" width="24" height="16" rx="3"/><rect class="c" x="44" y="14" width="24" height="16" rx="3"/><rect class="c" x="84" y="14" width="24" height="16" rx="3"/><text x="16" y="10" font-size="9" fill="currentColor" stroke="none" text-anchor="middle">1</text><text x="56" y="10" font-size="9" fill="currentColor" stroke="none" text-anchor="middle">3</text><text x="96" y="10" font-size="9" fill="currentColor" stroke="none" text-anchor="middle">2</text>`],
-      ['1', `<rect class="c" x="4" y="14" width="24" height="16" rx="3"/><rect class="c" x="44" y="14" width="24" height="16" rx="3"/><rect class="c" x="84" y="14" width="24" height="16" rx="3"/><text x="16" y="10" font-size="9" fill="currentColor" stroke="none" text-anchor="middle">1</text><text x="56" y="10" font-size="9" fill="currentColor" stroke="none" text-anchor="middle">2</text><text x="96" y="10" font-size="9" fill="currentColor" stroke="none" text-anchor="middle">3</text>`],
-    ].map(([m, svg]) => `<button type="button" data-s="${m}" class="${(strictOrder ? '1' : '0') === m ? 'on' : ''}"><svg viewBox="0 0 112 44">${svg}</svg><span>${esc(t('sibs_' + m))}</span></button>`).join('')
     + `<label class="xcheck"><input type="checkbox" id="lg-badges" ${orderBadges ? 'checked' : ''}><span>${esc(t('show_order_badges'))}</span></label></div>`;
 }
 function setLang(l) {
@@ -84,12 +79,10 @@ function setLang(l) {
 
 let CARD_W = 280, CARD_H = 112, COUPLE_GAP = 76;
 const H_GAP = 36, V_GAP = 96, TREE_GAP = 100;
-const COMPACT_KEY = 'familytree.compact', CROSS_KEY = 'familytree.cross', STRICT_KEY = 'familytree.strictOrder';
-let strictOrder = localStorage.getItem(STRICT_KEY) === '1';
+const COMPACT_KEY = 'familytree.compact', CROSS_KEY = 'familytree.cross';
 const BADGE_KEY = 'familytree.orderBadges';
 let orderBadges = localStorage.getItem(BADGE_KEY) !== '0';
 function setOrderBadges(on) { orderBadges = on; localStorage.setItem(BADGE_KEY, on ? '1' : '0'); document.body.classList.toggle('no-ord', !on); renderLegend(); }
-function setStrictOrder(on) { strictOrder = on; localStorage.setItem(STRICT_KEY, on ? '1' : ''); renderLegend(); render(); }
 let crossMode = ['default', 'jump', 'gap'].includes(localStorage.getItem(CROSS_KEY)) ? localStorage.getItem(CROSS_KEY) : 'gap';
 function setCrossMode(m) { crossMode = m; localStorage.setItem(CROSS_KEY, m); renderLegend(); render(); }
 let compact = false;
@@ -107,7 +100,7 @@ const DRAFT_KEY = 'familytree.draft';
 let positions = new Map();
 const ctx = {
   get CARD_H() { return CARD_H; }, get CARD_W() { return CARD_W; }, get COUPLE_GAP() { return COUPLE_GAP; }, get H_GAP() { return H_GAP; }, get V_GAP() { return V_GAP; }, get TREE_GAP() { return TREE_GAP; },
-  get compact() { return compact; }, get crossMode() { return crossMode; }, get strictOrder() { return strictOrder; }, get orderBadges() { return orderBadges; },
+  get compact() { return compact; }, get crossMode() { return crossMode; }, get orderBadges() { return orderBadges; },
   get dirty() { return dirty; }, get editingId() { return editingId; }, get fileName() { return fileName; }, get hiPeople() { return hiPeople; }, get linkFrom() { return linkFrom; }, get multi() { return multi; }, get selectedId() { return selectedId; }, get sheetId() { return sheetId; },
   get positions() { return positions; }, set positions(v) { positions = v; },
   get paintMulti() { return paintMulti; }, get placeSheet() { return placeSheet; }, get shownName() { return shownName; }, get stopEditing() { return stopEditing; }, get toast() { return toast; }, get bbox() { return bbox; },
@@ -474,6 +467,7 @@ function select(id, opts = {}) {
   if (id) { const fb = $('#actions [data-sel=fold]'); fb.hidden = !childrenOf(id).length; fb.textContent = t(isCollapsed(id) ? 'expand' : 'collapse'); }
   $('#actions').classList.toggle('show', !!id);
   document.body.classList.toggle('has-selection', !!id);
+  renderEdges();
   cardsEl.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected'));
   if (id) {
     cardEl(id)?.classList.add('selected');
@@ -659,7 +653,7 @@ function openSheet(id, fresh) {
   if (fresh || !isCoarse) { sh('sh-name').focus(); if (fresh) sh('sh-name').select(); }
 }
 if (localStorage.getItem(COMPACT_KEY)) setCompact(true);
-$('#legend .panel').addEventListener('click', (e) => { const b = e.target.closest('[data-x]'), c = e.target.closest('[data-s]'); if (b) setCrossMode(b.dataset.x); else if (c) setStrictOrder(c.dataset.s === '1'); });
+$('#legend .panel').addEventListener('click', (e) => { const b = e.target.closest('[data-x]'); if (b) setCrossMode(b.dataset.x); });
 $('#legend .panel').addEventListener('change', (e) => { if (e.target.id === 'lg-badges') setOrderBadges(e.target.checked); });
 document.body.classList.toggle('no-ord', !orderBadges);
 const sheetDocked = matchMedia('(max-width: 760px), (pointer: coarse)');

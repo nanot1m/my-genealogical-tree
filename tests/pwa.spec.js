@@ -70,7 +70,7 @@ test.describe('in-app documentation', () => {
     await page.click('[data-act=legend]');
     await expect(page.locator('#legend.show')).toBeVisible();
     await expect(page.locator('#legend .item')).toHaveCount(29);
-    await expect(page.locator('#legend h3')).toHaveText(['Couples', 'Children', 'People', 'Relationships', 'Line crossings', 'Sibling order']);
+    await expect(page.locator('#legend h3')).toHaveText(['Couples', 'Children', 'People', 'Relationships', 'Line crossings']);
     await page.keyboard.press('Escape');
     await expect(page.locator('#legend.show')).toHaveCount(0);
     await page.keyboard.press('g');

@@ -97,9 +97,19 @@ export function computeLayout(model, opts) {
       const men = u.members.filter(isMale), women = u.members.filter(m => !isMale(m));
       for (const h of men) for (const w of women) for (const rh of rootsAbove(h)) for (const rw of rootsAbove(w)) { if (rh !== rw && before.has(rw.id) && before.has(rh.id)) before.get(rw.id).add(rh.id); }
     }
+    // start from the roots above the index couple's husband so the wife's ancestry attaches on her side
+    const preferred = new Set();
+    if (ci === idxComp) {
+      const me = model.indexPerson, spouse = vSpouses(me)[0];
+      const husband = isMale(me) ? me : spouse && isMale(spouse) ? spouse : me;
+      for (const r of rootsAbove(husband)) preferred.add(r.id);
+      if (!preferred.size) preferred.add(unitOf.get(husband).id);
+    }
+    const rank = (u) => preferred.has(u.id) ? 0 : 1;
     const done = new Set(); const ordered = [];
     while (ordered.length < roots.length) {
-      const pick = roots.find(u => !done.has(u.id) && [...before.get(u.id)].every(x => done.has(x))) || roots.find(u => !done.has(u.id));
+      const ready = roots.filter(u => !done.has(u.id) && [...before.get(u.id)].every(x => done.has(x)));
+      const pick = (ready.length ? ready : roots.filter(u => !done.has(u.id))).sort((a, b) => rank(a) - rank(b))[0];
       done.add(pick.id); ordered.push(pick);
     }
     const compTrees = [];
@@ -125,8 +135,12 @@ export function computeLayout(model, opts) {
     let contour = new Map([[u.row, [[0, u.width]]]]);
     const xs = new Map([[u, 0]]);
     const place = (frame, dx) => { for (const [k, v] of frame.x) xs.set(k, v + dx); contour = merge(contour, shiftContour(frame.contour, dx)); };
-    for (const b of u.left) { const f = layoutNode(b, 'right'); place(f, settle(contour, f.contour, -1)); }
-    for (const b of u.right) { const f = layoutNode(b, 'left'); place(f, settle(contour, f.contour, 1)); }
+    // a spouse's parents start above that spouse and extend outward (rule 4); inside a side block everything keeps opening outward
+    const anchorOf = (b) => u.members.find(m => parentUnit(m) === b);
+    const putLeft = (b) => { const f = layoutNode(b, 'right'); const dx0 = memberOffset(u, anchorOf(b)) + CARD_W - b.width; place(f, dx0 + settle(contour, shiftContour(f.contour, dx0), -1)); };
+    const putRight = (b) => { const f = layoutNode(b, 'left'); const dx0 = memberOffset(u, anchorOf(b)); place(f, dx0 + settle(contour, shiftContour(f.contour, dx0), 1)); };
+    const blocksAfterKids = align !== 'center';
+    if (!blocksAfterKids) { for (const b of u.left) putLeft(b); for (const b of u.right) putRight(b); }
     if (u.kids.length) {
       let acc = null; const placed = [];
       for (const k of u.kids) {
@@ -142,6 +156,7 @@ export function computeLayout(model, opts) {
       shift += settle(contour, shiftContour(acc, shift), 1);
       for (const [, f, dx] of placed) place(f, dx + shift);
     }
+    if (blocksAfterKids) { for (const b of [...u.left, ...u.right]) (align === 'left' ? putRight : putLeft)(b); }
     return { contour, x: xs };
   }
   let offset = 0;

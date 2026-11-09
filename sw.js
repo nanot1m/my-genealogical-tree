@@ -1,5 +1,5 @@
 const CACHE = 'familytree-v1';
-const ASSETS = ['./', './index.html', './styles.css', './src/main.js', './src/i18n.js', './src/util.js', './src/crossings.js', './src/model.js', './src/layout.js', './src/render.js', './src/pdf.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png'];
+const ASSETS = ['./', './index.html', './styles.css', './src/main.js', './src/i18n.js', './src/util.js', './src/crossings.js', './src/model.js', './src/engine.js', './src/render.js', './src/pdf.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));

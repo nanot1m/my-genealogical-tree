@@ -113,6 +113,15 @@ export function animatePositions() {
 
 export function fullName(p) { return p.birthName ? `${p.name || t('unnamed')} (${t('nee')} ${p.birthName})` : (p.name || t('unnamed')); }
 
+function focusSet(id) {
+  if (!id || !state.people[id]) return new Set();
+  const out = new Set([id]);
+  for (const f of Object.values(state.families)) {
+    if (f.children.includes(id)) { f.parents.forEach(p => out.add(p)); f.children.forEach(c => out.add(c)); }
+    if (f.parents.includes(id)) f.children.forEach(c => out.add(c));
+  }
+  return out;
+}
 export function renderEdges(pos = ctx.positions) {
   const d = [], dPartners = [], dPast = [], dPartnersPast = [], dSlash = [], dEnded = [], rels = [], dAdopted = [], dFoster = [], dArrow = [], dHouse = [], dHi = [];
   const lineBuckets = [d, dPartners, dPast, dPartnersPast, dAdopted, dFoster];
@@ -123,6 +132,7 @@ export function renderEdges(pos = ctx.positions) {
     lineBuckets.forEach((b, i) => dHi.push(...b.slice(before[i])));
   };
   const isPast = (f) => !!f.ended || f.status === 'divorced' || f.status === 'separated';
+  const hi = ctx.hiPeople.size ? ctx.hiPeople : focusSet(ctx.selectedId);
   const hull = (pts) => {
     pts = [...pts].sort((a, b) => a.x - b.x || a.y - b.y);
     const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
@@ -156,18 +166,20 @@ export function renderEdges(pos = ctx.positions) {
     else dSlash.push(`M${mx - 4} ${my + 8} L${mx + 4} ${my - 8}`);
     if (status.startsWith('reconciled')) dSlash.push(`M${mx - 10} ${my - 8} L${mx + 10} ${my + 8}`);
   };
-  const lanes = [];
-  const laneFor = (y, x1, x2) => {
-    for (let k = 0; ; k++) {
-      const used = lanes.filter(l => l.y === y && l.k === k).some(l => x1 <= l.x2 + 8 && x2 >= l.x1 - 8);
-      if (!used) { lanes.push({ y, k, x1, x2 }); return k; }
-    }
+  const segs = [], badges = [];
+  const blocked = (y, x1, x2, bx) => segs.some(s => Math.abs(s.y - y) < 10 && x1 <= s.x2 + 8 && x2 >= s.x1 - 8)
+    || badges.some(b => Math.abs(b.y - y) < 22 && b.x > x1 - 22 && b.x < x2 + 22)
+    || (bx != null && segs.some(s => Math.abs(s.y - y) < 22 && bx > s.x1 - 22 && bx < s.x2 + 22));
+  const freeY = (y, x1, x2, steps, bx) => {
+    const found = steps.map(dy => y + dy).find(c => !blocked(c, x1, x2, bx)) ?? y;
+    segs.push({ y: found, x1, x2 });
+    return found;
   };
   const fams = Object.values(state.families).sort((a, b) => b.children.length - a.children.length);
   for (const f of fams) {
     const ps = f.parents.filter(id => pos.has(id)).map(mid).sort((a, b) => a.cx - b.cx);
     const cs = f.children.filter(id => pos.has(id)).map(mid);
-    const hiFam = ctx.hiPeople.size > 0 && f.parents.some(id => ctx.hiPeople.has(id)) && f.children.some(id => ctx.hiPeople.has(id));
+    const hiFam = hi.size > 0 && f.parents.some(id => hi.has(id)) && f.children.some(id => hi.has(id));
     let origin = null;
     if (ps.length === 2) capture(hiFam, () => {
       const [a, b] = ps;
@@ -181,10 +193,11 @@ export function renderEdges(pos = ctx.positions) {
         slashes(origin.x, a.cy, f.status);
       } else {
         const gap = Math.round((b.cx - a.cx) / (ctx.CARD_W + ctx.COUPLE_GAP));
-        const stepY = Math.max(a.bottom, b.bottom) + 18 + 12 * Math.max(0, gap - 2);
-        bucket.push(`M${a.cx} ${a.bottom} L${a.cx} ${stepY} L${b.cx} ${stepY} L${b.cx} ${b.bottom}`);
+        const stepY = freeY(Math.max(a.bottom, b.bottom) + 18 + 12 * Math.max(0, gap - 2), a.cx, b.cx, [0, 14, 28, 42, 56], (a.cx + b.cx) / 2);
+        bucket.push(rounded([{ x: a.cx, y: a.bottom }, { x: a.cx, y: stepY }, { x: b.cx, y: stepY }, { x: b.cx, y: b.bottom }]));
         origin = { x: (a.cx + b.cx) / 2, y: stepY };
         marriages.push({ f, x: origin.x, y: stepY, past });
+        badges.push(origin);
         slashes(origin.x, stepY, f.status);
       }
     }); else if (ps.length === 1) origin = { x: ps[0].cx, y: ps[0].bottom };
@@ -192,7 +205,8 @@ export function renderEdges(pos = ctx.positions) {
     const rowTop = Math.min(...cs.map(c => c.top));
     const xs = cs.map(c => c.cx);
     if (origin) xs.push(origin.x);
-    const busY = rowTop - ctx.V_GAP / 2 - 14 * laneFor(rowTop, Math.min(...xs), Math.max(...xs));
+    const down = [14, 28].filter(dy => rowTop - ctx.V_GAP / 2 + dy < rowTop - 16);
+    const busY = freeY(rowTop - ctx.V_GAP / 2, Math.min(...xs), Math.max(...xs), [0, -14, ...down, -28, -42, -56, -70]);
     const sorted = [...cs].sort((a, b) => a.cx - b.cx);
     const kinds = f.kinds || {};
     const twinOf = (id) => kinds[id]?.twin || Object.keys(kinds).find(k => kinds[k].twin === id) || '';
@@ -212,17 +226,19 @@ export function renderEdges(pos = ctx.positions) {
       if (kinds[c.id]?.type === 'adopted') dArrow.push(`M${c.cx - 5} ${c.top - 9} L${c.cx} ${c.top - 1} L${c.cx + 5} ${c.top - 9}`);
       return false;
     };
-    const hiXs = hiFam ? sorted.filter(c => ctx.hiPeople.has(c.id)).map(c => c.cx) : [];
+    const hiXs = hiFam ? sorted.filter(c => hi.has(c.id)).map(c => c.cx) : [];
     if (origin) {
-      d.push(rounded([origin, { x: origin.x, y: busY }, { x: sorted[0].cx, y: busY }]));
-      d.push(`M${Math.min(origin.x, sorted[0].cx)} ${busY} L${Math.max(origin.x, sorted[sorted.length - 1].cx)} ${busY}`);
+      const x0 = sorted[0].cx, x1 = sorted[sorted.length - 1].cx;
+      if (origin.x < x0 - 1) d.push(rounded([origin, { x: origin.x, y: busY }, { x: x1, y: busY }]));
+      else if (origin.x > x1 + 1) d.push(rounded([origin, { x: origin.x, y: busY }, { x: x0, y: busY }]));
+      else d.push(`M${origin.x} ${origin.y} L${origin.x} ${busY}`, `M${x0} ${busY} L${x1} ${busY}`);
       if (hiXs.length) dHi.push(`M${origin.x} ${origin.y} L${origin.x} ${busY}`, `M${Math.min(origin.x, ...hiXs)} ${busY} L${Math.max(origin.x, ...hiXs)} ${busY}`);
-      for (const c of sorted) capture(hiFam && ctx.hiPeople.has(c.id), () => drop(c, origin.x));
+      for (const c of sorted) capture(hiFam && hi.has(c.id), () => drop(c, origin.x));
     } else {
       const f0 = sorted[0], fn = sorted[sorted.length - 1];
       d.push(`M${f0.cx} ${busY} L${fn.cx} ${busY}`);
       if (hiXs.length > 1) dHi.push(`M${Math.min(...hiXs)} ${busY} L${Math.max(...hiXs)} ${busY}`);
-      for (const c of sorted) capture(hiFam && ctx.hiPeople.has(c.id), () => drop(c, f0.cx));
+      for (const c of sorted) capture(hiFam && hi.has(c.id), () => drop(c, f0.cx));
     }
   }
   for (const p of people()) {
