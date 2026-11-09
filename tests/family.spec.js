@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { newTree, firstPerson, addRelative, cardOf, select, draftState, familiesByName, positions, rows } from './helpers.js';
+import { newTree, firstPerson, addRelative, cardOf, select, draftState, familiesByName, positions, rows, setGender } from './helpers.js';
 
 test.describe('spouses and marriages', () => {
   test('add spouse, multiple spouses, child menu asks which partner', async ({ page }) => {
@@ -93,14 +93,15 @@ test.describe('replacing parents and marriage order', () => {
     await expect(page.locator('.marriage').first()).toContainText('1950 – † 2007');
   });
 
-  test('two marriages form a chain even when a spouse has another partner in the row', async ({ page }) => {
+  test('men sit left of women in a shared row, first wife next to her husband', async ({ page }) => {
     await newTree(page);
     await firstPerson(page, 'Hub');
     await addRelative(page, null, 'm', 'First');
     await addRelative(page, 'Hub', 'm', 'Second');
     await addRelative(page, 'Second', 'm', 'Other');
+    await setGender(page, 'Hub', 'm'); await setGender(page, 'Other', 'm');
     const r = rows(await positions(page));
-    expect(r[0]).toEqual(['First', 'Hub', 'Second', 'Other']);
+    expect(r[0]).toEqual(['Other', 'Hub', 'First', 'Second']);
   });
 
   test('three or more marriages: person anchored at the edge, later marriages routed below the row', async ({ page }) => {
@@ -148,6 +149,7 @@ test.describe('replacing parents and marriage order', () => {
     await addRelative(page, null, 'm', 'Mary');
     await addRelative(page, 'John', 'm', 'Second');
     await addRelative(page, 'John', 'm', 'Third');
+    await setGender(page, 'John', 'm');
     await page.locator('.marriage', { hasText: '³' }).click();
     await expect(page.locator('#mpop-title')).toHaveText('John & Third');
     await expect(page.locator('#m-order-row')).toBeVisible();

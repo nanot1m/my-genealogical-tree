@@ -116,3 +116,10 @@ export function attachConsoleGuard(page, errors) {
 }
 
 export const PHOTO = new URL('./fixtures/photo.png', import.meta.url).pathname;
+
+export async function setGender(page, name, g) {
+  await cardOf(page, name).dblclick();
+  await page.click(`#sh-gender [data-v=${g}]`);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(150);
+}

@@ -122,7 +122,7 @@ test.describe('animations', () => {
     await addRelative(page, null, 'c', 'A');
     await page.waitForTimeout(500);
     const sampling = page.evaluate(async () => {
-      const el = document.querySelectorAll('.card')[1];
+      const el = document.querySelectorAll('.card')[0];
       const seen = new Set(); const t0 = performance.now();
       while (performance.now() - t0 < 500) { await new Promise(r => requestAnimationFrame(r)); seen.add(Math.round(parseFloat(el.style.left))); }
       return seen.size;

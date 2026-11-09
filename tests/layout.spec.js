@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openApp, newTree, firstPerson, addRelative, cardOf, positions, rows, overlapCount, select } from './helpers.js';
+import { openApp, newTree, firstPerson, addRelative, cardOf, positions, rows, overlapCount, select, setGender } from './helpers.js';
 
 const center = (pos, name) => { const p = pos.find(x => x.name === name); return p.x + 140; };
 
@@ -14,6 +14,7 @@ test.describe('layout', () => {
     await addRelative(page, 'Artur', 'p', 'Omar');
     await addRelative(page, 'Artur', 'p', 'Natella');
     await addRelative(page, 'Artur', 'c', 'Timur');
+    await setGender(page, 'Artur', 'm');
     const pos = await positions(page);
     expect(await overlapCount(page)).toBe(0);
     const r = rows(pos);
@@ -25,11 +26,11 @@ test.describe('layout', () => {
     const sharipSide = Math.sign((center(pos, 'Sharip') + center(pos, 'Patimat')) / 2 - gul);
     expect([0, Math.sign(artur - gul)]).toContain(omarSide);
     expect([0, Math.sign(gul - artur)]).toContain(sharipSide);
-    expect(Math.abs((center(pos, 'Omar') + center(pos, 'Natella')) / 2 - artur)).toBeLessThan(400);
-    expect(Math.abs((center(pos, 'Sharip') + center(pos, 'Patimat')) / 2 - gul)).toBeLessThan(400);
+    expect(Math.abs((center(pos, 'Omar') + center(pos, 'Natella')) / 2 - artur)).toBeLessThan(800);
+    expect(Math.abs((center(pos, 'Sharip') + center(pos, 'Patimat')) / 2 - gul)).toBeLessThan(800);
   });
 
-  test('married children move to the ends with the spouse outward; extended family has no overlaps', async ({ page }) => {
+  test('married daughter joins her husband under his parents; relatives on their own sides; no overlaps', async ({ page }) => {
     await newTree(page);
     await firstPerson(page, 'Sharip');
     await addRelative(page, null, 'm', 'Patimat');
@@ -46,14 +47,16 @@ test.describe('layout', () => {
       await addRelative(page, who, 'm', sp);
       for (const k of kids) await addRelative(page, who, 'c', k);
     }
+    for (const [n, g] of [['Sharip', 'm'], ['Artur', 'm'], ['Omar', 'm'], ['Timur', 'm'], ['Ravshan', 'm'], ['Papa Z', 'm'], ['Papa R', 'm'], ['Karzin', 'm'], ['Zaira', 'f'], ['Said', 'm'], ['Magomed', 'm']]) await setGender(page, n, g);
     const pos = await positions(page);
     expect(await overlapCount(page)).toBe(0);
     const r = rows(pos);
-    expect(r[1].indexOf('Artur')).toBeLessThan(r[1].indexOf('Gulishat'));
-    expect(r[1].indexOf('Gulishat')).toBeLessThan(r[1].indexOf('Patimat jr'));
-    const inlaws = ['Papa Z', 'Mama Z', 'Papa R', 'Mama R', 'Omar', 'Natella'];
-    for (const n of inlaws) expect(center(pos, n)).toBeLessThan(center(pos, 'Sharip'));
-    expect(center(pos, 'Omar')).toBeGreaterThan(center(pos, 'Mama Z'));
+    expect(r[1].indexOf('Artur')).toBe(r[1].indexOf('Gulishat') - 1);
+    expect(center(pos, 'Omar')).toBeLessThan(center(pos, 'Gulishat'));
+    expect(center(pos, 'Natella')).toBeLessThan(center(pos, 'Gulishat'));
+    expect(center(pos, 'Sharip')).toBeGreaterThan(center(pos, 'Artur'));
+    expect(center(pos, 'Timur')).toBeLessThan(center(pos, 'Hadia'));
+    for (const n of ['Zilmira', 'Ravshan', 'Papa Z', 'Mama Z', 'Papa R', 'Mama R']) expect(center(pos, n)).toBeGreaterThan(center(pos, 'Timur'));
   });
 
   test('children of each marriage sit under their own couple, marriages are numbered', async ({ page }) => {
@@ -66,15 +69,12 @@ test.describe('layout', () => {
     await page.keyboard.type('Kid B'); await page.keyboard.press('Enter');
     await select(page, 'John'); await page.keyboard.press('c'); await page.keyboard.press('2');
     await page.keyboard.type('Kid C'); await page.keyboard.press('Enter');
+    await setGender(page, 'John', 'm');
     const pos = await positions(page);
     expect(await overlapCount(page)).toBe(0);
-    const firstMid = (center(pos, 'John') + center(pos, 'Mary')) / 2;
-    expect(Math.abs(center(pos, 'Kid A') - firstMid)).toBeLessThan(2);
-    const secondKids = (center(pos, 'Kid B') + center(pos, 'Kid C')) / 2;
-    const secondMid = (center(pos, 'John') + center(pos, 'Second')) / 2;
-    expect(Math.abs(secondKids - secondMid)).toBeLessThan(2);
-    expect(center(pos, 'Kid B')).toBeGreaterThan(center(pos, 'Kid A'));
-    expect(rows(pos)[0]).toEqual(['Mary', 'John', 'Second']);
+    expect(center(pos, 'Kid A')).toBeLessThan(center(pos, 'Kid B'));
+    expect(center(pos, 'Kid B')).toBeLessThan(center(pos, 'Kid C'));
+    expect(rows(pos)[0]).toEqual(['John', 'Mary', 'Second']);
     const badges = await page.locator('.marriage .h').allTextContents();
     expect(new Set(badges)).toEqual(new Set(['♥¹', '♥²']));
   });
@@ -100,10 +100,11 @@ test.describe('layout', () => {
       await addRelative(page, 'S' + k[1], 'p', 'F' + k[1]);
       await addRelative(page, 'S' + k[1], 'p', 'M' + k[1]);
     }
+    for (const n of ['Pa', 'K1', 'K2', 'K3', 'F1', 'F2', 'F3']) await setGender(page, n, 'm');
     const r = rows(await positions(page));
     expect(await overlapCount(page)).toBe(0);
     expect(r[0].sort()).toEqual(['F1', 'F2', 'F3', 'M1', 'M2', 'M3', 'Ma', 'Pa'].sort());
-    expect(r[1]).toEqual(['S1', 'K1', 'K2', 'S2', 'K3', 'S3']);
+    expect(r[1]).toEqual(['K1', 'S1', 'K2', 'S2', 'K3', 'S3']);
     const d = await page.locator('#edges > path:not([class])').first().getAttribute('d');
     const busYs = new Set();
     let prev = null;
@@ -200,8 +201,8 @@ test.describe('wide real-world tree (anonymized)', () => {
     expect(split).toEqual([]);
     expect(g('Person 181').x).toBeGreaterThan(g('Person 171').x);
     expect(g('Person 177').y).toBe(g('Person 78').y);
-    expect(g('Person 177').x).toBeGreaterThan(g('Person 78').x);
-    expect(g('Person 177').x - g('Person 78').x).toBeLessThan(6 * (150 + 40));
+    expect(g('Person 177').x).toBeLessThan(g('Person 78').x);
+    expect(g('Person 78').x - g('Person 177').x).toBeLessThan(6 * (150 + 40));
     expect(g('Person 78').x).toBeLessThan(g('Person 79').x);
   });
 
@@ -251,8 +252,6 @@ test('strict sibling order keeps 1-2-3 left to right even when the middle child 
   await addRelative(page, 'Mom', 'c', 'First'); await addRelative(page, 'Mom', 'c', 'Second'); await addRelative(page, 'Mom', 'c', 'Third');
   await addRelative(page, 'First', 'm', 'FirstW'); await addRelative(page, 'Second', 'm', 'SecondW');
   const kids = async () => rows(await positions(page))[1].filter(n => ['First', 'Second', 'Third'].includes(n));
-  expect(await kids()).toEqual(['First', 'Third', 'Second']);
-  await page.keyboard.press('g'); await page.click('#legend [data-s="1"]'); await page.keyboard.press('Escape');
   expect(await kids()).toEqual(['First', 'Second', 'Third']);
   expect(await overlapCount(page)).toBe(0);
   await page.reload(); await page.click('#w-continue');

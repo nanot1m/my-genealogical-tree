@@ -1,7 +1,7 @@
 import { t, lang } from './i18n.js';
 import { $, esc, rounded, year, initials, hueOf, dateParts, ageOf } from './util.js';
 import { state, people, fam, childFamily, parentFamilies, parentsOf, childrenOf, spousesOf, siblingsOf, husbandOf, birthOrder, byBirth, kindOf, descendantsOf, isCollapsed } from './model.js';
-import { computeLayout } from './layout.js';
+import { computeLayout } from './engine.js';
 import { applyCrossings } from './crossings.js';
 
 let ctx = null;
@@ -18,7 +18,7 @@ export function setSpawnFrom(id) { spawnFrom = id; }
 
 export function layout() {
   marriages = [];
-  ctx.positions = computeLayout({ CARD_W: ctx.CARD_W, CARD_H: ctx.CARD_H, COUPLE_GAP: ctx.COUPLE_GAP, H_GAP: ctx.H_GAP, V_GAP: ctx.V_GAP, TREE_GAP: ctx.TREE_GAP, strictOrder: ctx.strictOrder });
+  ctx.positions = computeLayout({ people: state.people, families: state.families, collapsed: state.collapsed, indexPerson: state.indexPerson }, { CARD_W: ctx.CARD_W, CARD_H: ctx.CARD_H, COUPLE_GAP: ctx.COUPLE_GAP, H_GAP: ctx.H_GAP, V_GAP: ctx.V_GAP, TREE_GAP: ctx.TREE_GAP }).positions;
 }
 
 export function render() {

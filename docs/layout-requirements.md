@@ -1,6 +1,6 @@
 # Layout engine requirements
 
-Draft, in progress. Numbered rules are agreed and listed in priority order: when two rules conflict, the earlier one wins. Cards never overlap; that is a hard constraint above all rules.
+Rules are agreed. Priority when rules conflict: no overlap (hard), couple integrity (1, 5, 6), sides (4), birth order (2), parents centred (8), compactness. A husband's siblings therefore all sit left of his couple and a wife's all right of it, out of birth order if needed.
 
 ## Rules
 
