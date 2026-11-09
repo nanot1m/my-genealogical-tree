@@ -128,15 +128,43 @@ test.describe('file handles and launch screen (File System Access API)', () => {
 });
 
 test.describe('PDF export', () => {
-  test('opens a print page sized to the tree without controls', async ({ page, context }) => {
+  test('dialog offers fit or poster; poster tiles the tree across A4 sheets with labels', async ({ page, context }) => {
     await newTree(page);
     await firstPerson(page, 'Anna');
-    await addRelative(page, null, 'c', 'Kid');
-    const [popup] = await Promise.all([context.waitForEvent('page'), page.click('[data-act=pdf]')]);
+    for (let i = 0; i < 6; i++) await addRelative(page, 'Anna', 'c', 'Kid ' + i);
+    await page.click('[data-act=pdf]');
+    await expect(page.locator('#pdfdlg')).toBeVisible();
+    await page.selectOption('#pd-mode', 'fit');
+    await expect(page.locator('#pd-hint')).toContainText('1 sheet(s)');
+    let [popup] = await Promise.all([context.waitForEvent('page'), page.click('#pd-go')]);
     await popup.waitForLoadState();
-    await expect(popup.locator('.card')).toHaveCount(2);
+    await expect(popup.locator('.page')).toHaveCount(1);
+    await expect(popup.locator('.card')).toHaveCount(7);
     await expect(popup.locator('.plus').first()).toBeHidden();
-    const css = await popup.evaluate(() => document.querySelector('style:last-of-type').textContent);
-    expect(css).toMatch(/@page \{ size: [\d.]+mm [\d.]+mm/);
+    expect(await popup.evaluate(() => document.querySelector('style:last-of-type').textContent)).toMatch(/@page \{ size: 297mm 210mm/);
+    await popup.close();
+    await page.click('[data-act=pdf]');
+    await page.selectOption('#pd-mode', 'poster'); await page.selectOption('#pd-scale', '1');
+    await expect(page.locator('#pd-hint')).toContainText('at 100%');
+    [popup] = await Promise.all([context.waitForEvent('page'), page.click('#pd-go')]);
+    await popup.waitForLoadState();
+    const n = await popup.locator('.page').count();
+    expect(n).toBeGreaterThan(1);
+    await expect(popup.locator('.page .foot').first()).toContainText('A1');
+    await expect(popup.locator('.page').first().locator('.sheet-id')).toHaveText('A1');
+    expect(await popup.locator('.page .guide').count()).toBeGreaterThan(0);
+    expect(await popup.locator('.page .glue').count()).toBeGreaterThan(0);
+    expect(await page.locator('#pd-preview rect').count()).toBeGreaterThan(n);
+    await popup.close();
+    await page.reload(); await page.click('#w-continue'); await page.click('[data-act=pdf]');
+    await expect(page.locator('#pd-mode')).toHaveValue('poster');
+    await page.click('#pd-cancel');
+    await page.keyboard.press('v');
+    await page.click('[data-act=pdf]'); await page.selectOption('#pd-mode', 'fit');
+    const [cp] = await Promise.all([context.waitForEvent('page'), page.click('#pd-go')]);
+    await cp.waitForLoadState();
+    const m = await cp.evaluate(() => { const c = document.querySelector('.card'); const r = c.getBoundingClientRect(); const s = parseFloat(document.querySelector('#world').style.transform.match(/scale\(([\d.]+)\)/)[1]); return { w: r.width / s, bg: getComputedStyle(c.querySelector('.photo')).backgroundImage.startsWith('linear') }; });
+    expect(Math.round(m.w)).toBe(150);
+    expect(m.bg).toBe(true);
   });
 });

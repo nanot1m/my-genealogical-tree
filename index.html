@@ -264,6 +264,20 @@
   }
   #update { position: absolute; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; display: none; border: none; border-radius: 12px; padding: 10px 16px; font: inherit; font-size: 14px; font-weight: 500; background: var(--accent); color: #fff; box-shadow: var(--shadow-lg); cursor: pointer; white-space: nowrap; }
   #update.show { display: block; }
+  #pdfdlg { position: absolute; inset: 0; background: rgba(20,24,40,.35); display: none; align-items: center; justify-content: center; z-index: 60; }
+  #pdfdlg.show { display: flex; }
+  #pdfdlg .panel { width: 380px; max-width: calc(100vw - 24px); background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 18px 20px; box-shadow: var(--shadow-lg); animation: pop .18s cubic-bezier(.2,.8,.2,1); }
+  #pdfdlg h4 { margin: 0 0 12px; font-size: 17px; }
+  #pdfdlg .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  #pdfdlg .grid label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+  #pdfdlg select { font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--text); }
+  #pdfdlg .chk { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 13.5px; cursor: pointer; }
+  #pdfdlg .chk input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+  #pdfdlg .hint { margin: 10px 0 0; font-size: 12.5px; color: var(--muted); min-height: 1.4em; }
+  #pdfdlg #pd-preview { display: block; width: 100%; height: 120px; margin-top: 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel-2); }
+  #pdfdlg .foot { display: flex; gap: 10px; margin-top: 14px; }
+  #pdfdlg button { flex: 1; border: none; border-radius: 10px; padding: 11px 16px; font-size: 14.5px; font-weight: 500; background: var(--panel-2); color: var(--text); cursor: pointer; }
+  #pdfdlg button.primary { background: var(--accent); color: #fff; }
   #install { position: absolute; inset: 0; background: rgba(20,24,40,.35); display: none; align-items: flex-end; justify-content: center; z-index: 60; }
   #install.show { display: flex; }
   #install .panel { width: 100%; max-width: 520px; background: var(--panel); border-radius: 20px 20px 0 0; padding: 18px 20px calc(16px + env(safe-area-inset-bottom)); box-shadow: var(--shadow-lg); animation: sheet-up .22s cubic-bezier(.2,.8,.2,1); }
@@ -577,6 +591,22 @@
     </div>
   </div>
 </div>
+<div id="pdfdlg" role="dialog" aria-modal="true">
+  <div class="panel">
+    <h4 data-i18n="export_pdf"></h4>
+    <div class="grid">
+      <label><span data-i18n="pd_paper"></span><select id="pd-paper"><option value="a4">A4</option><option value="a3">A3</option><option value="letter">Letter</option></select></label>
+      <label><span data-i18n="pd_mode"></span><select id="pd-mode"><option value="poster" data-i18n="pd_poster"></option><option value="fit" data-i18n="pd_fit"></option></select></label>
+      <label id="pd-scale-row"><span data-i18n="pd_scale"></span><select id="pd-scale"><option value="1">100%</option><option value="0.75">75%</option><option value="0.5">50%</option></select></label>
+      <label><span data-i18n="pd_orient"></span><select id="pd-orient"><option value="auto" data-i18n="pd_auto"></option><option value="landscape" data-i18n="pd_landscape"></option><option value="portrait" data-i18n="pd_portrait"></option></select></label>
+    </div>
+    <label class="chk"><input type="checkbox" id="pd-plain"><span data-i18n="pd_plain"></span></label>
+    <label class="chk"><input type="checkbox" id="pd-gray"><span data-i18n="pd_gray"></span></label>
+    <p class="hint" id="pd-hint"></p>
+    <svg id="pd-preview" viewBox="0 0 340 120" aria-hidden="true"></svg>
+    <div class="foot"><button type="button" id="pd-cancel" data-i18n="cancel"></button><button type="button" id="pd-go" class="primary" data-i18n="export_pdf"></button></div>
+  </div>
+</div>
 <div id="install" role="dialog" aria-modal="true">
   <div class="panel">
     <div class="head"><img src="icons/icon-192.png" alt=""><h4 data-i18n="inst_title"></h4></div>
@@ -690,7 +720,7 @@
       lg_married: 'Marriage: solid line, years in the badge', lg_partners: 'Partners, not married: dashed line', lg_separated: 'Separated: one slash', lg_divorced: 'Divorced: two slashes', lg_rec_sep: 'Reconciled after separation', lg_rec_div: 'Remarried each other after divorce', lg_ordinal: 'Marriage number for people married more than once; first spouse on the left',
       lg_bio: 'Biological child: solid line, oldest child on the left', lg_adopted: 'Adopted: dotted line with an arrow', lg_foster: 'Foster child: dashed line', lg_twins: 'Twins hang from one point', lg_identical: 'Identical twins: bar between them', lg_pregnancy: 'Pregnancy', lg_miscarriage: 'Miscarriage', lg_abortion: 'Abortion', lg_stillborn: 'Stillbirth',
       lg_gender: 'Square photo for men, round for women; men on the left of a couple', lg_deceased: 'Deceased: cross over the photo, years and age at death', lg_index: 'Index person, whom the chart is about: double outline', lg_illness: 'Illness, physical or mental: left half shaded, hatched when recovered', lg_substance: 'Substance abuse: lower half shaded, hatched when recovered', lg_ended: 'Line ended, no descendants', lg_household: 'Household: dashed loop around people living together',
-      sec_person: 'Person', sec_dates: 'Dates', sec_family: 'Family', sec_notation: 'Genogram notation', no_parents_hint: 'Available once the person has parents', sheet_title: 'Edit person', export_pdf: 'Export PDF', export_t: 'Export as PDF (print dialog)', change_photo: 'Change photo', adjust_crop: 'Adjust crop', rotate_l: 'Rotate left', rotate_r: 'Rotate right', straighten: 'Straighten', crop_title: 'Crop photo', crop_hint: 'Drag to move, scroll or pinch to zoom', cancel: 'Cancel', apply: 'Apply', zoom: 'Zoom', nothing_export: 'Nothing to export', update_ready: 'New version available · Update', inst_title: 'Install Family Tree', inst_text: 'Add the app to your home screen: it opens full screen, like a regular app, and works offline.', inst_later: 'Not now', inst_go: 'Install', inst_ios: ['Tap <span class="ic">Share ⎋</span> in the browser toolbar', 'Scroll down and choose <span class="ic">Add to Home Screen ⊕</span>', 'Tap <span class="ic">Add</span> in the top corner'], inst_android: ['Open the browser menu <span class="ic">⋮</span>', 'Choose <span class="ic">Install app</span> or <span class="ic">Add to Home screen</span>', 'Confirm with <span class="ic">Install</span>'],
+      sec_person: 'Person', sec_dates: 'Dates', sec_family: 'Family', sec_notation: 'Genogram notation', no_parents_hint: 'Available once the person has parents', sheet_title: 'Edit person', export_pdf: 'Export PDF', pd_paper: 'Paper', pd_mode: 'Layout', pd_poster: 'Poster: split across sheets', pd_fit: 'Fit on one sheet', pd_scale: 'Scale', pd_gray: 'Photos in greyscale', pd_plain: 'Simplified for printing (no colours or shadows)', pd_orient: 'Orientation', pd_auto: 'Auto', pd_landscape: 'Landscape', pd_portrait: 'Portrait', pd_print_hint: 'in the print dialog choose {p} {o}, scale 100%, no margins', pd_pages: '{n} sheet(s) at {s}%', export_t: 'Export as PDF (print dialog)', change_photo: 'Change photo', adjust_crop: 'Adjust crop', rotate_l: 'Rotate left', rotate_r: 'Rotate right', straighten: 'Straighten', crop_title: 'Crop photo', crop_hint: 'Drag to move, scroll or pinch to zoom', cancel: 'Cancel', apply: 'Apply', zoom: 'Zoom', nothing_export: 'Nothing to export', update_ready: 'New version available · Update', inst_title: 'Install Family Tree', inst_text: 'Add the app to your home screen: it opens full screen, like a regular app, and works offline.', inst_later: 'Not now', inst_go: 'Install', inst_ios: ['Tap <span class="ic">Share ⎋</span> in the browser toolbar', 'Scroll down and choose <span class="ic">Add to Home Screen ⊕</span>', 'Tap <span class="ic">Add</span> in the top corner'], inst_android: ['Open the browser menu <span class="ic">⋮</span>', 'Choose <span class="ic">Install app</span> or <span class="ic">Add to Home screen</span>', 'Confirm with <span class="ic">Install</span>'],
       help: [
         ['Keyboard shortcuts'],
         ['Navigate', [['Select parent / child', '↑ ↓'], ['Select sibling / spouse', '← →'], ['Deselect / close', 'Esc'], ['Fit tree to screen', 'F'], ['Find a person', '⌘F'], ['Compact cards', 'V'], ['Select several, show common ancestors', '⇧ click'], ['Zoom in / out / reset', '+ − 0'], ['Pan', 'Space+drag, wheel'], ['Zoom at cursor', 'pinch, ⌘+wheel']]],
@@ -723,7 +753,7 @@
       lg_married: 'Брак: сплошная линия, годы в значке', lg_partners: 'Партнёры без брака: пунктир', lg_separated: 'Расстались: одна черта', lg_divorced: 'Развод: две черты', lg_rec_sep: 'Примирение после разрыва', lg_rec_div: 'Повторный брак друг с другом после развода', lg_ordinal: 'Номер брака у тех, кто был в браке не раз; первый супруг слева',
       lg_bio: 'Родной ребёнок: сплошная линия, старший слева', lg_adopted: 'Усыновлён: точечная линия со стрелкой', lg_foster: 'Приёмный (опека): пунктир', lg_twins: 'Близнецы выходят из одной точки', lg_identical: 'Однояйцевые близнецы: перекладина между ними', lg_pregnancy: 'Беременность', lg_miscarriage: 'Выкидыш', lg_abortion: 'Аборт', lg_stillborn: 'Мертворождение',
       lg_gender: 'Квадратное фото — мужчина, круглое — женщина; мужчина слева в паре', lg_deceased: 'Умер: крест на фото, годы и возраст смерти', lg_index: 'Главное лицо, о ком схема: двойная рамка', lg_illness: 'Болезнь, физическая или психическая: левая половина затемнена, штриховка — преодолена', lg_substance: 'Зависимость: нижняя половина затемнена, штриховка — преодолена', lg_ended: 'Род не продлён, нет потомков', lg_household: 'Домохозяйство: пунктирный контур вокруг живущих вместе',
-      sec_person: 'Человек', sec_dates: 'Даты', sec_family: 'Семья', sec_notation: 'Обозначения генограммы', no_parents_hint: 'Доступно, когда у человека есть родители', sheet_title: 'Редактирование', export_pdf: 'Экспорт в PDF', export_t: 'Экспорт в PDF (диалог печати)', change_photo: 'Заменить фото', adjust_crop: 'Изменить обрезку', rotate_l: 'Повернуть влево', rotate_r: 'Повернуть вправо', straighten: 'Выровнять', crop_title: 'Обрезка фото', crop_hint: 'Перетащите для сдвига, колесо или щипок — масштаб', cancel: 'Отмена', apply: 'Применить', zoom: 'Масштаб', nothing_export: 'Нечего экспортировать', update_ready: 'Доступна новая версия · Обновить', inst_title: 'Установите Family Tree', inst_text: 'Добавьте приложение на рабочий стол: оно откроется на весь экран, как обычное приложение, и будет работать без интернета.', inst_later: 'Не сейчас', inst_go: 'Установить', inst_ios: ['Нажмите <span class="ic">Поделиться ⎋</span> на панели браузера', 'Прокрутите вниз и выберите <span class="ic">На экран «Домой» ⊕</span>', 'Нажмите <span class="ic">Добавить</span> в верхнем углу'], inst_android: ['Откройте меню браузера <span class="ic">⋮</span>', 'Выберите <span class="ic">Установить приложение</span> или <span class="ic">Добавить на главный экран</span>', 'Подтвердите кнопкой <span class="ic">Установить</span>'],
+      sec_person: 'Человек', sec_dates: 'Даты', sec_family: 'Семья', sec_notation: 'Обозначения генограммы', no_parents_hint: 'Доступно, когда у человека есть родители', sheet_title: 'Редактирование', export_pdf: 'Экспорт в PDF', pd_paper: 'Бумага', pd_mode: 'Компоновка', pd_poster: 'Постер: на нескольких листах', pd_fit: 'Уместить на одном листе', pd_scale: 'Масштаб', pd_gray: 'Фото в оттенках серого', pd_plain: 'Упрощённый вид для печати (без цветов и теней)', pd_orient: 'Ориентация', pd_auto: 'Авто', pd_landscape: 'Альбомная', pd_portrait: 'Книжная', pd_print_hint: 'в диалоге печати выберите {p}, {o}, масштаб 100%, без полей', pd_pages: 'Листов: {n}, масштаб {s}%', export_t: 'Экспорт в PDF (диалог печати)', change_photo: 'Заменить фото', adjust_crop: 'Изменить обрезку', rotate_l: 'Повернуть влево', rotate_r: 'Повернуть вправо', straighten: 'Выровнять', crop_title: 'Обрезка фото', crop_hint: 'Перетащите для сдвига, колесо или щипок — масштаб', cancel: 'Отмена', apply: 'Применить', zoom: 'Масштаб', nothing_export: 'Нечего экспортировать', update_ready: 'Доступна новая версия · Обновить', inst_title: 'Установите Family Tree', inst_text: 'Добавьте приложение на рабочий стол: оно откроется на весь экран, как обычное приложение, и будет работать без интернета.', inst_later: 'Не сейчас', inst_go: 'Установить', inst_ios: ['Нажмите <span class="ic">Поделиться ⎋</span> на панели браузера', 'Прокрутите вниз и выберите <span class="ic">На экран «Домой» ⊕</span>', 'Нажмите <span class="ic">Добавить</span> в верхнем углу'], inst_android: ['Откройте меню браузера <span class="ic">⋮</span>', 'Выберите <span class="ic">Установить приложение</span> или <span class="ic">Добавить на главный экран</span>', 'Подтвердите кнопкой <span class="ic">Установить</span>'],
       help: [
         ['Горячие клавиши'],
         ['Навигация', [['Выбрать родителя / ребёнка', '↑ ↓'], ['Выбрать брата-сестру / супруга', '← →'], ['Снять выделение / закрыть', 'Esc'], ['Вписать дерево в экран', 'F'], ['Найти человека', '⌘F'], ['Компактные карточки', 'V'], ['Выбрать нескольких, показать общих предков', '⇧ клик'], ['Приблизить / отдалить / сброс', '+ − 0'], ['Перемещение', 'Space+мышь, колесо'], ['Масштаб у курсора', 'щипок, ⌘+колесо']]],
@@ -756,7 +786,7 @@
       lg_married: 'Ehe: durchgezogene Linie, Jahre im Abzeichen', lg_partners: 'Unverheiratete Partner: gestrichelt', lg_separated: 'Getrennt: ein Schrägstrich', lg_divorced: 'Geschieden: zwei Schrägstriche', lg_rec_sep: 'Versöhnung nach Trennung', lg_rec_div: 'Wiederverheiratung nach Scheidung', lg_ordinal: 'Nummer der Ehe bei mehrfach Verheirateten; erster Partner links',
       lg_bio: 'Leibliches Kind: durchgezogen, ältestes Kind links', lg_adopted: 'Adoptiert: gepunktet mit Pfeil', lg_foster: 'Pflegekind: gestrichelt', lg_twins: 'Zwillinge gehen von einem Punkt aus', lg_identical: 'Eineiige Zwillinge: Querbalken', lg_pregnancy: 'Schwangerschaft', lg_miscarriage: 'Fehlgeburt', lg_abortion: 'Abtreibung', lg_stillborn: 'Totgeburt',
       lg_gender: 'Quadratisches Foto für Männer, rundes für Frauen; Männer links im Paar', lg_deceased: 'Verstorben: Kreuz über dem Foto, Jahre und Sterbealter', lg_index: 'Indexperson, um die es geht: doppelter Rahmen', lg_illness: 'Erkrankung, physisch oder psychisch: linke Hälfte schattiert, schraffiert wenn überwunden', lg_substance: 'Substanzmissbrauch: untere Hälfte schattiert, schraffiert wenn überwunden', lg_ended: 'Linie endet, keine Nachkommen', lg_household: 'Haushalt: gestrichelte Schleife um Zusammenlebende',
-      sec_person: 'Person', sec_dates: 'Daten', sec_family: 'Familie', sec_notation: 'Genogramm-Notation', no_parents_hint: 'Verfügbar, sobald die Person Eltern hat', sheet_title: 'Person bearbeiten', export_pdf: 'PDF exportieren', export_t: 'Als PDF exportieren (Druckdialog)', change_photo: 'Foto ändern', adjust_crop: 'Ausschnitt anpassen', rotate_l: 'Nach links drehen', rotate_r: 'Nach rechts drehen', straighten: 'Begradigen', crop_title: 'Foto zuschneiden', crop_hint: 'Ziehen zum Verschieben, Scrollen oder Pinch zum Zoomen', cancel: 'Abbrechen', apply: 'Übernehmen', zoom: 'Zoom', nothing_export: 'Nichts zu exportieren', update_ready: 'Neue Version verfügbar · Aktualisieren', inst_title: 'Family Tree installieren', inst_text: 'Füge die App zum Home-Bildschirm hinzu: Sie öffnet im Vollbild wie eine normale App und funktioniert offline.', inst_later: 'Nicht jetzt', inst_go: 'Installieren', inst_ios: ['Tippe in der Browserleiste auf <span class="ic">Teilen ⎋</span>', 'Scrolle nach unten und wähle <span class="ic">Zum Home-Bildschirm ⊕</span>', 'Tippe oben auf <span class="ic">Hinzufügen</span>'], inst_android: ['Öffne das Browsermenü <span class="ic">⋮</span>', 'Wähle <span class="ic">App installieren</span> oder <span class="ic">Zum Startbildschirm hinzufügen</span>', 'Bestätige mit <span class="ic">Installieren</span>'],
+      sec_person: 'Person', sec_dates: 'Daten', sec_family: 'Familie', sec_notation: 'Genogramm-Notation', no_parents_hint: 'Verfügbar, sobald die Person Eltern hat', sheet_title: 'Person bearbeiten', export_pdf: 'PDF exportieren', pd_paper: 'Papier', pd_mode: 'Layout', pd_poster: 'Poster: auf mehrere Blätter', pd_fit: 'Auf ein Blatt einpassen', pd_scale: 'Maßstab', pd_gray: 'Fotos in Graustufen', pd_plain: 'Vereinfacht für den Druck (ohne Farben und Schatten)', pd_orient: 'Ausrichtung', pd_auto: 'Auto', pd_landscape: 'Querformat', pd_portrait: 'Hochformat', pd_print_hint: 'im Druckdialog {p} {o}, Skalierung 100 %, ohne Ränder wählen', pd_pages: '{n} Blatt/Blätter bei {s}%', export_t: 'Als PDF exportieren (Druckdialog)', change_photo: 'Foto ändern', adjust_crop: 'Ausschnitt anpassen', rotate_l: 'Nach links drehen', rotate_r: 'Nach rechts drehen', straighten: 'Begradigen', crop_title: 'Foto zuschneiden', crop_hint: 'Ziehen zum Verschieben, Scrollen oder Pinch zum Zoomen', cancel: 'Abbrechen', apply: 'Übernehmen', zoom: 'Zoom', nothing_export: 'Nichts zu exportieren', update_ready: 'Neue Version verfügbar · Aktualisieren', inst_title: 'Family Tree installieren', inst_text: 'Füge die App zum Home-Bildschirm hinzu: Sie öffnet im Vollbild wie eine normale App und funktioniert offline.', inst_later: 'Nicht jetzt', inst_go: 'Installieren', inst_ios: ['Tippe in der Browserleiste auf <span class="ic">Teilen ⎋</span>', 'Scrolle nach unten und wähle <span class="ic">Zum Home-Bildschirm ⊕</span>', 'Tippe oben auf <span class="ic">Hinzufügen</span>'], inst_android: ['Öffne das Browsermenü <span class="ic">⋮</span>', 'Wähle <span class="ic">App installieren</span> oder <span class="ic">Zum Startbildschirm hinzufügen</span>', 'Bestätige mit <span class="ic">Installieren</span>'],
       help: [
         ['Tastenkürzel'],
         ['Navigation', [['Elternteil / Kind wählen', '↑ ↓'], ['Geschwister / Partner wählen', '← →'], ['Auswahl aufheben / schließen', 'Esc'], ['Baum einpassen', 'F'], ['Person suchen', '⌘F'], ['Kompakte Karten', 'V'], ['Mehrere wählen, gemeinsame Vorfahren zeigen', '⇧ Klick'], ['Vergrößern / verkleinern / zurücksetzen', '+ − 0'], ['Verschieben', 'Leertaste+Ziehen, Mausrad'], ['Zoom am Cursor', 'Pinch, ⌘+Mausrad']]],
@@ -1289,6 +1319,11 @@
     function placeKidsStrict(n, x, row) {
       const rowY = row * (CARD_H + V_GAP);
       const placedX = (id) => { const p = positions.get(id); return p && p.y === rowY ? p.x : null; };
+      const unitBounds = (id) => {
+        let lo = positions.get(id).x, hi = lo + CARD_W; const seen = new Set([id]); const q = [id];
+        while (q.length) { const cur = q.pop(); for (const sp of spousesOf(cur)) { const p = positions.get(sp); if (!p || seen.has(sp) || p.y !== rowY) continue; const near = Math.abs(p.x - lo) <= CARD_W + COUPLE_GAP + 1 || Math.abs(p.x - hi) <= COUPLE_GAP + 1; if (!near) continue; seen.add(sp); q.push(sp); lo = Math.min(lo, p.x); hi = Math.max(hi, p.x + CARD_W); } }
+        return [lo, hi];
+      };
       const groups = new Map();
       for (const k of n.kids) { const f = childFamily(k.c.own); const key = f ? f.id : k.c.own; if (!groups.has(key)) groups.set(key, { f, kids: [] }); groups.get(key).kids.push(k); }
       for (const { f, kids } of groups.values()) {
@@ -1301,22 +1336,47 @@
           e.done = true; measure(e.a); return e.a;
         };
         const p0 = order.findIndex(id => placedX(id) !== null);
-        let edge = p0 >= 0 ? placedX(order[p0]) + CARD_W : x + Math.min(...kids.map(k => k.dx)) - H_GAP;
+        const FAR = 2 * (CARD_W + H_GAP);
+        const extBounds = (node) => { const segs = [...node.ext.values()].flat(); return { l: Math.min(...segs.map(v => v[0])), r: Math.max(...segs.map(v => v[1])) }; };
+        const insertColumn = (node, cut, dir) => {
+          const { l, r } = extBounds(node), S = r - l + H_GAP;
+          const rowsHit = new Set([...node.ext.keys()].map(k => (k + row) * (CARD_H + V_GAP)));
+          for (let guard = 0; guard < 50; guard++) {
+            const st = [...positions.values()].filter(p => rowsHit.has(p.y) && p.x < cut && p.x + CARD_W > cut);
+            if (!st.length) break;
+            cut = dir > 0 ? Math.max(...st.map(p => p.x + CARD_W)) + H_GAP / 2 : Math.min(...st.map(p => p.x)) - H_GAP / 2;
+          }
+          const movers = [...positions.values()].filter(p => dir > 0 ? p.x >= cut : p.x + CARD_W <= cut);
+          for (const p of movers) p.x += dir * S;
+          occupied = new Map();
+          for (const p of positions.values()) occupied = union(occupied, new Map([[Math.round(p.y / (CARD_H + V_GAP)), [[p.x, p.x + CARD_W]]]]));
+          return dir > 0 ? cut + H_GAP / 2 - l : cut - H_GAP / 2 - r;
+        };
+        let edge = p0 >= 0 ? unitBounds(order[p0])[1] : x + Math.min(...kids.map(k => k.dx)) - H_GAP;
+        let leftEdge = p0 >= 0 ? unitBounds(order[p0])[0] : edge + H_GAP;
         for (const id of order.slice(p0 >= 0 ? p0 + 1 : 0)) {
-          const px = placedX(id); if (px !== null) { edge = Math.max(edge, px + CARD_W); continue; }
+          const px = placedX(id); if (px !== null) { const [lo, hi] = unitBounds(id); edge = Math.max(edge, hi); leftEdge = Math.min(leftEdge, lo); continue; }
           const node = nodeFor(id); if (!node) continue;
           let kx = edge + H_GAP;
-          kx += settle(occupied, shift(node.ext, kx, row), 1);
-          place(node, kx, row, node.anchorId); edge = kx + node.uw;
+          const pushR = settle(occupied, shift(node.ext, kx, row), 1);
+          if (pushR > FAR) {
+            const ix = insertColumn(node, edge + H_GAP / 2, 1);
+            place(node, ix, row, node.anchorId); edge = ix + node.uw; continue;
+          }
+          kx += pushR; place(node, kx, row, node.anchorId); edge = kx + node.uw;
         }
         if (p0 > 0) {
-          edge = placedX(order[p0]);
+          let ledge = leftEdge, redge = edge;
           for (const id of order.slice(0, p0).reverse()) {
-            const px = placedX(id); if (px !== null) { edge = Math.min(edge, px); continue; }
+            const px = placedX(id); if (px !== null) { const [lo, hi] = unitBounds(id); ledge = Math.min(ledge, lo); redge = Math.max(redge, hi); continue; }
             const node = nodeFor(id); if (!node) continue;
-            let kx = edge - H_GAP - node.uw;
-            kx += settle(occupied, shift(node.ext, kx, row), -1);
-            place(node, kx, row, node.anchorId); edge = kx;
+            let kx = ledge - H_GAP - node.uw;
+            const pushL = settle(occupied, shift(node.ext, kx, row), -1);
+            if (-pushL > FAR) {
+              const ix = insertColumn(node, ledge - H_GAP / 2, -1);
+              place(node, ix, row, node.anchorId); ledge = ix; continue;
+            }
+            kx += pushL; place(node, kx, row, node.anchorId); ledge = kx;
           }
         }
       }
@@ -1361,12 +1421,16 @@
         let room = Math.abs(center - bc);
         for (const p of mine) for (const [id, q] of positions) {
           if (set.has(id) || q.y !== p.y) continue;
+          const ahead = dir > 0 ? q.x >= p.x + CARD_W - 1 : q.x + CARD_W <= p.x + 1;
+          if (!ahead) continue;
           const gap = dir > 0 ? q.x - (p.x + CARD_W) - H_GAP : p.x - (q.x + CARD_W) - H_GAP;
-          if (gap >= 0) room = Math.min(room, gap);
+          room = Math.min(room, Math.max(0, gap));
         }
-        if (room > 0) for (const p of mine) p.x += dir * room;
+        if (room > 0.5) for (const p of mine) p.x += dir * room;
       }
       blocks.length = 0;
+      occupied = new Map();
+      for (const p of positions.values()) occupied = union(occupied, new Map([[Math.round(p.y / (CARD_H + V_GAP)), [[p.x, p.x + CARD_W]]]]));
     }
 
     const descCount = (pid, seen = new Set()) => { let n = 0; for (const c of childrenOf(pid)) if (!seen.has(c)) { seen.add(c); n += 1 + descCount(c, seen); } return n; };
@@ -2450,27 +2514,132 @@
     e.preventDefault(); e.stopPropagation();
   }, true);
 
+  const PAPERS = { a4: [210, 297], a3: [297, 420], letter: [215.9, 279.4] };
+  const PDF_KEY = 'familytree.pdf';
+  const pdfOpts = () => ({ paper: $('#pd-paper').value, mode: $('#pd-mode').value, scale: +$('#pd-scale').value, orient: $('#pd-orient').value, gray: $('#pd-gray').checked, plain: $('#pd-plain').checked });
+  function pdfPlan(o) {
+    const PX = 96 / 25.4, margin = (o.mode === 'fit' ? 10 : 14) * PX, overlap = 10 * PX, footer = 9 * PX, pad = 24;
+    const b = bbox(), [sw, sh] = PAPERS[o.paper];
+    const orient = (pw, ph) => {
+      const aw = pw - 2 * margin, ah = ph - 2 * margin - footer;
+      if (o.mode === 'fit') return { pw, ph, aw, ah, margin, footer, s: Math.min(aw / (b.w + 2 * pad), ah / (b.h + 2 * pad)), cols: 1, rows: 1, tw: aw, th: ah };
+      const s = o.scale, tw = aw - overlap, th = ah - overlap;
+      return { pw, ph, aw, ah, margin, footer, overlap, s, tw, th, cols: Math.max(1, Math.ceil((b.w + 2 * pad) * s / tw)), rows: Math.max(1, Math.ceil((b.h + 2 * pad) * s / th)) };
+    };
+    const cards = [...positions.values()];
+    const withTiles = (plan) => {
+      plan.landscape = plan.pw > plan.ph;
+      plan.tiles = [];
+      const fit = o.mode === 'fit';
+      const totalW = fit ? plan.aw / plan.s : 0, totalH = fit ? plan.ah / plan.s : 0;
+      const ox = fit ? b.x + b.w / 2 - totalW / 2 : b.x - pad, oy = fit ? b.y + b.h / 2 - totalH / 2 : b.y - pad;
+      for (let r = 0; r < plan.rows; r++) for (let c = 0; c < plan.cols; c++) {
+        const x0 = ox + c * plan.tw / plan.s, y0 = oy + r * plan.th / plan.s;
+        const w = (c < plan.cols - 1 ? plan.tw : plan.aw) / plan.s, h = (r < plan.rows - 1 ? plan.th : plan.ah) / plan.s;
+        const used = fit || cards.some(p => p.x < x0 + w && p.x + CARD_W > x0 && p.y < y0 + h && p.y + CARD_H > y0);
+        if (used) plan.tiles.push({ r, c, x0, y0 });
+      }
+      return plan;
+    };
+    const L = withTiles(orient(sh * PX, sw * PX)), P = withTiles(orient(sw * PX, sh * PX));
+    const plan = o.orient === 'landscape' ? L : o.orient === 'portrait' ? P : o.mode === 'fit' ? (L.s >= P.s ? L : P) : (L.tiles.length <= P.tiles.length ? L : P);
+    plan.paperMM = plan.pw > plan.ph ? [sh, sw] : [sw, sh];
+    if (o.mode === 'poster' && plan.tiles.length === 1) { const f = pdfPlan({ ...o, mode: 'fit' }); if (f.s > plan.s) return f; }
+    return plan;
+  }
+  function pdfHint() {
+    if (!positions.size) return '';
+    const plan = pdfPlan(pdfOpts());
+    $('#pd-scale-row').hidden = pdfOpts().mode === 'fit';
+    drawPdfPreview(plan);
+    return t('pd_pages').replace('{n}', plan.tiles.length).replace('{s}', Math.round(plan.s * 100)) + ' · ' + t('pd_print_hint').replace('{p}', $('#pd-paper').selectedOptions[0].textContent).replace('{o}', t(plan.landscape ? 'pd_landscape' : 'pd_portrait').toLowerCase());
+  }
+  function drawPdfPreview(plan) {
+    const svg = $('#pd-preview'), W = 340, H = 120, pad = 6;
+    const sheets = plan.tiles.map(tl => ({ ...tl, w: plan.aw / plan.s, h: plan.ah / plan.s }));
+    const xs = sheets.map(t => t.x0), ys = sheets.map(t => t.y0);
+    const minX = Math.min(...xs), minY = Math.min(...ys), maxX = Math.max(...sheets.map(t => t.x0 + t.w)), maxY = Math.max(...sheets.map(t => t.y0 + t.h));
+    const k = Math.min((W - 2 * pad) / (maxX - minX), (H - 2 * pad) / (maxY - minY));
+    const ox = pad + ((W - 2 * pad) - (maxX - minX) * k) / 2, oy = pad + ((H - 2 * pad) - (maxY - minY) * k) / 2;
+    const X = (v) => ox + (v - minX) * k, Y = (v) => oy + (v - minY) * k;
+    const cards = [...positions.values()].map(p => `<rect x="${X(p.x)}" y="${Y(p.y)}" width="${Math.max(1, CARD_W * k)}" height="${Math.max(1, CARD_H * k)}" rx="1" fill="var(--accent)" opacity=".55"/>`).join('');
+    const fs = Math.max(5, Math.min(11, plan.aw / plan.s * k * 0.28));
+    const tiles = sheets.map(t => `<rect x="${X(t.x0)}" y="${Y(t.y0)}" width="${t.w * k}" height="${t.h * k}" fill="var(--card)" stroke="var(--border-strong)" stroke-width=".8"/>` +
+      (plan.tiles.length > 1 ? `<text x="${X(t.x0) + 3}" y="${Y(t.y0) + fs + 1}" font-size="${fs}" font-weight="600" fill="var(--muted)">${String.fromCharCode(65 + t.r)}${t.c + 1}</text>` : '')).join('');
+    svg.innerHTML = tiles + cards;
+  }
   function exportPdf() {
     stopEditing();
     if (!positions.size) return toast(t('nothing_export'));
-    const b = bbox(), M = 40;
-    const w = b.w + 2 * M, h = b.h + 2 * M + 36;
-    const mm = (px) => (px * 0.264583).toFixed(2) + 'mm';
+    try { const saved = JSON.parse(localStorage.getItem(PDF_KEY) || '{}'); if (saved.paper) $('#pd-paper').value = saved.paper; if (saved.mode) $('#pd-mode').value = saved.mode; if (saved.scale) $('#pd-scale').value = String(saved.scale); $('#pd-gray').checked = !!saved.gray; $('#pd-plain').checked = !!saved.plain; if (saved.orient) $('#pd-orient').value = saved.orient; } catch (_) {}
+    $('#pd-hint').textContent = pdfHint();
+    $('#pdfdlg').classList.add('show');
+  }
+  $('#pdfdlg').addEventListener('change', () => { $('#pd-hint').textContent = pdfHint(); });
+  $('#pd-cancel').addEventListener('click', () => $('#pdfdlg').classList.remove('show'));
+  $('#pdfdlg').addEventListener('pointerdown', (e) => { if (e.target === $('#pdfdlg')) $('#pdfdlg').classList.remove('show'); });
+  $('#pd-go').addEventListener('click', () => { const o = pdfOpts(); localStorage.setItem(PDF_KEY, JSON.stringify(o)); $('#pdfdlg').classList.remove('show'); printPdf(o); });
+  function printPdf(o) {
+    const plan = pdfPlan(o);
     const css = document.querySelector('style').textContent;
+    const cardsCopy = cardsEl.cloneNode(true);
+    cardsCopy.querySelectorAll('.card').forEach(c => c.classList.remove('selected', 'multi', 'common', 'onpath', 'editing', 'link-source', 'enter'));
+    const world = `${edgesSvg.outerHTML}${badgesEl.outerHTML}<div id="cards">${cardsCopy.innerHTML}</div>`;
+    const multi = plan.tiles.length > 1;
+    const id = (r, c) => `${String.fromCharCode(65 + r)}${c + 1}`;
+    const has = (r, c) => plan.tiles.some(t => t.r === r && t.c === c);
+    const label = (tl) => multi ? id(tl.r, tl.c) : '';
+    const guides = (tl) => !multi ? '' : [
+      has(tl.r, tl.c - 1) ? `<div class="guide l">← ${id(tl.r, tl.c - 1)}</div>` : '',
+      has(tl.r, tl.c + 1) ? `<div class="guide r">${id(tl.r, tl.c + 1)} →</div>` : '',
+      has(tl.r - 1, tl.c) ? `<div class="guide t">↑ ${id(tl.r - 1, tl.c)}</div>` : '',
+      has(tl.r + 1, tl.c) ? `<div class="guide b">↓ ${id(tl.r + 1, tl.c)}</div>` : '',
+      `<div class="sheet-id">${label(tl)}</div>`,
+    ].join('');
+    const glue = (tl) => !multi ? '' : (has(tl.r, tl.c + 1) ? '<i class="glue r"></i>' : '') + (has(tl.r + 1, tl.c) ? '<i class="glue b"></i>' : '');
+    const date = new Date().toLocaleDateString(lang);
+    const pages = plan.tiles.map(tl => `<section class="page"><div class="clip"><div id="world" style="transform: translate(${-tl.x0 * plan.s}px, ${-tl.y0 * plan.s}px) scale(${plan.s})">${world}</div>${glue(tl)}</div>
+      ${guides(tl)}
+      <div class="foot"><span>${esc(shownName(fileName))}</span><span>${date} · ${Math.round(plan.s * 100)}%${multi ? ` · ${label(tl)} (${plan.rows}×${plan.cols})` : ''}</span></div>
+      <i class="mark tl"></i><i class="mark tr"></i><i class="mark bl"></i><i class="mark br"></i></section>`).join('');
     const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><title>${esc(shownName(fileName))}</title><style>${css}
-      @page { size: ${mm(w)} ${mm(h)}; margin: 0; }
-      :root { color-scheme: light; --bg: #fff; --card: #fff; --panel: #fff; --panel-2: #f1f3f8; --border: #e3e6ee; --border-strong: #cfd4e0; --text: #1b2030; --muted: #7c859b; --line: #b7bed0; --shadow-sm: none; --shadow: none; }
-      html, body { overflow: visible; background: #fff; width: ${w}px; height: ${h}px; }
-      #viewport { position: relative; width: ${w}px; height: ${h}px; background: #fff; overflow: visible; }
-      #world { transform: translate(${M - b.x}px, ${M + 36 - b.y}px); }
+      @page { size: ${plan.paperMM[0]}mm ${plan.paperMM[1]}mm; margin: 0; }
+      :root { color-scheme: light; --card-w: ${CARD_W}px; --card-h: ${CARD_H}px; --shadow-sm: none; --shadow: none; --shadow-lg: none; }
+      .card, .card.selected, .card.multi, .marriage, .relbadge, .ord { box-shadow: none; }
+      ${o.plain ? `:root { --bg: #fff; --card: #fff; --panel: #fff; --panel-2: #f1f3f8; --border: #9aa0ad; --border-strong: #6b7280; --text: #000; --muted: #4b5563; --line: #5b6373; --shadow-sm: none; --shadow: none; }
+      .card, .card.selected, .card.multi { box-shadow: none; border-color: var(--border); }
+      .card.index { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #000; }
+      .photo { background: #e5e7eb !important; color: #374151 !important; border-color: #fff; box-shadow: 0 0 0 1px #9aa0ad; }
+      .marriage, .relbadge, .ord { box-shadow: none; border-color: var(--border); }
+      #edges path { stroke-width: 2.2; }
+      #edges path.past { opacity: .6; }` : `.card.selected, .card.multi { border-color: var(--border); }`}
+      html, body { overflow: visible; background: #fff; width: ${plan.paperMM[0]}mm; height: auto; margin: 0; }
+      .page { position: relative; width: ${plan.paperMM[0]}mm; height: ${plan.paperMM[1]}mm; overflow: hidden; break-inside: avoid; page-break-inside: avoid; background: #fff; }
+      .page + .page { break-before: page; page-break-before: always; }
+      .clip { position: absolute; left: ${plan.margin}px; top: ${plan.margin}px; width: ${plan.aw}px; height: ${plan.ah}px; overflow: hidden; contain: strict; }
+      #world { will-change: auto; }
+      .foot { position: absolute; left: ${plan.margin}px; right: ${plan.margin}px; bottom: ${plan.margin * 0.4}px; display: flex; justify-content: space-between; font-size: 10px; color: #4b5563; }
+      .guide { position: absolute; font-size: 11px; font-weight: 600; color: #6b7280; letter-spacing: .02em; }
+      .guide.l { left: ${plan.margin * 0.25}px; top: 50%; transform: translateY(-50%) rotate(-90deg); transform-origin: center; white-space: nowrap; }
+      .guide.r { right: ${plan.margin * 0.25}px; top: 50%; transform: translateY(-50%) rotate(90deg); transform-origin: center; white-space: nowrap; }
+      .guide.t { left: 50%; top: ${plan.margin * 0.3}px; transform: translateX(-50%); }
+      .guide.b { left: 50%; bottom: ${plan.margin * 0.3 + plan.footer}px; transform: translateX(-50%); }
+      .sheet-id { position: absolute; left: ${plan.margin}px; top: ${plan.margin * 0.2}px; font-size: 14px; font-weight: 700; color: #374151; }
+      .glue { position: absolute; border: 0 dashed #b9bfcc; pointer-events: none; }
+      .glue.r { top: 0; bottom: 0; right: ${plan.overlap || 0}px; border-left-width: 1px; }
+      .glue.b { left: 0; right: 0; bottom: ${plan.overlap || 0}px; border-top-width: 1px; }
+      .mark { position: absolute; width: 14px; height: 14px; border: 0 solid #999; }
+      .mark.tl { left: ${plan.margin - 15}px; top: ${plan.margin - 15}px; border-right-width: 1px; border-bottom-width: 1px; }
+      .mark.tr { right: ${plan.margin - 15}px; top: ${plan.margin - 15}px; border-left-width: 1px; border-bottom-width: 1px; }
+      .mark.bl { left: ${plan.margin - 15}px; bottom: ${plan.margin + plan.footer - 15}px; border-right-width: 1px; border-top-width: 1px; }
+      .mark.br { right: ${plan.margin - 15}px; bottom: ${plan.margin + plan.footer - 15}px; border-left-width: 1px; border-top-width: 1px; }
       .plus, .photo .cam, .photo-x, .edit { display: none !important; }
       .card.leave { display: none; }
-      .card, .card.selected { box-shadow: none; border-color: var(--border); cursor: default; break-inside: avoid; }
+      .card { cursor: default; }
+      .photo img { filter: ${o.gray ? 'grayscale(1)' : 'none'}; }
       .marriage.empty { display: none; }
-      .relbadge { cursor: default; }
-      .pdf-title { position: absolute; left: ${M}px; top: 12px; font-size: 14px; font-weight: 600; color: #5b6377; }
-    </style></head><body class="${compact ? 'compact' : ''} ${orderBadges ? '' : 'no-ord'}"><div id="viewport"><div class="pdf-title">${esc(shownName(fileName))}</div><div id="world">${edgesSvg.outerHTML}${badgesEl.outerHTML}<div id="cards">${cardsEl.innerHTML}</div></div></div>
-    <script>window.onload = () => setTimeout(() => { window.print(); }, 150);<\/script></body></html>`;
+    </style></head><body class="${compact ? 'compact' : ''} ${orderBadges ? '' : 'no-ord'}">${pages}
+    <script>window.onload = () => setTimeout(() => { window.print(); }, 200);<\/script></body></html>`;
     const win = window.open('', '_blank');
     if (!win) return toast(t('save_failed'));
     win.document.open(); win.document.write(html); win.document.close();

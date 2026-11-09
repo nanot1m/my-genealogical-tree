@@ -188,6 +188,19 @@ test.describe('wide real-world tree (anonymized)', () => {
     return n;
   });
 
+  test('strict sibling order in compact view: no overlaps on the wide tree', async ({ page }) => {
+    await openApp(page, {}); await page.evaluate(() => { localStorage.setItem('familytree.strictOrder', '1'); localStorage.setItem('familytree.compact', '1'); });
+    const fs = await import('node:fs');
+    const state = JSON.parse(fs.readFileSync(new URL('./fixtures/wide-tree.json', import.meta.url), 'utf8'));
+    await page.evaluate((d) => localStorage.setItem('familytree.draft', JSON.stringify(d)), { state, fileName: 'w.ftree', dirty: true });
+    await page.reload(); await page.click('#w-continue'); await page.waitForTimeout(600);
+    expect(await overlapCount(page)).toBe(0);
+    const pos = await positions(page), g = (n) => pos.find(p => p.name === n);
+    expect(g('Person 177').y).toBe(g('Person 78').y);
+    expect(g('Person 177').x).toBeGreaterThan(g('Person 78').x);
+    expect(g("Person 177").x - g("Person 78").x).toBeLessThan(6 * (150 + 40));
+  });
+
   test('strict sibling order: no overlaps on the wide tree', async ({ page }) => {
     await openApp(page, {}); await page.evaluate(() => localStorage.setItem('familytree.strictOrder', '1'));
     const fs = await import('node:fs');
