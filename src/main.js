@@ -1,3 +1,6 @@
+import { $, sh } from './util.js';
+import { initRender, render, renderCards, cardHTML, applyPositions, animatePositions, fullName, renderEdges, marriageOrdinal, marriageText, statusHint, datesText, fmtDate, refreshCard, setSpawnFrom, reduceMotion, badgesEl, viewport, world, edgesSvg, cardsEl, emptyEl, cardEl } from './render.js';
+import { initPdf, exportPdf } from './pdf.js';
 import { t, lang, setLangValue, LANG_KEY } from './i18n.js';
 import { state, setState, people, fam, emptyState, childFamily, parentFamilies, moveMarriage, replaceParent, parentsOf, childrenOf, spousesOf, siblingsOf, newPerson, newFamily, addParent, addChild, addSpouse, addSibling, deletePerson, ancestorsOf, linkSpouse, linkChild, addRelation, joinHousehold, birthOrder, moveChild, husbandOf, coupled, kindOf, setKind, nearestRelative, byBirth } from './model.js';
 import { computeLayout } from './layout.js';
@@ -102,14 +105,15 @@ const GRID = 24, MIN_ZOOM = 0.15, MAX_ZOOM = 3;
 const DRAFT_KEY = 'familytree.draft';
 
 let positions = new Map();
-let marriages = [];
-function layout() {
-  marriages = [];
-  positions = computeLayout({ CARD_W, CARD_H, COUPLE_GAP, H_GAP, V_GAP, TREE_GAP, strictOrder });
-}
-let displayPos = new Map(), animFrame = 0, spawnFrom = null;
-const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const badgesEl = document.getElementById('badges');
+const ctx = {
+  get CARD_H() { return CARD_H; }, get CARD_W() { return CARD_W; }, get COUPLE_GAP() { return COUPLE_GAP; }, get H_GAP() { return H_GAP; }, get V_GAP() { return V_GAP; }, get TREE_GAP() { return TREE_GAP; },
+  get compact() { return compact; }, get crossMode() { return crossMode; }, get strictOrder() { return strictOrder; }, get orderBadges() { return orderBadges; },
+  get dirty() { return dirty; }, get editingId() { return editingId; }, get fileName() { return fileName; }, get hiPeople() { return hiPeople; }, get linkFrom() { return linkFrom; }, get multi() { return multi; }, get selectedId() { return selectedId; }, get sheetId() { return sheetId; },
+  get positions() { return positions; }, set positions(v) { positions = v; },
+  get paintMulti() { return paintMulti; }, get placeSheet() { return placeSheet; }, get shownName() { return shownName; }, get stopEditing() { return stopEditing; }, get toast() { return toast; }, get bbox() { return bbox; },
+};
+initRender(ctx); initPdf(ctx);
+
 let selectedId = null;
 let multi = new Set(), hiPeople = new Set();
 let editingId = null;
@@ -119,8 +123,6 @@ let fileHandle = null, fileName = null, dirty = false;
 let view = { x: 0, y: 0, s: 1 };
 
 
-const $ = (s) => document.querySelector(s);
-const viewport = $('#viewport'), world = $('#world'), edgesSvg = $('#edges'), cardsEl = $('#cards'), emptyEl = $('#empty');
 const photoInput = $('#photoInput'), fileInput = $('#fileInput');
 
 
@@ -159,19 +161,6 @@ function afterChange() {
 }
 
 
-function render() {
-  layout();
-  renderCards();
-  if (multi.size > 1) paintMulti(true);
-  animatePositions();
-  placeSheet();
-  emptyEl.hidden = people().length > 0;
-  $('#actions').classList.toggle('show', !!selectedId && !editingId);
-  document.body.classList.toggle('has-selection', !!selectedId);
-  $('#filename').textContent = shownName(fileName);
-  $('#filename').classList.toggle('dirty', dirty);
-  document.title = (dirty ? '• ' : '') + shownName(fileName) + ' — ' + t('app');
-}
 
 function setDateField(input, value) {
   const exact = !value || isExactDate(value);
@@ -191,295 +180,8 @@ document.addEventListener('click', (e) => {
   input.dispatchEvent(new Event('input', { bubbles: true }));
   input.focus();
 });
-function fmtDate(s) {
-  if (!s) return '';
-  const parts = dateParts(s); if (!parts) return s;
-  const [y, m, d] = parts;
-  const date = new Date(y, (m || 1) - 1, d || 1);
-  const opts = { year: 'numeric', ...(m && { month: d ? 'short' : 'long' }), ...(d && { day: 'numeric' }) };
-  return date.toLocaleDateString(lang, opts).replace(/\s*г\.$/, '');
-}
-function datesText(p) {
-  if (!p.birth && (p.alive || !p.death)) return '';
-  const born = p.birth ? fmtDate(p.birth) : '?';
-  if (p.alive) { const a = ageOf(p.birth); return `${t('b')} ${born}` + (a !== null ? ` · ${a} ${t('years')}` : ''); }
-  const died = p.death ? fmtDate(p.death) : '?';
-  const a = p.birth && p.death ? ageOf(p.birth, p.death) : null;
-  return `${born} – ${died}` + (a !== null ? ` (${a})` : '');
-}
 
-function renderCards() {
-  const seen = new Set();
-  for (const p of people()) {
-    let el = cardEl(p.id);
-    if (el && el.classList.contains('leave')) { el.remove(); el = null; }
-    const fresh = !el;
-    if (fresh) { el = document.createElement('div'); el.dataset.id = p.id; cardsEl.appendChild(el); }
-    el.className = 'card' + (p.id === selectedId ? ' selected' : '') + (p.id === sheetId ? ' editing' : '') + (fresh ? ' enter' : '') + (p.fate ? ' unborn' : '') + (linkFrom === p.id ? ' link-source' : '') + (!p.alive && !p.fate ? ' deceased' : '') + (state.indexPerson === p.id ? ' index' : '') + (p.gender ? ' g-' + p.gender : '');
-    if (fresh) el.addEventListener('animationend', () => el.classList.remove('enter'), { once: true });
-    el.style.setProperty('--h', hueOf(p.id));
-    el.innerHTML = cardHTML(p);
-    seen.add(p.id);
-  }
-  for (const el of cardsEl.querySelectorAll('.card')) {
-    if (seen.has(el.dataset.id) || el.classList.contains('leave')) continue;
-    el.classList.remove('selected', 'editing'); el.classList.add('leave');
-    el.addEventListener('animationend', () => el.remove(), { once: true });
-  }
-}
-function fateGlyph(f) {
-  const g = { pregnancy: '<path d="M16 6 L27 26 H5 Z"/>', miscarriage: '<circle cx="16" cy="16" r="6" fill="currentColor"/>', abortion: '<path d="M9 9 L23 23 M23 9 L9 23"/>', stillborn: '<rect x="7" y="7" width="18" height="18" rx="2"/><path d="M9 9 L23 23 M23 9 L9 23"/>' }[f] || '';
-  return `<svg class="fg" viewBox="0 0 32 32">${g}</svg>`;
-}
-function cardHTML(p) {
-  const canAddParent = parentsOf(p.id).length < 2;
-  const dt = datesText(p);
-  return `
-      <div class="photo" title="${t('set_photo')}">
-        ${p.fate ? fateGlyph(p.fate) : p.photo ? `<img src="${p.photo}" alt="">` : `<span>${initials(p.name)}</span>`}
-        ${p.illness ? `<i class="hx ill ${p.illness}" title="${t('illness')}"></i>` : ''}${p.substance ? `<i class="hx sub ${p.substance}" title="${t('substance')}"></i>` : ''}
-        <div class="cam">📷</div>
-        <button class="photo-x ${p.photo ? 'has-photo' : ''}" title="${t('remove_photo')}">×</button>
-      </div>
-      ${birthOrder(p.id) ? `<span class="ord" title="${t('birth_order')}">${birthOrder(p.id)}</span>` : ''}
-      <div class="info">
-        <div class="name ${p.name ? '' : 'empty'}" title="${esc(fullName(p))}"><span class="nm">${esc(p.name) || t('unnamed')}</span>${p.birthName ? ` <span class="nee">${t('nee')} ${esc(p.birthName)}</span>` : ''}</div>
-        <div class="dates ${dt ? '' : 'empty'}">${esc(dt)}${p.fate ? `<span class="fate-chip">${t('fate_' + p.fate)}</span>` : ''}</div>
-      </div>
-      ${canAddParent ? `<button class="plus top" data-add="parent" data-tip="${t('tip_parent')}">+</button>` : ''}
-      <button class="plus left" data-add="sibling-left" data-tip="${t('tip_sibling_l')}">+</button>
-      <button class="plus right" data-add="sibling-right" data-tip="${t('tip_sibling_r')}">+</button>
-      <button class="plus bottom" data-add="child" data-tip="${t('tip_child')}">+</button>
-      <button class="plus spouse" data-add="spouse" data-tip="${t('tip_spouse')}">♥</button>`;
-}
-function applyPositions(map) {
-  for (const [id, p] of map) { const el = cardEl(id); if (el) { el.style.left = p.x + 'px'; el.style.top = p.y + 'px'; } }
-  renderEdges(map);
-}
-function animatePositions() {
-  cancelAnimationFrame(animFrame);
-  const from = new Map();
-  for (const [id, p] of positions) {
-    const prev = displayPos.get(id) || (spawnFrom && displayPos.get(spawnFrom)) || p;
-    from.set(id, { x: prev.x, y: prev.y });
-  }
-  spawnFrom = null;
-  const moving = [...positions].some(([id, p]) => { const f = from.get(id); return Math.abs(f.x - p.x) > .5 || Math.abs(f.y - p.y) > .5; });
-  if (!moving || reduceMotion) { displayPos = new Map(positions); applyPositions(displayPos); return; }
-  applyPositions(from);
-  const start = performance.now(), dur = 340;
-  const step = (now) => {
-    const k = Math.min(1, (now - start) / dur), e = 1 - Math.pow(1 - k, 3);
-    displayPos = new Map();
-    for (const [id, p] of positions) { const f = from.get(id); displayPos.set(id, { x: f.x + (p.x - f.x) * e, y: f.y + (p.y - f.y) * e }); }
-    applyPositions(displayPos);
-    if (k < 1) animFrame = requestAnimationFrame(step);
-  };
-  animFrame = requestAnimationFrame(step);
-}
-function fullName(p) { return p.birthName ? `${p.name || t('unnamed')} (${t('nee')} ${p.birthName})` : (p.name || t('unnamed')); }
 
-function renderEdges(pos = positions) {
-  const d = [], dPartners = [], dPast = [], dPartnersPast = [], dSlash = [], dEnded = [], rels = [], dAdopted = [], dFoster = [], dArrow = [], dHouse = [], dHi = [];
-  const lineBuckets = [d, dPartners, dPast, dPartnersPast, dAdopted, dFoster];
-  const capture = (on, fn) => {
-    if (!on) return fn();
-    const before = lineBuckets.map(b => b.length);
-    fn();
-    lineBuckets.forEach((b, i) => dHi.push(...b.slice(before[i])));
-  };
-  const isPast = (f) => !!f.ended || f.status === 'divorced' || f.status === 'separated';
-  const hull = (pts) => {
-    pts = [...pts].sort((a, b) => a.x - b.x || a.y - b.y);
-    const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
-    const lower = []; for (const p of pts) { while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop(); lower.push(p); }
-    const upper = []; for (const p of [...pts].reverse()) { while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop(); upper.push(p); }
-    return lower.slice(0, -1).concat(upper.slice(0, -1));
-  };
-  const houseBadges = [];
-  for (const h of state.households || []) {
-    const pts = [];
-    for (const id of h.members) { const q = pos.get(id); if (!q) continue; const pad = 18; pts.push({ x: q.x - pad, y: q.y - pad }, { x: q.x + CARD_W + pad, y: q.y - pad }, { x: q.x - pad, y: q.y + CARD_H + pad }, { x: q.x + CARD_W + pad, y: q.y + CARD_H + pad }); }
-    if (pts.length < 8) continue;
-    const hp = hull(pts); let path = '';
-    for (let i = 0; i < hp.length; i++) {
-      const a = hp[i], b = hp[(i + 1) % hp.length], m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-      path += i === 0 ? `M${m.x} ${m.y}` : ` Q${a.x} ${a.y} ${m.x} ${m.y}`;
-    }
-    const a0 = hp[0], b0 = hp[1 % hp.length];
-    dHouse.push(path + ` Q${a0.x} ${a0.y} ${(a0.x + b0.x) / 2} ${(a0.y + b0.y) / 2} Z`);
-    const top = hp.reduce((m, p) => p.y < m.y ? p : m, hp[0]);
-    houseBadges.push({ h, x: hp.reduce((a, p) => a + p.x, 0) / hp.length, y: top.y });
-  }
-  marriages = [];
-  const midY = compact ? 46 : CARD_H / 2, halfW = compact ? 44 : CARD_W / 2;
-  const contentBottom = (id) => { const el = compact && cardEl(id); return el ? Math.min(CARD_H, el.offsetHeight) : CARD_H; };
-  const mid = (id) => { const p = pos.get(id); return { id, x: p.x, cx: p.x + CARD_W / 2, cy: p.y + midY, top: p.y, bottom: p.y + contentBottom(id) }; };
-  const slashes = (mx, my, status) => {
-    if (!status || status === 'married' || status === 'partners') return;
-    const two = status === 'divorced' || status === 'reconciled_div';
-    if (two) { dSlash.push(`M${mx - 9} ${my + 8} L${mx - 1} ${my - 8}`, `M${mx + 1} ${my + 8} L${mx + 9} ${my - 8}`); }
-    else dSlash.push(`M${mx - 4} ${my + 8} L${mx + 4} ${my - 8}`);
-    if (status.startsWith('reconciled')) dSlash.push(`M${mx - 10} ${my - 8} L${mx + 10} ${my + 8}`);
-  };
-  const lanes = [];
-  const laneFor = (y, x1, x2) => {
-    for (let k = 0; ; k++) {
-      const used = lanes.filter(l => l.y === y && l.k === k).some(l => x1 <= l.x2 + 8 && x2 >= l.x1 - 8);
-      if (!used) { lanes.push({ y, k, x1, x2 }); return k; }
-    }
-  };
-  const fams = Object.values(state.families).sort((a, b) => b.children.length - a.children.length);
-  for (const f of fams) {
-    const ps = f.parents.filter(id => pos.has(id)).map(mid).sort((a, b) => a.cx - b.cx);
-    const cs = f.children.filter(id => pos.has(id)).map(mid);
-    const hiFam = hiPeople.size > 0 && f.parents.some(id => hiPeople.has(id)) && f.children.some(id => hiPeople.has(id));
-    let origin = null;
-    if (ps.length === 2) capture(hiFam, () => {
-      const [a, b] = ps;
-      const adjacent = Math.abs(a.top - b.top) < 1 && ![...pos.values()].some(q => Math.abs(q.y - a.top) < 1 && q.x > a.x && q.x < b.x);
-      const past = isPast(f);
-      const bucket = f.status === 'partners' ? (past ? dPartnersPast : dPartners) : (past ? dPast : d);
-      if (adjacent) {
-        bucket.push(`M${a.cx + halfW} ${a.cy} L${b.cx - halfW} ${b.cy}`);
-        origin = { x: (a.cx + b.cx) / 2, y: a.cy };
-        marriages.push({ f, x: origin.x, y: a.cy + 27, past });
-        slashes(origin.x, a.cy, f.status);
-      } else {
-        const gap = Math.round((b.cx - a.cx) / (CARD_W + COUPLE_GAP));
-        const stepY = Math.max(a.bottom, b.bottom) + 18 + 12 * Math.max(0, gap - 2);
-        bucket.push(`M${a.cx} ${a.bottom} L${a.cx} ${stepY} L${b.cx} ${stepY} L${b.cx} ${b.bottom}`);
-        origin = { x: (a.cx + b.cx) / 2, y: stepY };
-        marriages.push({ f, x: origin.x, y: stepY, past });
-        slashes(origin.x, stepY, f.status);
-      }
-    }); else if (ps.length === 1) origin = { x: ps[0].cx, y: ps[0].bottom };
-    if (!cs.length) continue;
-    const rowTop = Math.min(...cs.map(c => c.top));
-    const xs = cs.map(c => c.cx);
-    if (origin) xs.push(origin.x);
-    const busY = rowTop - V_GAP / 2 - 14 * laneFor(rowTop, Math.min(...xs), Math.max(...xs));
-    const sorted = [...cs].sort((a, b) => a.cx - b.cx);
-    const kinds = f.kinds || {};
-    const twinOf = (id) => kinds[id]?.twin || Object.keys(kinds).find(k => kinds[k].twin === id) || '';
-    const bucketFor = (id) => ({ adopted: dAdopted, foster: dFoster }[kinds[id]?.type] || d);
-    const drop = (c, fromX) => {
-      const tw = twinOf(c.id); const other = sorted.find(x => x.id === tw);
-      if (other && other.cx > c.cx) {
-        const apex = (c.cx + other.cx) / 2;
-        d.push(`M${fromX} ${busY} L${apex} ${busY}`);
-        bucketFor(c.id).push(`M${apex} ${busY} L${c.cx} ${c.top}`); bucketFor(other.id).push(`M${apex} ${busY} L${other.cx} ${other.top}`);
-        const ident = kinds[c.id]?.identical || kinds[other.id]?.identical;
-        if (ident) { const m = 0.55; d.push(`M${apex + (c.cx - apex) * m} ${busY + (c.top - busY) * m} L${apex + (other.cx - apex) * m} ${busY + (other.top - busY) * m}`); }
-        return true;
-      }
-      if (other) return true;
-      bucketFor(c.id).push(`M${c.cx} ${busY} L${c.cx} ${c.top}`);
-      if (kinds[c.id]?.type === 'adopted') dArrow.push(`M${c.cx - 5} ${c.top - 9} L${c.cx} ${c.top - 1} L${c.cx + 5} ${c.top - 9}`);
-      return false;
-    };
-    const hiXs = hiFam ? sorted.filter(c => hiPeople.has(c.id)).map(c => c.cx) : [];
-    if (origin) {
-      d.push(rounded([origin, { x: origin.x, y: busY }, { x: sorted[0].cx, y: busY }]));
-      d.push(`M${Math.min(origin.x, sorted[0].cx)} ${busY} L${Math.max(origin.x, sorted[sorted.length - 1].cx)} ${busY}`);
-      if (hiXs.length) dHi.push(`M${origin.x} ${origin.y} L${origin.x} ${busY}`, `M${Math.min(origin.x, ...hiXs)} ${busY} L${Math.max(origin.x, ...hiXs)} ${busY}`);
-      for (const c of sorted) capture(hiFam && hiPeople.has(c.id), () => drop(c, origin.x));
-    } else {
-      const f0 = sorted[0], fn = sorted[sorted.length - 1];
-      d.push(`M${f0.cx} ${busY} L${fn.cx} ${busY}`);
-      if (hiXs.length > 1) dHi.push(`M${Math.min(...hiXs)} ${busY} L${Math.max(...hiXs)} ${busY}`);
-      for (const c of sorted) capture(hiFam && hiPeople.has(c.id), () => drop(c, f0.cx));
-    }
-  }
-  for (const p of people()) {
-    if (!p.lineEnded || childrenOf(p.id).length || !pos.has(p.id)) continue;
-    const q = pos.get(p.id), cx = q.x + CARD_W / 2, y = q.y + CARD_H;
-    dEnded.push(`M${cx} ${y} L${cx} ${y + 16} M${cx - 14} ${y + 16} L${cx + 14} ${y + 16}`);
-  }
-  const anchorPt = (from, to) => {
-    const dx = to.cx - from.cx, dy = to.cy - from.cy;
-    const hw = CARD_W / 2 + 6, hh = CARD_H / 2 + 6;
-    const k = Math.min(hw / Math.max(Math.abs(dx), 1e-6), hh / Math.max(Math.abs(dy), 1e-6));
-    return { x: from.cx + dx * k, y: from.cy + dy * k };
-  };
-  const relBadges = [];
-  for (const r of state.relations) {
-    if (!pos.has(r.from) || !pos.has(r.to)) continue;
-    const a = mid(r.from), b = mid(r.to);
-    const p1 = anchorPt(a, b), p2 = anchorPt(b, a);
-    const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
-    const len = Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1;
-    const nx = -(p2.y - p1.y) / len, ny = (p2.x - p1.x) / len;
-    const bow = Math.min(90, len * 0.22);
-    const cx = mx + nx * bow, cy = my + ny * bow;
-    const q = (tt) => ({ x: (1 - tt) * (1 - tt) * p1.x + 2 * (1 - tt) * tt * cx + tt * tt * p2.x, y: (1 - tt) * (1 - tt) * p1.y + 2 * (1 - tt) * tt * cy + tt * tt * p2.y });
-    const curve = `M${p1.x} ${p1.y} Q${cx} ${cy} ${p2.x} ${p2.y}`;
-    const type = r.type;
-    if (type === 'conflict') {
-      const n = Math.max(8, Math.round(len / 14)); let z = `M${p1.x} ${p1.y}`;
-      for (let i = 1; i < n; i++) { const pt = q(i / n); const sgn = i % 2 ? 1 : -1; z += ` L${pt.x + nx * 6 * sgn} ${pt.y + ny * 6 * sgn}`; }
-      rels.push(`<path class="rel conflict" d="${z} L${p2.x} ${p2.y}"/>`);
-    } else if (type === 'close' || type === 'fused') {
-      const w = type === 'fused' ? 9 : 6;
-      rels.push(`<path class="rel ${type}" style="stroke-width:${w}" d="${curve}"/><path class="rel inner" style="stroke-width:${w - 4}" d="${curve}"/>`);
-      if (type === 'fused') rels.push(`<path class="rel ${type}" style="stroke-width:1.5" d="${curve}"/>`);
-    } else if (type === 'cutoff') {
-      const m = q(0.5), m2 = q(0.5 + 6 / len), m1 = q(0.5 - 6 / len);
-      rels.push(`<path class="rel cutoff" d="${curve}"/><path class="rel cutoff" style="stroke-width:2.5" d="M${m1.x + nx * 9} ${m1.y + ny * 9} L${m1.x - nx * 9} ${m1.y - ny * 9} M${m2.x + nx * 9} ${m2.y + ny * 9} L${m2.x - nx * 9} ${m2.y - ny * 9}"/>`);
-      void m;
-    } else if (type === 'focused') {
-      rels.push(`<path class="rel focused" marker-end="url(#arrow-head)" d="${curve}"/>`);
-    } else {
-      rels.push(`<path class="rel ${esc(type)}" d="${curve}"/>`);
-    }
-    relBadges.push({ r, x: (p1.x + 2 * cx + p2.x) / 4, y: (p1.y + 2 * cy + p2.y) / 4 });
-  }
-  const defs = `<defs><marker id="arrow-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="currentColor" style="color: var(--text)"/></marker></defs>`;
-  if (crossMode !== 'default') applyCrossings([d, dAdopted, dFoster, dPartners, dPast, dPartnersPast, dHi], crossMode);
-  edgesSvg.innerHTML = defs + `<path class="house" d="${dHouse.join(' ')}"/><path d="${d.join(' ')}"/><path class="adopted" d="${dAdopted.join(' ')}"/><path class="foster" d="${dFoster.join(' ')}"/><path d="${dArrow.join(' ')}"/><path class="partners" d="${dPartners.join(' ')}"/><path class="past" d="${dPast.join(' ')}"/><path class="partners past" d="${dPartnersPast.join(' ')}"/><path class="slash" d="${dSlash.join(' ')}"/><path class="ended" d="${dEnded.join(' ')}"/><path class="hi" d="${dHi.join(' ')}"/>` + rels.join('');
-  badgesEl.innerHTML = '';
-  for (const { h, x, y } of houseBadges) {
-    const el = document.createElement('div');
-    el.className = 'relbadge house'; el.dataset.hid = h.id; el.title = t('household_title');
-    el.style.left = x + 'px'; el.style.top = y + 'px';
-    el.textContent = '⌂ ' + h.members.length;
-    badgesEl.appendChild(el);
-  }
-  for (const { r, x, y } of relBadges) {
-    const el = document.createElement('div');
-    el.className = 'relbadge'; el.dataset.rid = r.id; el.title = t('relation');
-    el.style.left = x + 'px'; el.style.top = y + 'px';
-    el.textContent = r.label || t('rel_' + r.type);
-    badgesEl.appendChild(el);
-  }
-  for (const m of marriages) {
-    const el = document.createElement('div');
-    const txt = marriageText(m.f);
-    el.className = 'marriage' + (txt ? '' : ' empty') + (m.past ? ' past' : '');
-    el.dataset.fid = m.f.id; el.title = t('marriage_dates');
-    el.style.left = m.x + 'px'; el.style.top = m.y + 'px';
-    el.innerHTML = `<span class="h">♥${marriageOrdinal(m.f)}</span>${esc(txt)}`;
-    badgesEl.appendChild(el);
-  }
-}
-const statusHint = (st) => t({ married: 'lg_married', partners: 'lg_partners', separated: 'lg_separated', divorced: 'lg_divorced', reconciled_sep: 'lg_rec_sep', reconciled_div: 'lg_rec_div' }[st] || 'lg_married');
-function marriageOrdinal(f) {
-  let best = 0;
-  for (const pid of f.parents) {
-    const fams = parentFamilies(pid);
-    if (fams.length < 2) continue;
-    best = Math.max(best, fams.indexOf(f) + 1);
-  }
-  return best ? String(best).replace(/\d/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]) : '';
-}
-function marriageText(f) {
-  const mark = f.status === 'divorced' ? '⚡ ' : f.status === 'separated' ? '⁄ ' : f.status?.startsWith('reconciled') ? '↺ ' : '';
-  if (!f.married && !f.ended) return mark.trim();
-  const widowed = f.parents.map(id => state.people[id]).filter(p => p && !p.alive);
-  const death = widowed.length ? (widowed.map(p => year(p.death)).filter(Boolean).sort()[0] || '?') : '';
-  const end = f.ended ? year(f.ended) : (f.status === 'divorced' || f.status === 'separated') ? '?' : death ? '† ' + death : t('present');
-  return mark + `${year(f.married) || '?'} – ${end}`;
-}
 
 const mpop = $('#mpop');
 let mpopFamily = null;
@@ -755,7 +457,6 @@ function select(id, opts = {}) {
     if (opts.scroll !== false) ensureVisible(id);
   }
 }
-const cardEl = (id) => cardsEl.querySelector(`.card[data-id="${id}"]`);
 function clearMulti() {
   if (!multi.size && !document.body.classList.contains('has-multi')) return;
   multi = new Set(); hiPeople = new Set(); document.body.classList.remove('has-multi'); renderEdges();
@@ -894,7 +595,6 @@ cardsEl.addEventListener('click', (e) => {
 
 const sheet = $('#sheet');
 let sheetId = null, sheetSnapshot = null;
-const sh = (id) => document.getElementById(id);
 function openSheet(id, fresh) {
   if (sheetId && sheetId !== id) closeSheet();
   if (editingId) stopEditing();
@@ -943,12 +643,6 @@ function placeSheet() {
   if (left < m) left = Math.max(m, Math.min(x, sr.width - m - bw));
   const top = Math.max(m, Math.min(y - 20, sr.height - m - bh));
   box.style.left = left + 'px'; box.style.top = top + 'px';
-}
-function refreshCard(id) {
-  const p = state.people[id], el = cardEl(id); if (!p || !el) return;
-  el.innerHTML = cardHTML(p);
-  el.classList.toggle('unborn', !!p.fate); el.classList.toggle('deceased', !p.alive && !p.fate); el.classList.toggle('index', state.indexPerson === id);
-  for (const g of ['m', 'f', 'x']) el.classList.toggle('g-' + g, p.gender === g);
 }
 function refreshSheetPhoto() {
   const p = state.people[sheetId]; if (!p) return;
@@ -1137,139 +831,9 @@ document.addEventListener('keydown', (e) => {
   e.preventDefault(); e.stopPropagation();
 }, true);
 
-const PAPERS = { a4: [210, 297], a3: [297, 420], letter: [215.9, 279.4] };
-const PDF_KEY = 'familytree.pdf';
-const pdfOpts = () => ({ paper: $('#pd-paper').value, mode: $('#pd-mode').value, scale: +$('#pd-scale').value, orient: $('#pd-orient').value, gray: $('#pd-gray').checked, plain: $('#pd-plain').checked });
-function pdfPlan(o) {
-  const PX = 96 / 25.4, margin = (o.mode === 'fit' ? 10 : 14) * PX, overlap = 10 * PX, footer = 9 * PX, pad = 24;
-  const b = bbox(), [sw, sh] = PAPERS[o.paper];
-  const orient = (pw, ph) => {
-    const aw = pw - 2 * margin, ah = ph - 2 * margin - footer;
-    if (o.mode === 'fit') return { pw, ph, aw, ah, margin, footer, s: Math.min(aw / (b.w + 2 * pad), ah / (b.h + 2 * pad)), cols: 1, rows: 1, tw: aw, th: ah };
-    const s = o.scale, tw = aw - overlap, th = ah - overlap;
-    return { pw, ph, aw, ah, margin, footer, overlap, s, tw, th, cols: Math.max(1, Math.ceil((b.w + 2 * pad) * s / tw)), rows: Math.max(1, Math.ceil((b.h + 2 * pad) * s / th)) };
-  };
-  const cards = [...positions.values()];
-  const withTiles = (plan) => {
-    plan.landscape = plan.pw > plan.ph;
-    plan.tiles = [];
-    const fit = o.mode === 'fit';
-    const totalW = fit ? plan.aw / plan.s : 0, totalH = fit ? plan.ah / plan.s : 0;
-    const ox = fit ? b.x + b.w / 2 - totalW / 2 : b.x - pad, oy = fit ? b.y + b.h / 2 - totalH / 2 : b.y - pad;
-    for (let r = 0; r < plan.rows; r++) for (let c = 0; c < plan.cols; c++) {
-      const x0 = ox + c * plan.tw / plan.s, y0 = oy + r * plan.th / plan.s;
-      const w = (c < plan.cols - 1 ? plan.tw : plan.aw) / plan.s, h = (r < plan.rows - 1 ? plan.th : plan.ah) / plan.s;
-      const used = fit || cards.some(p => p.x < x0 + w && p.x + CARD_W > x0 && p.y < y0 + h && p.y + CARD_H > y0);
-      if (used) plan.tiles.push({ r, c, x0, y0 });
-    }
-    return plan;
-  };
-  const L = withTiles(orient(sh * PX, sw * PX)), P = withTiles(orient(sw * PX, sh * PX));
-  const plan = o.orient === 'landscape' ? L : o.orient === 'portrait' ? P : o.mode === 'fit' ? (L.s >= P.s ? L : P) : (L.tiles.length <= P.tiles.length ? L : P);
-  plan.paperMM = plan.pw > plan.ph ? [sh, sw] : [sw, sh];
-  if (o.mode === 'poster' && plan.tiles.length === 1) { const f = pdfPlan({ ...o, mode: 'fit' }); if (f.s > plan.s) return f; }
-  return plan;
-}
-function pdfHint() {
-  if (!positions.size) return '';
-  const plan = pdfPlan(pdfOpts());
-  $('#pd-scale-row').hidden = pdfOpts().mode === 'fit';
-  drawPdfPreview(plan);
-  return t('pd_pages').replace('{n}', plan.tiles.length).replace('{s}', Math.round(plan.s * 100)) + ' · ' + t('pd_print_hint').replace('{p}', $('#pd-paper').selectedOptions[0].textContent).replace('{o}', t(plan.landscape ? 'pd_landscape' : 'pd_portrait').toLowerCase());
-}
-function drawPdfPreview(plan) {
-  const svg = $('#pd-preview'), W = 340, H = 120, pad = 6;
-  const sheets = plan.tiles.map(tl => ({ ...tl, w: plan.aw / plan.s, h: plan.ah / plan.s }));
-  const xs = sheets.map(t => t.x0), ys = sheets.map(t => t.y0);
-  const minX = Math.min(...xs), minY = Math.min(...ys), maxX = Math.max(...sheets.map(t => t.x0 + t.w)), maxY = Math.max(...sheets.map(t => t.y0 + t.h));
-  const k = Math.min((W - 2 * pad) / (maxX - minX), (H - 2 * pad) / (maxY - minY));
-  const ox = pad + ((W - 2 * pad) - (maxX - minX) * k) / 2, oy = pad + ((H - 2 * pad) - (maxY - minY) * k) / 2;
-  const X = (v) => ox + (v - minX) * k, Y = (v) => oy + (v - minY) * k;
-  const cards = [...positions.values()].map(p => `<rect x="${X(p.x)}" y="${Y(p.y)}" width="${Math.max(1, CARD_W * k)}" height="${Math.max(1, CARD_H * k)}" rx="1" fill="var(--accent)" opacity=".55"/>`).join('');
-  const fs = Math.max(5, Math.min(11, plan.aw / plan.s * k * 0.28));
-  const tiles = sheets.map(t => `<rect x="${X(t.x0)}" y="${Y(t.y0)}" width="${t.w * k}" height="${t.h * k}" fill="var(--card)" stroke="var(--border-strong)" stroke-width=".8"/>` +
-    (plan.tiles.length > 1 ? `<text x="${X(t.x0) + 3}" y="${Y(t.y0) + fs + 1}" font-size="${fs}" font-weight="600" fill="var(--muted)">${String.fromCharCode(65 + t.r)}${t.c + 1}</text>` : '')).join('');
-  svg.innerHTML = tiles + cards;
-}
-function exportPdf() {
-  stopEditing();
-  if (!positions.size) return toast(t('nothing_export'));
-  try { const saved = JSON.parse(localStorage.getItem(PDF_KEY) || '{}'); if (saved.paper) $('#pd-paper').value = saved.paper; if (saved.mode) $('#pd-mode').value = saved.mode; if (saved.scale) $('#pd-scale').value = String(saved.scale); $('#pd-gray').checked = !!saved.gray; $('#pd-plain').checked = !!saved.plain; if (saved.orient) $('#pd-orient').value = saved.orient; } catch (_) {}
-  $('#pd-hint').textContent = pdfHint();
-  $('#pdfdlg').classList.add('show');
-}
-$('#pdfdlg').addEventListener('change', () => { $('#pd-hint').textContent = pdfHint(); });
-$('#pd-cancel').addEventListener('click', () => $('#pdfdlg').classList.remove('show'));
-$('#pdfdlg').addEventListener('pointerdown', (e) => { if (e.target === $('#pdfdlg')) $('#pdfdlg').classList.remove('show'); });
-$('#pd-go').addEventListener('click', () => { const o = pdfOpts(); localStorage.setItem(PDF_KEY, JSON.stringify(o)); $('#pdfdlg').classList.remove('show'); printPdf(o); });
-function printPdf(o) {
-  const plan = pdfPlan(o);
-  const css = [...document.styleSheets].filter(ss => !ss.href || new URL(ss.href).origin === location.origin).flatMap(ss => [...ss.cssRules].map(r => r.cssText)).join('\n');
-  const cardsCopy = cardsEl.cloneNode(true);
-  cardsCopy.querySelectorAll('.card').forEach(c => c.classList.remove('selected', 'multi', 'common', 'onpath', 'editing', 'link-source', 'enter'));
-  const world = `${edgesSvg.outerHTML}${badgesEl.outerHTML}<div id="cards">${cardsCopy.innerHTML}</div>`;
-  const multi = plan.tiles.length > 1;
-  const id = (r, c) => `${String.fromCharCode(65 + r)}${c + 1}`;
-  const has = (r, c) => plan.tiles.some(t => t.r === r && t.c === c);
-  const label = (tl) => multi ? id(tl.r, tl.c) : '';
-  const guides = (tl) => !multi ? '' : [
-    has(tl.r, tl.c - 1) ? `<div class="guide l">← ${id(tl.r, tl.c - 1)}</div>` : '',
-    has(tl.r, tl.c + 1) ? `<div class="guide r">${id(tl.r, tl.c + 1)} →</div>` : '',
-    has(tl.r - 1, tl.c) ? `<div class="guide t">↑ ${id(tl.r - 1, tl.c)}</div>` : '',
-    has(tl.r + 1, tl.c) ? `<div class="guide b">↓ ${id(tl.r + 1, tl.c)}</div>` : '',
-    `<div class="sheet-id">${label(tl)}</div>`,
-  ].join('');
-  const glue = (tl) => !multi ? '' : (has(tl.r, tl.c + 1) ? '<i class="glue r"></i>' : '') + (has(tl.r + 1, tl.c) ? '<i class="glue b"></i>' : '');
-  const date = new Date().toLocaleDateString(lang);
-  const pages = plan.tiles.map(tl => `<section class="page"><div class="clip"><div id="world" style="transform: translate(${-tl.x0 * plan.s}px, ${-tl.y0 * plan.s}px) scale(${plan.s})">${world}</div>${glue(tl)}</div>
-    ${guides(tl)}
-    <div class="foot"><span>${esc(shownName(fileName))}</span><span>${date} · ${Math.round(plan.s * 100)}%${multi ? ` · ${label(tl)} (${plan.rows}×${plan.cols})` : ''}</span></div>
-    <i class="mark tl"></i><i class="mark tr"></i><i class="mark bl"></i><i class="mark br"></i></section>`).join('');
-  const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><title>${esc(shownName(fileName))}</title><style>${css}
-    @page { size: ${plan.paperMM[0]}mm ${plan.paperMM[1]}mm; margin: 0; }
-    :root { color-scheme: light; --card-w: ${CARD_W}px; --card-h: ${CARD_H}px; --shadow-sm: none; --shadow: none; --shadow-lg: none; }
-    .card, .card.selected, .card.multi, .marriage, .relbadge, .ord { box-shadow: none; }
-    ${o.plain ? `:root { --bg: #fff; --card: #fff; --panel: #fff; --panel-2: #f1f3f8; --border: #9aa0ad; --border-strong: #6b7280; --text: #000; --muted: #4b5563; --line: #5b6373; --shadow-sm: none; --shadow: none; }
-    .card, .card.selected, .card.multi { box-shadow: none; border-color: var(--border); }
-    .card.index { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #000; }
-    .photo { background: #e5e7eb !important; color: #374151 !important; border-color: #fff; box-shadow: 0 0 0 1px #9aa0ad; }
-    .marriage, .relbadge, .ord { box-shadow: none; border-color: var(--border); }
-    #edges path { stroke-width: 2.2; }
-    #edges path.past { opacity: .6; }` : `.card.selected, .card.multi { border-color: var(--border); }`}
-    html, body { overflow: visible; background: #fff; width: ${plan.paperMM[0]}mm; height: auto; margin: 0; }
-    .page { position: relative; width: ${plan.paperMM[0]}mm; height: ${plan.paperMM[1]}mm; overflow: hidden; break-inside: avoid; page-break-inside: avoid; background: #fff; }
-    .page + .page { break-before: page; page-break-before: always; }
-    .clip { position: absolute; left: ${plan.margin}px; top: ${plan.margin}px; width: ${plan.aw}px; height: ${plan.ah}px; overflow: hidden; contain: strict; }
-    #world { will-change: auto; }
-    .foot { position: absolute; left: ${plan.margin}px; right: ${plan.margin}px; bottom: ${plan.margin * 0.4}px; display: flex; justify-content: space-between; font-size: 10px; color: #4b5563; }
-    .guide { position: absolute; font-size: 11px; font-weight: 600; color: #6b7280; letter-spacing: .02em; }
-    .guide.l { left: ${plan.margin * 0.25}px; top: 50%; transform: translateY(-50%) rotate(-90deg); transform-origin: center; white-space: nowrap; }
-    .guide.r { right: ${plan.margin * 0.25}px; top: 50%; transform: translateY(-50%) rotate(90deg); transform-origin: center; white-space: nowrap; }
-    .guide.t { left: 50%; top: ${plan.margin * 0.3}px; transform: translateX(-50%); }
-    .guide.b { left: 50%; bottom: ${plan.margin * 0.3 + plan.footer}px; transform: translateX(-50%); }
-    .sheet-id { position: absolute; left: ${plan.margin}px; top: ${plan.margin * 0.2}px; font-size: 14px; font-weight: 700; color: #374151; }
-    .glue { position: absolute; border: 0 dashed #b9bfcc; pointer-events: none; }
-    .glue.r { top: 0; bottom: 0; right: ${plan.overlap || 0}px; border-left-width: 1px; }
-    .glue.b { left: 0; right: 0; bottom: ${plan.overlap || 0}px; border-top-width: 1px; }
-    .mark { position: absolute; width: 14px; height: 14px; border: 0 solid #999; }
-    .mark.tl { left: ${plan.margin - 15}px; top: ${plan.margin - 15}px; border-right-width: 1px; border-bottom-width: 1px; }
-    .mark.tr { right: ${plan.margin - 15}px; top: ${plan.margin - 15}px; border-left-width: 1px; border-bottom-width: 1px; }
-    .mark.bl { left: ${plan.margin - 15}px; bottom: ${plan.margin + plan.footer - 15}px; border-right-width: 1px; border-top-width: 1px; }
-    .mark.br { right: ${plan.margin - 15}px; bottom: ${plan.margin + plan.footer - 15}px; border-left-width: 1px; border-top-width: 1px; }
-    .plus, .photo .cam, .photo-x, .edit { display: none !important; }
-    .card.leave { display: none; }
-    .card { cursor: default; }
-    .photo img { filter: ${o.gray ? 'grayscale(1)' : 'none'}; }
-    .marriage.empty { display: none; }
-  </style></head><body class="${compact ? 'compact' : ''} ${orderBadges ? '' : 'no-ord'}">${pages}
-  <script>window.onload = () => setTimeout(() => { window.print(); }, 200);<\/script></body></html>`;
-  const win = window.open('', '_blank');
-  if (!win) return toast(t('save_failed'));
-  win.document.open(); win.document.write(html); win.document.close();
-}
 
 function createRelative(id, kind, anchor, familyId) {
-  spawnFrom = id;
+  setSpawnFrom(id);
   if (kind === 'parent' && !familyId && parentsOf(id).length >= 2) {
     return openMenu(anchor || cardEl(id), t('two_parents'), parentsOf(id).map(old => ({ label: t('replace') + ' ' + (state.people[old]?.name || t('unnamed')), run: () => createRelative(id, 'parent', null, old) })));
   }

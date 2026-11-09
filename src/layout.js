@@ -1,4 +1,4 @@
-import { state, people, fam, childFamily, parentFamilies, parentsOf, childrenOf, spousesOf, siblingsOf, husbandOf, coupled, byBirth } from './model.js';
+import { state, people, fam, childFamily, parentFamilies, parentsOf, childrenOf, spousesOf, siblingsOf, husbandOf, coupled, byBirth, ancestorsOf } from './model.js';
 
 let CARD_W, CARD_H, COUPLE_GAP, H_GAP, V_GAP, TREE_GAP, strictOrder;
 let positions = new Map();
@@ -451,7 +451,18 @@ function layoutPass(pref) {
   }
 
   const descCount = (pid, seen = new Set()) => { let n = 0; for (const c of childrenOf(pid)) if (!seen.has(c) && !husbandOf(c)) { seen.add(c); n += 1 + descCount(c, seen); } return n; };
-  const bySize = (list) => list.map(p => [p, descCount(p.id)]).sort((a, b) => b[1] - a[1]).map(([p]) => p);
+  const idx = state.indexPerson && state.people[state.indexPerson] ? state.indexPerson : null;
+  const sideSets = { husband: new Set(), wife: new Set() };
+  if (idx) {
+    const me = state.people[idx], spouse = spousesOf(idx)[0];
+    const isMale = (id) => state.people[id]?.gender === 'm';
+    const husband = isMale(idx) ? idx : spouse && isMale(spouse) ? spouse : null;
+    const wife = husband === idx ? spouse : idx;
+    if (husband) { sideSets.husband = ancestorsOf(husband); sideSets.husband.add(husband); }
+    if (wife) { sideSets.wife = ancestorsOf(wife); sideSets.wife.add(wife); }
+  }
+  const sideOf = (pid) => sideSets.husband.has(pid) ? -1 : sideSets.wife.has(pid) ? 1 : 0;
+  const bySize = (list) => list.map(p => [p, descCount(p.id), sideOf(p.id)]).sort((a, b) => a[2] - b[2] || b[1] - a[1]).map(([p]) => p);
   const roots = bySize(people().filter(p => !childFamily(p.id)));
   const cluster = (pid) => { const seen = new Set([pid]); for (const a of seen) for (const sp of spousesOf(a)) seen.add(sp); return [...seen]; };
   const topRoots = roots.filter(p => cluster(p.id).every(id => !childFamily(id)));

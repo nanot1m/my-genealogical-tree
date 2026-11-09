@@ -49,3 +49,6 @@ export function ageOf(birth, ref) {
   if (b[1] && r[1] && (r[1] < b[1] || (r[1] === b[1] && b[2] && r[2] && r[2] < b[2]))) a--;
   return a >= 0 ? a : null;
 }
+
+export const $ = (s) => document.querySelector(s);
+export const sh = (id) => document.getElementById(id);
