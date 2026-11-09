@@ -1333,6 +1333,40 @@
       const cx = (id) => positions.get(id).x + CARD_W / 2;
       const byRow = new Map();
       for (const u of units) { if (!byRow.has(u.y)) byRow.set(u.y, []); byRow.get(u.y).push(u); }
+      const target = (u) => {
+        let sum = 0, w = 0;
+        for (const id of u.ids) for (const f of parentFamilies(id)) {
+          const kids = f.children.filter(c => positions.has(c)); if (!kids.length) continue;
+          const inUnit = f.parents.filter(x => u.ids.includes(x));
+          const from = inUnit.reduce((a, b) => a + cx(b), 0) / inUnit.length;
+          sum += kids.reduce((a, b) => a + cx(b), 0) / kids.length - from; w += 1;
+        }
+        if (!w) for (const id of u.ids) {
+          const ps = parentsOf(id).filter(a => positions.has(a));
+          if (ps.length) { sum += ps.reduce((a, b) => a + cx(b), 0) / ps.length - cx(id); w += 1; }
+        }
+        return w ? sum / w : null;
+      };
+      const famKey = (u) => new Set(u.ids.map(id => childFamily(id)?.id).filter(Boolean));
+      const swappable = (a, b) => { const fa = famKey(a); return ![...famKey(b)].some(k => fa.has(k)); };
+      const width = (u) => u.right - positions.get(u.ids[0]).x;
+      for (const row of byRow.values()) {
+        for (let pass = 0; pass < row.length; pass++) {
+          let swapped = false;
+          for (let i = 0; i + 1 < row.length; i++) {
+            const a = row[i], b = row[i + 1], ta = target(a), tb = target(b);
+            if (ta === null || tb === null || !swappable(a, b)) continue;
+            const ax = positions.get(a.ids[0]).x, bx = positions.get(b.ids[0]).x;
+            if (ax + ta <= bx + tb + CARD_W / 2) continue;
+            const start = ax, wa = width(a), wb = width(b), gap = bx - a.right;
+            const da = start + wb + gap - ax, db = start - bx;
+            for (const id of a.ids) positions.get(id).x += da; a.right += da;
+            for (const id of b.ids) positions.get(id).x += db; b.right += db;
+            row[i] = b; row[i + 1] = a; swapped = true;
+          }
+          if (!swapped) break;
+        }
+      }
       for (let iter = 0; iter < 12; iter++) {
         let moved = 0;
         for (const u of units) {
@@ -1366,9 +1400,9 @@
     function placeKidsStrict(n, x, row) {
       const rowY = row * (CARD_H + V_GAP);
       const placedX = (id) => { const p = positions.get(id); return p && p.y === rowY ? p.x : null; };
-      const unitBounds = (id) => {
+      const unitBounds = (id, y = rowY) => {
         let lo = positions.get(id).x, hi = lo + CARD_W; const seen = new Set([id]); const q = [id];
-        while (q.length) { const cur = q.pop(); for (const sp of spousesOf(cur)) { const p = positions.get(sp); if (!p || seen.has(sp) || p.y !== rowY) continue; const near = Math.abs(p.x - lo) <= CARD_W + COUPLE_GAP + 1 || Math.abs(p.x - hi) <= COUPLE_GAP + 1; if (!near) continue; seen.add(sp); q.push(sp); lo = Math.min(lo, p.x); hi = Math.max(hi, p.x + CARD_W); } }
+        while (q.length) { const cur = q.pop(); for (const sp of spousesOf(cur)) { const p = positions.get(sp); if (!p || seen.has(sp) || p.y !== y) continue; const near = Math.abs(p.x - lo) <= CARD_W + COUPLE_GAP + 1 || Math.abs(p.x - hi) <= COUPLE_GAP + 1; if (!near) continue; seen.add(sp); q.push(sp); lo = Math.min(lo, p.x); hi = Math.max(hi, p.x + CARD_W); } }
         return [lo, hi];
       };
       const groups = new Map();
@@ -1388,12 +1422,13 @@
         const insertColumn = (node, cut, dir) => {
           const { l, r } = extBounds(node), S = r - l + H_GAP;
           const rowsHit = new Set([...node.ext.keys()].map(k => (k + row) * (CARD_H + V_GAP)));
+          const bounds = new Map([...positions.entries()].map(([id, p]) => [id, unitBounds(id, p.y)]));
           for (let guard = 0; guard < 50; guard++) {
-            const st = [...positions.values()].filter(p => rowsHit.has(p.y) && p.x < cut && p.x + CARD_W > cut);
+            const st = [...positions.entries()].filter(([id, p]) => rowsHit.has(p.y) && bounds.get(id)[0] < cut && bounds.get(id)[1] > cut);
             if (!st.length) break;
-            cut = dir > 0 ? Math.max(...st.map(p => p.x + CARD_W)) + H_GAP / 2 : Math.min(...st.map(p => p.x)) - H_GAP / 2;
+            cut = dir > 0 ? Math.max(...st.map(([id]) => bounds.get(id)[1])) + H_GAP / 2 : Math.min(...st.map(([id]) => bounds.get(id)[0])) - H_GAP / 2;
           }
-          const movers = [...positions.values()].filter(p => dir > 0 ? p.x >= cut : p.x + CARD_W <= cut);
+          const movers = [...positions.entries()].filter(([id, p]) => { const [lo, hi] = bounds.get(id); return dir > 0 ? lo >= cut : hi <= cut; }).map(([, p]) => p);
           for (const p of movers) p.x += dir * S;
           occupied = new Map();
           for (const p of positions.values()) occupied = union(occupied, new Map([[Math.round(p.y / (CARD_H + V_GAP)), [[p.x, p.x + CARD_W]]]]));

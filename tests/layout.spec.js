@@ -196,6 +196,9 @@ test.describe('wide real-world tree (anonymized)', () => {
     await page.reload(); await page.click('#w-continue'); await page.waitForTimeout(600);
     expect(await overlapCount(page)).toBe(0);
     const pos = await positions(page), g = (n) => pos.find(p => p.name === n);
+    const split = Object.values(state.families).filter(f => f.parents.length === 2).map(f => f.parents.map(id => g(state.people[id].name))).filter(([a, b]) => a && b && a.y === b.y && Math.abs(a.x - b.x) > 3 * (150 + 40)).map(([a, b]) => [a.name, b.name]);
+    expect(split).toEqual([]);
+    expect(g('Person 181').x).toBeGreaterThan(g('Person 171').x);
     expect(g('Person 177').y).toBe(g('Person 78').y);
     expect(g('Person 177').x).toBeGreaterThan(g('Person 78').x);
     expect(g("Person 177").x - g("Person 78").x).toBeLessThan(6 * (150 + 40));
