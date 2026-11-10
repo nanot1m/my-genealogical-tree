@@ -1,0 +1,4 @@
+#!/bin/sh
+files=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(m?js|css|html|json)$')
+[ -z "$files" ] && exit 0
+./node_modules/.bin/oxfmt $files && git add $files
