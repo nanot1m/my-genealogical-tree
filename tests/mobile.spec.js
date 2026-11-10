@@ -8,12 +8,16 @@ async function newTreeTouch(page, opts) {
 }
 
 test.describe('touch devices', () => {
-  test('tap creates and selects, the edit sheet replaces inline editing, action bar adds relatives', async ({ page }) => {
+  test('tap creates and selects, the edit sheet replaces inline editing, action bar adds relatives', async ({
+    page,
+  }) => {
     await newTreeTouch(page, { lang: 'ru' });
     await page.tap('#empty');
     await expect(page.locator('#sheet')).toBeVisible();
     await expect(page.locator('#sh-name')).toBeFocused();
-    await page.keyboard.type('Анастасия'); await page.keyboard.press('Tab'); await page.keyboard.type('Иванова');
+    await page.keyboard.type('Анастасия');
+    await page.keyboard.press('Tab');
+    await page.keyboard.type('Иванова');
     await page.fill('#sh-birth', '1950-03-04');
     await page.locator('#sh-alive').uncheck();
     await page.fill('#sh-death', '2020-01-01');
@@ -25,7 +29,8 @@ test.describe('touch devices', () => {
     await expect(page.locator('#actions')).toBeVisible();
     await page.tap('#actions [data-sel=child]');
     await expect(page.locator('#sheet')).toBeVisible();
-    await page.keyboard.type('Дитя'); await page.tap('#sh-done');
+    await page.keyboard.type('Дитя');
+    await page.tap('#sh-done');
     await expect(cards(page)).toHaveCount(2);
     await page.keyboard.press('Meta+z');
     await expect(cards(page)).toHaveCount(1);
@@ -33,7 +38,9 @@ test.describe('touch devices', () => {
 
   test('tap selected card opens the sheet; photo, crop and delete work from the sheet', async ({ page }) => {
     await newTreeTouch(page);
-    await page.tap('#empty'); await page.keyboard.type('Touch'); await page.tap('#sh-done');
+    await page.tap('#empty');
+    await page.keyboard.type('Touch');
+    await page.tap('#sh-done');
     await expect(cardOf(page, 'Touch')).toHaveClass(/selected/);
     await page.tap('.card');
     await expect(page.locator('#sheet')).toBeVisible();
@@ -52,7 +59,9 @@ test.describe('touch devices', () => {
 
   test('pinch zooms and a single finger pans', async ({ page }) => {
     await newTreeTouch(page);
-    await page.tap('#empty'); await page.keyboard.type('A'); await page.tap('#sh-done');
+    await page.tap('#empty');
+    await page.keyboard.type('A');
+    await page.tap('#sh-done');
     const transform = () => page.evaluate(() => document.getElementById('world').style.transform);
     const before = await transform();
     const cdp = await page.context().newCDPSession(page);
@@ -62,19 +71,37 @@ test.describe('touch devices', () => {
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     const panned = await transform();
     expect(panned).not.toBe(before);
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 150, y: 400 }, { x: 250, y: 400 }] });
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 100, y: 400 }, { x: 300, y: 400 }] });
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [
+        { x: 150, y: 400 },
+        { x: 250, y: 400 },
+      ],
+    });
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [
+        { x: 100, y: 400 },
+        { x: 300, y: 400 },
+      ],
+    });
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     expect(await transform()).toContain('scale(2)');
   });
 
   test('phone layout: toolbars stack, action bar fits, sheet does not overflow in Russian', async ({ page }) => {
     await newTreeTouch(page, { lang: 'ru' });
-    await page.tap('#empty'); await page.keyboard.type('Анастасия Константинопольская'); await page.keyboard.press('Tab'); await page.keyboard.type('Иванова');
-    const overflow = () => page.evaluate(() => [...document.querySelectorAll('.bar, #sheet input, #sheet .sh-row, #sheet .foot button, #actions button')]
-      .filter(el => el.offsetParent !== null)
-      .filter(el => el.getBoundingClientRect().right > innerWidth + 1 || el.getBoundingClientRect().left < -1)
-      .map(el => el.id || el.className));
+    await page.tap('#empty');
+    await page.keyboard.type('Анастасия Константинопольская');
+    await page.keyboard.press('Tab');
+    await page.keyboard.type('Иванова');
+    const overflow = () =>
+      page.evaluate(() =>
+        [...document.querySelectorAll('.bar, #sheet input, #sheet .sh-row, #sheet .foot button, #actions button')]
+          .filter((el) => el.offsetParent !== null)
+          .filter((el) => el.getBoundingClientRect().right > innerWidth + 1 || el.getBoundingClientRect().left < -1)
+          .map((el) => el.id || el.className),
+      );
     expect(await overflow()).toEqual([]);
     await page.tap('#sh-done');
     expect(await overflow()).toEqual([]);
@@ -85,7 +112,10 @@ test.describe('touch devices', () => {
 
   test('install tutorial shows once on first launch, in the user locale', async ({ page }) => {
     await page.goto('/');
-    await page.evaluate(() => { localStorage.clear(); localStorage.setItem('familytree.lang', 'ru'); });
+    await page.evaluate(() => {
+      localStorage.clear();
+      localStorage.setItem('familytree.lang', 'ru');
+    });
     await page.reload();
     await expect(page.locator('#install')).toBeVisible();
     await expect(page.locator('#install h4')).toHaveText('Установите Family Tree');

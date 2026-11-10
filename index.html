@@ -1,212 +1,475 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Family Tree">
-<meta name="theme-color" content="#f7f8fa">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<title>Family Tree</title>
-<link rel="stylesheet" href="styles.css">
-</head>
-<body>
-<div id="viewport">
-  <div id="world">
-    <svg id="edges"></svg>
-    <div id="badges"></div>
-    <div id="cards"></div>
-  </div>
-  <div id="empty" hidden>
-    <div class="big">+</div>
-    <p data-i18n="empty"></p>
-    <small><kbd>Enter</kbd> · <kbd>N</kbd></small>
-  </div>
-</div>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Family Tree" />
+    <meta name="theme-color" content="#f7f8fa" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <title>Family Tree</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="viewport">
+      <div id="world">
+        <svg id="edges"></svg>
+        <div id="badges"></div>
+        <div id="cards"></div>
+      </div>
+      <div id="empty" hidden>
+        <div class="big">+</div>
+        <p data-i18n="empty"></p>
+        <small><kbd>Enter</kbd> · <kbd>N</kbd></small>
+      </div>
+    </div>
 
-<div class="bar" id="topleft">
-  <span id="filename">Untitled tree</span>
-  <span class="sep"></span>
-  <button data-act="filemenu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span class="lbl" data-i18n="file_menu"></span></button>
-  <button data-act="new" data-i18n-title="new_t"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15h6"/></svg><span class="lbl" data-i18n="new"></span></button>
-  <button data-act="open" data-i18n-title="open_t"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span class="lbl" data-i18n="open"></span></button>
-  <button data-act="save" data-i18n-title="save_t"><svg viewBox="0 0 24 24"><path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M8 3v5h7V3M8 21v-6h8v6"/></svg><span class="lbl" data-i18n="save"></span></button>
-  <button data-act="saveas" data-i18n-title="saveas_t"><svg viewBox="0 0 24 24"><path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M12 10v6M9 13h6"/></svg><span class="lbl" data-i18n="saveas"></span></button>
-  <span class="sep"></span>
-  <button data-act="pdf" data-i18n-title="export_t"><svg viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg><span class="lbl" data-i18n="export_pdf"></span></button>
-  <button data-act="download" data-i18n-title="download_t" hidden><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg><span class="lbl" data-i18n="download"></span></button>
-</div>
-<div class="bar" id="topright">
-  <button data-act="undo" title="Undo (⌘Z)"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg><span class="lbl">↶</span></button>
-  <button data-act="redo" title="Redo (⇧⌘Z)"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg><span class="lbl">↷</span></button>
-  <span class="sep"></span>
-  <button data-act="zoomout" title="Zoom out (−)"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg><span class="lbl">−</span></button>
-  <span id="zoomlvl">100%</span>
-  <button data-act="zoomin" title="Zoom in (+)"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="lbl">+</span></button>
-  <button data-act="fit" data-i18n-title="fit_t"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span class="lbl" data-i18n="fit"></span></button>
-  <button data-act="compact" data-i18n-title="compact_t"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="16" rx="1.5"/><rect x="14" y="4" width="6" height="16" rx="1.5"/></svg><span class="lbl" data-i18n="compact"></span></button>
-  <span class="sep"></span>
-  <select id="lang" title="Language"><option value="en">EN</option><option value="ru">RU</option><option value="de">DE</option></select>
-  <button data-act="legend" data-i18n-title="legend_t"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h5v18H6a2 2 0 0 1-2-2zM13 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5z"/></svg><span class="lbl" data-i18n="legend"></span></button>
-  <button data-act="help" data-i18n-title="help_t"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01"/></svg></button>
-</div>
-<div class="bar" id="bottom">
-  <span><kbd>↑↓←→</kbd> <span data-i18n="hint_nav"></span></span>
-  <span><kbd>Enter</kbd> <span data-i18n="hint_edit"></span></span>
-  <span><kbd>P</kbd> <kbd>C</kbd> <kbd>S</kbd> <kbd>M</kbd> <span data-i18n="hint_add"></span></span>
-  <span><kbd>⌫</kbd> <span data-i18n="hint_del"></span></span>
-  <span><kbd>?</kbd> <span data-i18n="hint_help"></span></span>
-</div>
-<div class="bar" id="actions">
-  <button data-sel="edit" data-i18n="edit"></button>
-  <button data-sel="photo" data-i18n="photo"></button>
-  <span class="sep"></span>
-  <button data-sel="parent" data-i18n="add_parent"></button>
-  <button data-sel="sibling-right" data-i18n="add_sibling"></button>
-  <button data-sel="child" data-i18n="add_child"></button>
-  <button data-sel="spouse" data-i18n="add_spouse"></button>
-  <button data-sel="link" data-i18n="link" data-i18n-title="link_t"></button>
-  <button data-sel="fold" data-i18n="collapse"></button>
-  <span class="sep"></span>
-  <button data-sel="delete" class="danger" data-i18n="delete"></button>
-</div>
-<div id="toast"></div>
-<div id="relbar"></div>
-<button type="button" id="update" data-i18n="update_ready"></button>
-<div id="mpop">
-  <h4 id="mpop-title">Marriage</h4>
-  <div class="row"><label data-i18n="status"></label><select id="m-status"><option value="married" data-i18n="st_married"></option><option value="partners" data-i18n="st_partners"></option><option value="separated" data-i18n="st_separated"></option><option value="divorced" data-i18n="st_divorced"></option><option value="reconciled_sep" data-i18n="st_reconciled_sep"></option><option value="reconciled_div" data-i18n="st_reconciled_div"></option></select></div>
-  <div class="row"><label data-i18n="married"></label><span class="df"><input type="date" id="m-from"><button type="button" class="df-mode" data-for="m-from"></button></span></div>
-  <div class="row"><label data-i18n="until"></label><span class="df"><input type="date" id="m-to"><button type="button" class="df-mode" data-for="m-to"></button></span></div>
-  <p class="hint" id="m-hint"></p>
-  <div class="row" id="m-order-row"><label data-i18n="order"></label><button type="button" id="m-earlier" data-i18n="earlier"></button><button type="button" id="m-later" data-i18n="later"></button></div>
-  <div class="foot"><button class="danger" id="m-unlink" data-i18n="unlink"></button><button id="m-close" data-i18n="done"></button></div>
-</div>
-<div id="menu"></div>
-<div id="search"><input type="text" id="s-q" autocomplete="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other"><div id="s-list"></div></div>
-<div id="rpop">
-  <h4 data-i18n="relation"></h4>
-  <div class="row"><label data-i18n="fate"></label><select id="r-type"><option value="close" data-i18n="rel_close"></option><option value="fused" data-i18n="rel_fused"></option><option value="conflict" data-i18n="rel_conflict"></option><option value="distant" data-i18n="rel_distant"></option><option value="cutoff" data-i18n="rel_cutoff"></option><option value="focused" data-i18n="rel_focused"></option></select></div>
-  <div class="row"><label data-i18n="label"></label><input type="text" id="r-label" autocomplete="off" data-1p-ignore></div>
-  <p class="hint" id="r-hint"></p>
-  <div class="foot"><button class="danger" id="r-delete" data-i18n="delete"></button><button id="r-close" data-i18n="done"></button></div>
-</div>
-<div id="welcome">
-  <div class="panel">
-    <h2 data-i18n="app"></h2>
-    <button class="primary" id="w-continue" hidden></button>
-    <h3 id="w-list-title"></h3>
-    <div id="w-recent"></div>
-    <div class="foot">
-      <button id="w-open"></button>
-      <button id="w-new" data-i18n="new_tree"></button>
+    <div class="bar" id="topleft">
+      <span id="filename">Untitled tree</span>
+      <span class="sep"></span>
+      <button data-act="filemenu">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></svg
+        ><span class="lbl" data-i18n="file_menu"></span>
+      </button>
+      <button data-act="new" data-i18n-title="new_t">
+        <svg viewBox="0 0 24 24">
+          <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+          <path d="M14 3v6h6M12 12v6M9 15h6" /></svg
+        ><span class="lbl" data-i18n="new"></span>
+      </button>
+      <button data-act="open" data-i18n-title="open_t">
+        <svg viewBox="0 0 24 24">
+          <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg
+        ><span class="lbl" data-i18n="open"></span>
+      </button>
+      <button data-act="save" data-i18n-title="save_t">
+        <svg viewBox="0 0 24 24">
+          <path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+          <path d="M8 3v5h7V3M8 21v-6h8v6" /></svg
+        ><span class="lbl" data-i18n="save"></span>
+      </button>
+      <button data-act="saveas" data-i18n-title="saveas_t">
+        <svg viewBox="0 0 24 24">
+          <path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+          <path d="M12 10v6M9 13h6" /></svg
+        ><span class="lbl" data-i18n="saveas"></span>
+      </button>
+      <span class="sep"></span>
+      <button data-act="pdf" data-i18n-title="export_t">
+        <svg viewBox="0 0 24 24">
+          <path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+          <path d="M6 14h12v7H6z" /></svg
+        ><span class="lbl" data-i18n="export_pdf"></span>
+      </button>
+      <button data-act="download" data-i18n-title="download_t" hidden>
+        <svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16" /></svg
+        ><span class="lbl" data-i18n="download"></span>
+      </button>
     </div>
-  </div>
-</div>
-<div id="pdfdlg" role="dialog" aria-modal="true">
-  <div class="panel">
-    <h4 data-i18n="export_pdf"></h4>
-    <div class="grid">
-      <label><span data-i18n="pd_paper"></span><select id="pd-paper"><option value="a4">A4</option><option value="a3">A3</option><option value="letter">Letter</option></select></label>
-      <label><span data-i18n="pd_mode"></span><select id="pd-mode"><option value="poster" data-i18n="pd_poster"></option><option value="fit" data-i18n="pd_fit"></option></select></label>
-      <label id="pd-scale-row"><span data-i18n="pd_scale"></span><select id="pd-scale"><option value="1">100%</option><option value="0.75">75%</option><option value="0.5">50%</option></select></label>
-      <label><span data-i18n="pd_orient"></span><select id="pd-orient"><option value="auto" data-i18n="pd_auto"></option><option value="landscape" data-i18n="pd_landscape"></option><option value="portrait" data-i18n="pd_portrait"></option></select></label>
+    <div class="bar" id="topright">
+      <button data-act="undo" title="Undo (⌘Z)">
+        <svg viewBox="0 0 24 24">
+          <path d="M9 14 4 9l5-5" />
+          <path d="M4 9h11a5 5 0 0 1 0 10h-3" /></svg
+        ><span class="lbl">↶</span>
+      </button>
+      <button data-act="redo" title="Redo (⇧⌘Z)">
+        <svg viewBox="0 0 24 24">
+          <path d="m15 14 5-5-5-5" />
+          <path d="M20 9H9a5 5 0 0 0 0 10h3" /></svg
+        ><span class="lbl">↷</span>
+      </button>
+      <span class="sep"></span>
+      <button data-act="zoomout" title="Zoom out (−)">
+        <svg viewBox="0 0 24 24"><path d="M5 12h14" /></svg><span class="lbl">−</span>
+      </button>
+      <span id="zoomlvl">100%</span>
+      <button data-act="zoomin" title="Zoom in (+)">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg><span class="lbl">+</span>
+      </button>
+      <button data-act="fit" data-i18n-title="fit_t">
+        <svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" /></svg
+        ><span class="lbl" data-i18n="fit"></span>
+      </button>
+      <button data-act="compact" data-i18n-title="compact_t">
+        <svg viewBox="0 0 24 24">
+          <rect x="4" y="4" width="6" height="16" rx="1.5" />
+          <rect x="14" y="4" width="6" height="16" rx="1.5" /></svg
+        ><span class="lbl" data-i18n="compact"></span>
+      </button>
+      <span class="sep"></span>
+      <select id="lang" title="Language">
+        <option value="en">EN</option>
+        <option value="ru">RU</option>
+        <option value="de">DE</option>
+      </select>
+      <button data-act="legend" data-i18n-title="legend_t">
+        <svg viewBox="0 0 24 24">
+          <path d="M4 5a2 2 0 0 1 2-2h5v18H6a2 2 0 0 1-2-2zM13 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5z" /></svg
+        ><span class="lbl" data-i18n="legend"></span>
+      </button>
+      <button data-act="help" data-i18n-title="help_t">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01" />
+        </svg>
+      </button>
     </div>
-    <label class="chk"><input type="checkbox" id="pd-plain"><span data-i18n="pd_plain"></span></label>
-    <label class="chk"><input type="checkbox" id="pd-gray"><span data-i18n="pd_gray"></span></label>
-    <p class="hint" id="pd-hint"></p>
-    <svg id="pd-preview" viewBox="0 0 340 120" aria-hidden="true"></svg>
-    <div class="foot"><button type="button" id="pd-cancel" data-i18n="cancel"></button><button type="button" id="pd-go" class="primary" data-i18n="export_pdf"></button></div>
-  </div>
-</div>
-<div id="install" role="dialog" aria-modal="true">
-  <div class="panel">
-    <div class="head"><img src="icons/icon-192.png" alt=""><h4 data-i18n="inst_title"></h4></div>
-    <p data-i18n="inst_text"></p>
-    <ol id="inst-steps"></ol>
-    <div class="foot"><button type="button" id="inst-later" data-i18n="inst_later"></button><button type="button" id="inst-go" class="primary" data-i18n="inst_go" hidden></button></div>
-  </div>
-</div>
-<div id="sheet">
-  <div class="sheet">
-    <div class="grab"></div>
-    <div class="sh-top"><h4 data-i18n="sheet_title"></h4><button type="button" id="sh-close" aria-label="Close">×</button></div>
-    <section>
-      <h5 data-i18n="sec_person"></h5>
-      <div class="sh-head">
-        <div class="photo" id="sh-photo"></div>
-        <div class="sh-names">
-          <input type="text" id="sh-name" autocomplete="off" autocapitalize="words" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other">
-          <input type="text" id="sh-bname" autocomplete="off" autocapitalize="words" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other">
+    <div class="bar" id="bottom">
+      <span><kbd>↑↓←→</kbd> <span data-i18n="hint_nav"></span></span>
+      <span><kbd>Enter</kbd> <span data-i18n="hint_edit"></span></span>
+      <span><kbd>P</kbd> <kbd>C</kbd> <kbd>S</kbd> <kbd>M</kbd> <span data-i18n="hint_add"></span></span>
+      <span><kbd>⌫</kbd> <span data-i18n="hint_del"></span></span>
+      <span><kbd>?</kbd> <span data-i18n="hint_help"></span></span>
+    </div>
+    <div class="bar" id="actions">
+      <button data-sel="edit" data-i18n="edit"></button>
+      <button data-sel="photo" data-i18n="photo"></button>
+      <span class="sep"></span>
+      <button data-sel="parent" data-i18n="add_parent"></button>
+      <button data-sel="sibling-right" data-i18n="add_sibling"></button>
+      <button data-sel="child" data-i18n="add_child"></button>
+      <button data-sel="spouse" data-i18n="add_spouse"></button>
+      <button data-sel="link" data-i18n="link" data-i18n-title="link_t"></button>
+      <button data-sel="fold" data-i18n="collapse"></button>
+      <span class="sep"></span>
+      <button data-sel="delete" class="danger" data-i18n="delete"></button>
+    </div>
+    <div id="toast"></div>
+    <div id="relbar"></div>
+    <button type="button" id="update" data-i18n="update_ready"></button>
+    <div id="mpop">
+      <h4 id="mpop-title">Marriage</h4>
+      <div class="row">
+        <label data-i18n="status"></label
+        ><select id="m-status">
+          <option value="married" data-i18n="st_married"></option>
+          <option value="partners" data-i18n="st_partners"></option>
+          <option value="separated" data-i18n="st_separated"></option>
+          <option value="divorced" data-i18n="st_divorced"></option>
+          <option value="reconciled_sep" data-i18n="st_reconciled_sep"></option>
+          <option value="reconciled_div" data-i18n="st_reconciled_div"></option>
+        </select>
+      </div>
+      <div class="row">
+        <label data-i18n="married"></label
+        ><span class="df"
+          ><input type="date" id="m-from" /><button type="button" class="df-mode" data-for="m-from"></button
+        ></span>
+      </div>
+      <div class="row">
+        <label data-i18n="until"></label
+        ><span class="df"
+          ><input type="date" id="m-to" /><button type="button" class="df-mode" data-for="m-to"></button
+        ></span>
+      </div>
+      <p class="hint" id="m-hint"></p>
+      <div class="row" id="m-order-row">
+        <label data-i18n="order"></label><button type="button" id="m-earlier" data-i18n="earlier"></button
+        ><button type="button" id="m-later" data-i18n="later"></button>
+      </div>
+      <div class="foot">
+        <button class="danger" id="m-unlink" data-i18n="unlink"></button><button id="m-close" data-i18n="done"></button>
+      </div>
+    </div>
+    <div id="menu"></div>
+    <div id="search">
+      <input
+        type="text"
+        id="s-q"
+        autocomplete="off"
+        spellcheck="false"
+        data-1p-ignore
+        data-lpignore="true"
+        data-form-type="other"
+      />
+      <div id="s-list"></div>
+    </div>
+    <div id="rpop">
+      <h4 data-i18n="relation"></h4>
+      <div class="row">
+        <label data-i18n="fate"></label
+        ><select id="r-type">
+          <option value="close" data-i18n="rel_close"></option>
+          <option value="fused" data-i18n="rel_fused"></option>
+          <option value="conflict" data-i18n="rel_conflict"></option>
+          <option value="distant" data-i18n="rel_distant"></option>
+          <option value="cutoff" data-i18n="rel_cutoff"></option>
+          <option value="focused" data-i18n="rel_focused"></option>
+        </select>
+      </div>
+      <div class="row">
+        <label data-i18n="label"></label><input type="text" id="r-label" autocomplete="off" data-1p-ignore />
+      </div>
+      <p class="hint" id="r-hint"></p>
+      <div class="foot">
+        <button class="danger" id="r-delete" data-i18n="delete"></button><button id="r-close" data-i18n="done"></button>
+      </div>
+    </div>
+    <div id="welcome">
+      <div class="panel">
+        <h2 data-i18n="app"></h2>
+        <button class="primary" id="w-continue" hidden></button>
+        <h3 id="w-list-title"></h3>
+        <div id="w-recent"></div>
+        <div class="foot">
+          <button id="w-open"></button>
+          <button id="w-new" data-i18n="new_tree"></button>
         </div>
       </div>
-      <div class="sh-grid">
-        <label class="wide"><span data-i18n="profession"></span><input type="text" id="sh-prof" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other"></label>
-        <label><span data-i18n="gender"></span><div class="seg" id="sh-gender"><button type="button" data-v="m" data-i18n="g_m"></button><button type="button" data-v="f" data-i18n="g_f"></button></div></label>
-        <label><span data-i18n="fate"></span><select id="sh-fate"><option value="" data-i18n="fate_none"></option><option value="pregnancy" data-i18n="fate_pregnancy"></option><option value="miscarriage" data-i18n="fate_miscarriage"></option><option value="abortion" data-i18n="fate_abortion"></option><option value="stillborn" data-i18n="fate_stillborn"></option></select></label>
-      </div>
-    </section>
-    <section>
-      <h5 data-i18n="sec_dates"></h5>
-      <div class="sh-grid">
-        <label><span class="cap"><span data-i18n="born"></span><button type="button" class="df-mode" data-for="sh-birth"></button></span><input type="date" id="sh-birth"></label>
-        <label><span data-i18n="birthplace"></span><input type="text" id="sh-place" autocomplete="off" autocapitalize="words" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other"></label>
-        <label id="sh-death-row"><span class="cap"><span data-i18n="died"></span><button type="button" class="df-mode" data-for="sh-death"></button></span><input type="date" id="sh-death"></label>
-      </div>
-      <label class="sh-check"><input type="checkbox" id="sh-alive"><span data-i18n="living"></span></label>
-    </section>
-    <section id="sh-family">
-      <h5 data-i18n="sec_family"></h5>
-      <div class="sh-grid">
-        <label id="sh-kind-row"><span data-i18n="child_link"></span><select id="sh-kind"><option value="bio" data-i18n="link_bio"></option><option value="adopted" data-i18n="link_adopted"></option><option value="foster" data-i18n="link_foster"></option></select></label>
-        <label id="sh-twin-row"><span data-i18n="twin_of"></span><select id="sh-twin"></select></label>
-      </div>
-      <label class="sh-check" id="sh-identical-row"><input type="checkbox" id="sh-identical"><span data-i18n="identical"></span></label>
-      <div class="sh-grid" id="sh-order-row"><label class="wide"><span data-i18n="birth_order"></span><div class="seg" id="sh-order"><button type="button" data-ord="-1" data-i18n="earlier"></button><button type="button" data-ord="1" data-i18n="later"></button></div></label></div>
-      <p class="sh-hint" id="sh-order-hint" data-i18n="order_dated_hint"></p>
-      <p class="sh-hint" id="sh-family-hint" data-i18n="no_parents_hint"></p>
-    </section>
-    <section>
-      <h5 data-i18n="sec_notation"></h5>
-      <div class="sh-grid">
-        <label><span data-i18n="illness"></span><select id="sh-illness"><option value="" data-i18n="h_none"></option><option value="active" data-i18n="h_active"></option><option value="recovered" data-i18n="h_recovered"></option></select></label>
-        <label><span data-i18n="substance"></span><select id="sh-substance"><option value="" data-i18n="h_none"></option><option value="active" data-i18n="h_active"></option><option value="recovered" data-i18n="h_recovered"></option></select></label>
-      </div>
-      <label class="sh-check"><input type="checkbox" id="sh-index"><span data-i18n="index_person"></span></label>
-      <label class="sh-check"><input type="checkbox" id="sh-ended"><span data-i18n="line_ended"></span></label>
-    </section>
-    <section>
-      <h5 data-i18n="sec_notes"></h5>
-      <textarea id="sh-notes" rows="4" autocomplete="off" spellcheck="true"></textarea>
-    </section>
-    <div class="foot"><button id="sh-delete" class="danger" data-i18n="delete"></button><button id="sh-done" class="primary" data-i18n="done"></button></div>
-  </div>
-</div>
-<div id="crop">
-  <div class="panel">
-    <h4 data-i18n="crop_title"></h4>
-    <div class="stage"><canvas id="crop-canvas" width="600" height="600"></canvas><div class="mask"></div></div>
-    <div class="zoomrow"><span data-i18n="zoom"></span><input type="range" id="crop-zoom" min="0" max="1000" value="0"></div>
-    <div class="zoomrow"><span data-i18n="straighten"></span><input type="range" id="crop-angle" min="-45" max="45" value="0"><span id="crop-deg">0°</span></div>
-    <div class="rotrow">
-      <button type="button" id="crop-rl" data-i18n-title="rotate_l">↺ 90°</button>
-      <button type="button" id="crop-rr" data-i18n-title="rotate_r">↻ 90°</button>
     </div>
-    <p class="hint" data-i18n="crop_hint"></p>
-    <div class="foot"><button id="crop-cancel" data-i18n="cancel"></button><button id="crop-ok" class="primary" data-i18n="apply"></button></div>
-  </div>
-</div>
+    <div id="pdfdlg" role="dialog" aria-modal="true">
+      <div class="panel">
+        <h4 data-i18n="export_pdf"></h4>
+        <div class="grid">
+          <label
+            ><span data-i18n="pd_paper"></span
+            ><select id="pd-paper">
+              <option value="a4">A4</option>
+              <option value="a3">A3</option>
+              <option value="letter">Letter</option>
+            </select></label
+          >
+          <label
+            ><span data-i18n="pd_mode"></span
+            ><select id="pd-mode">
+              <option value="poster" data-i18n="pd_poster"></option>
+              <option value="fit" data-i18n="pd_fit"></option></select
+          ></label>
+          <label id="pd-scale-row"
+            ><span data-i18n="pd_scale"></span
+            ><select id="pd-scale">
+              <option value="1">100%</option>
+              <option value="0.75">75%</option>
+              <option value="0.5">50%</option>
+            </select></label
+          >
+          <label
+            ><span data-i18n="pd_orient"></span
+            ><select id="pd-orient">
+              <option value="auto" data-i18n="pd_auto"></option>
+              <option value="landscape" data-i18n="pd_landscape"></option>
+              <option value="portrait" data-i18n="pd_portrait"></option></select
+          ></label>
+        </div>
+        <label class="chk"><input type="checkbox" id="pd-plain" /><span data-i18n="pd_plain"></span></label>
+        <label class="chk"><input type="checkbox" id="pd-gray" /><span data-i18n="pd_gray"></span></label>
+        <p class="hint" id="pd-hint"></p>
+        <svg id="pd-preview" viewBox="0 0 340 120" aria-hidden="true"></svg>
+        <div class="foot">
+          <button type="button" id="pd-cancel" data-i18n="cancel"></button
+          ><button type="button" id="pd-go" class="primary" data-i18n="export_pdf"></button>
+        </div>
+      </div>
+    </div>
+    <div id="install" role="dialog" aria-modal="true">
+      <div class="panel">
+        <div class="head">
+          <img src="icons/icon-192.png" alt="" />
+          <h4 data-i18n="inst_title"></h4>
+        </div>
+        <p data-i18n="inst_text"></p>
+        <ol id="inst-steps"></ol>
+        <div class="foot">
+          <button type="button" id="inst-later" data-i18n="inst_later"></button
+          ><button type="button" id="inst-go" class="primary" data-i18n="inst_go" hidden></button>
+        </div>
+      </div>
+    </div>
+    <div id="sheet">
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="sh-top">
+          <h4 data-i18n="sheet_title"></h4>
+          <button type="button" id="sh-close" aria-label="Close">×</button>
+        </div>
+        <section>
+          <h5 data-i18n="sec_person"></h5>
+          <div class="sh-head">
+            <div class="photo" id="sh-photo"></div>
+            <div class="sh-names">
+              <input
+                type="text"
+                id="sh-name"
+                autocomplete="off"
+                autocapitalize="words"
+                spellcheck="false"
+                data-1p-ignore
+                data-lpignore="true"
+                data-bwignore
+                data-form-type="other"
+              />
+              <input
+                type="text"
+                id="sh-bname"
+                autocomplete="off"
+                autocapitalize="words"
+                spellcheck="false"
+                data-1p-ignore
+                data-lpignore="true"
+                data-bwignore
+                data-form-type="other"
+              />
+            </div>
+          </div>
+          <div class="sh-grid">
+            <label class="wide"
+              ><span data-i18n="profession"></span
+              ><input
+                type="text"
+                id="sh-prof"
+                autocomplete="off"
+                data-1p-ignore
+                data-lpignore="true"
+                data-bwignore
+                data-form-type="other"
+            /></label>
+            <label
+              ><span data-i18n="gender"></span>
+              <div class="seg" id="sh-gender">
+                <button type="button" data-v="m" data-i18n="g_m"></button
+                ><button type="button" data-v="f" data-i18n="g_f"></button></div
+            ></label>
+            <label
+              ><span data-i18n="fate"></span
+              ><select id="sh-fate">
+                <option value="" data-i18n="fate_none"></option>
+                <option value="pregnancy" data-i18n="fate_pregnancy"></option>
+                <option value="miscarriage" data-i18n="fate_miscarriage"></option>
+                <option value="abortion" data-i18n="fate_abortion"></option>
+                <option value="stillborn" data-i18n="fate_stillborn"></option></select
+            ></label>
+          </div>
+        </section>
+        <section>
+          <h5 data-i18n="sec_dates"></h5>
+          <div class="sh-grid">
+            <label
+              ><span class="cap"
+                ><span data-i18n="born"></span><button type="button" class="df-mode" data-for="sh-birth"></button></span
+              ><input type="date" id="sh-birth"
+            /></label>
+            <label
+              ><span data-i18n="birthplace"></span
+              ><input
+                type="text"
+                id="sh-place"
+                autocomplete="off"
+                autocapitalize="words"
+                data-1p-ignore
+                data-lpignore="true"
+                data-bwignore
+                data-form-type="other"
+            /></label>
+            <label id="sh-death-row"
+              ><span class="cap"
+                ><span data-i18n="died"></span><button type="button" class="df-mode" data-for="sh-death"></button></span
+              ><input type="date" id="sh-death"
+            /></label>
+          </div>
+          <label class="sh-check"><input type="checkbox" id="sh-alive" /><span data-i18n="living"></span></label>
+        </section>
+        <section id="sh-family">
+          <h5 data-i18n="sec_family"></h5>
+          <div class="sh-grid">
+            <label id="sh-kind-row"
+              ><span data-i18n="child_link"></span
+              ><select id="sh-kind">
+                <option value="bio" data-i18n="link_bio"></option>
+                <option value="adopted" data-i18n="link_adopted"></option>
+                <option value="foster" data-i18n="link_foster"></option></select
+            ></label>
+            <label id="sh-twin-row"
+              ><span data-i18n="twin_of"></span
+              ><select id="sh-twin"></select
+            ></label>
+          </div>
+          <label class="sh-check" id="sh-identical-row"
+            ><input type="checkbox" id="sh-identical" /><span data-i18n="identical"></span
+          ></label>
+          <div class="sh-grid" id="sh-order-row">
+            <label class="wide"
+              ><span data-i18n="birth_order"></span>
+              <div class="seg" id="sh-order">
+                <button type="button" data-ord="-1" data-i18n="earlier"></button
+                ><button type="button" data-ord="1" data-i18n="later"></button></div
+            ></label>
+          </div>
+          <p class="sh-hint" id="sh-order-hint" data-i18n="order_dated_hint"></p>
+          <p class="sh-hint" id="sh-family-hint" data-i18n="no_parents_hint"></p>
+        </section>
+        <section>
+          <h5 data-i18n="sec_notation"></h5>
+          <div class="sh-grid">
+            <label
+              ><span data-i18n="illness"></span
+              ><select id="sh-illness">
+                <option value="" data-i18n="h_none"></option>
+                <option value="active" data-i18n="h_active"></option>
+                <option value="recovered" data-i18n="h_recovered"></option></select
+            ></label>
+            <label
+              ><span data-i18n="substance"></span
+              ><select id="sh-substance">
+                <option value="" data-i18n="h_none"></option>
+                <option value="active" data-i18n="h_active"></option>
+                <option value="recovered" data-i18n="h_recovered"></option></select
+            ></label>
+          </div>
+          <label class="sh-check"><input type="checkbox" id="sh-index" /><span data-i18n="index_person"></span></label>
+          <label class="sh-check"><input type="checkbox" id="sh-ended" /><span data-i18n="line_ended"></span></label>
+        </section>
+        <section>
+          <h5 data-i18n="sec_notes"></h5>
+          <textarea id="sh-notes" rows="4" autocomplete="off" spellcheck="true"></textarea>
+        </section>
+        <div class="foot">
+          <button id="sh-delete" class="danger" data-i18n="delete"></button
+          ><button id="sh-done" class="primary" data-i18n="done"></button>
+        </div>
+      </div>
+    </div>
+    <div id="crop">
+      <div class="panel">
+        <h4 data-i18n="crop_title"></h4>
+        <div class="stage">
+          <canvas id="crop-canvas" width="600" height="600"></canvas>
+          <div class="mask"></div>
+        </div>
+        <div class="zoomrow">
+          <span data-i18n="zoom"></span><input type="range" id="crop-zoom" min="0" max="1000" value="0" />
+        </div>
+        <div class="zoomrow">
+          <span data-i18n="straighten"></span><input type="range" id="crop-angle" min="-45" max="45" value="0" /><span
+            id="crop-deg"
+            >0°</span
+          >
+        </div>
+        <div class="rotrow">
+          <button type="button" id="crop-rl" data-i18n-title="rotate_l">↺ 90°</button>
+          <button type="button" id="crop-rr" data-i18n-title="rotate_r">↻ 90°</button>
+        </div>
+        <p class="hint" data-i18n="crop_hint"></p>
+        <div class="foot">
+          <button id="crop-cancel" data-i18n="cancel"></button
+          ><button id="crop-ok" class="primary" data-i18n="apply"></button>
+        </div>
+      </div>
+    </div>
 
-<div id="help"><div class="panel"></div></div>
-<div id="legend"><div class="panel"></div></div>
+    <div id="help"><div class="panel"></div></div>
+    <div id="legend"><div class="panel"></div></div>
 
-<input type="file" id="photoInput" accept="image/*">
-<input type="file" id="fileInput">
+    <input type="file" id="photoInput" accept="image/*" />
+    <input type="file" id="fileInput" />
 
-<script type="module" src="src/main.js"></script>
-</body>
+    <script type="module" src="src/main.js"></script>
+  </body>
 </html>

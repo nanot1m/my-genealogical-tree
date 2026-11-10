@@ -2,11 +2,14 @@ import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
 import { openApp, newTree, firstPerson, addRelative, cardOf, cards, libraryEntries, PHOTO } from './helpers.js';
 
-const opfsSavePicker = (name) => `window.showSaveFilePicker = async () => (await navigator.storage.getDirectory()).getFileHandle(${JSON.stringify(name)}, { create: true });`;
+const opfsSavePicker = (name) =>
+  `window.showSaveFilePicker = async () => (await navigator.storage.getDirectory()).getFileHandle(${JSON.stringify(name)}, { create: true });`;
 
 test.describe('binary file format', () => {
-  test('download produces a FTREE binary with raw JPEG, reopens with photo and relatives, legacy JSON imports', async ({ page }, testInfo) => {
-    page.on('dialog', d => d.accept('mytree'));
+  test('download produces a FTREE binary with raw JPEG, reopens with photo and relatives, legacy JSON imports', async ({
+    page,
+  }, testInfo) => {
+    page.on('dialog', (d) => d.accept('mytree'));
     await newTree(page, { noFS: true });
     await firstPerson(page, 'Anna Müller');
     await cardOf(page, 'Anna Müller').locator('.photo').click();
@@ -32,7 +35,10 @@ test.describe('binary file format', () => {
     await expect(page.locator('#filename')).toHaveText('mytree');
 
     const legacy = testInfo.outputPath('legacy.json');
-    fs.writeFileSync(legacy, JSON.stringify({ people: { a: { id: 'a', name: 'Old Guy', birth: '1900-01-01' } }, families: {} }));
+    fs.writeFileSync(
+      legacy,
+      JSON.stringify({ people: { a: { id: 'a', name: 'Old Guy', birth: '1900-01-01' } }, families: {} }),
+    );
     await page.locator('#fileInput').setInputFiles(legacy);
     await expect(cardOf(page, 'Old Guy')).toBeVisible();
     await expect(page.locator('#filename')).toHaveText('legacy');
@@ -71,18 +77,30 @@ test.describe('library mode (no File System Access API)', () => {
     await expect(page.locator('[data-act=filemenu]')).toBeVisible();
     await expect(page.locator('[data-act=new]')).toBeHidden();
     await page.click('[data-act=filemenu]');
-    await expect(page.locator('#menu button')).toHaveText(['New', 'Open', 'Save', 'Save as', 'Download file', 'Export PDF']);
+    await expect(page.locator('#menu button')).toHaveText([
+      'New',
+      'Open',
+      'Save',
+      'Save as',
+      'Download file',
+      'Export PDF',
+    ]);
     await ctx.close();
   });
 });
 
 test.describe('file handles and launch screen (File System Access API)', () => {
-  test('recent files persist in IndexedDB, auto-reopen when permitted, prompt otherwise, draft takes precedence', async ({ page }) => {
-    await page.addInitScript(opfsSavePicker('test.ftree') + `
+  test('recent files persist in IndexedDB, auto-reopen when permitted, prompt otherwise, draft takes precedence', async ({
+    page,
+  }) => {
+    await page.addInitScript(
+      opfsSavePicker('test.ftree') +
+        `
       if (localStorage.getItem('mockPrompt')) {
         FileSystemFileHandle.prototype.queryPermission = async () => 'prompt';
         FileSystemFileHandle.prototype.requestPermission = async () => { window.__asked = true; return 'granted'; };
-      }`);
+      }`,
+    );
     await openApp(page);
     await expect(page.locator('#w-recent .none')).toHaveCount(1);
     await expect(page.locator('#w-continue')).toBeHidden();
@@ -104,7 +122,11 @@ test.describe('file handles and launch screen (File System Access API)', () => {
     expect(await page.evaluate(() => window.__asked)).toBe(true);
 
     await addRelative(page, 'Persisted', 'c', 'Unsaved Kid');
-    await page.evaluate(() => { FileSystemFileHandle.prototype.createWritable = async () => { throw new Error('offline'); }; });
+    await page.evaluate(() => {
+      FileSystemFileHandle.prototype.createWritable = async () => {
+        throw new Error('offline');
+      };
+    });
     await page.waitForTimeout(600);
     await page.reload();
     await expect(page.locator('#w-continue')).toBeVisible();
@@ -119,7 +141,10 @@ test.describe('file handles and launch screen (File System Access API)', () => {
     await page.waitForTimeout(1500);
     await expect(page.locator('#filename')).toHaveClass(/dirty/);
     await page.keyboard.press('Meta+s');
-    const size = () => page.evaluate(async () => (await (await (await navigator.storage.getDirectory()).getFileHandle('auto.ftree')).getFile()).size);
+    const size = () =>
+      page.evaluate(
+        async () => (await (await (await navigator.storage.getDirectory()).getFileHandle('auto.ftree')).getFile()).size,
+      );
     const s1 = await size();
     await addRelative(page, null, 'c', 'FS Kid');
     await expect.poll(size, { timeout: 5000 }).toBeGreaterThan(s1);
@@ -141,10 +166,13 @@ test.describe('PDF export', () => {
     await expect(popup.locator('.page')).toHaveCount(1);
     await expect(popup.locator('.card')).toHaveCount(7);
     await expect(popup.locator('.plus').first()).toBeHidden();
-    expect(await popup.evaluate(() => document.querySelector('style:last-of-type').textContent)).toMatch(/@page \{ size: 297mm 210mm/);
+    expect(await popup.evaluate(() => document.querySelector('style:last-of-type').textContent)).toMatch(
+      /@page \{ size: 297mm 210mm/,
+    );
     await popup.close();
     await page.click('[data-act=pdf]');
-    await page.selectOption('#pd-mode', 'poster'); await page.selectOption('#pd-scale', '1');
+    await page.selectOption('#pd-mode', 'poster');
+    await page.selectOption('#pd-scale', '1');
     await expect(page.locator('#pd-hint')).toContainText('at 100%');
     [popup] = await Promise.all([context.waitForEvent('page'), page.click('#pd-go')]);
     await popup.waitForLoadState();
@@ -156,14 +184,22 @@ test.describe('PDF export', () => {
     expect(await popup.locator('.page .glue').count()).toBeGreaterThan(0);
     expect(await page.locator('#pd-preview rect').count()).toBeGreaterThan(n);
     await popup.close();
-    await page.reload(); await page.click('#w-continue'); await page.click('[data-act=pdf]');
+    await page.reload();
+    await page.click('#w-continue');
+    await page.click('[data-act=pdf]');
     await expect(page.locator('#pd-mode')).toHaveValue('poster');
     await page.click('#pd-cancel');
     await page.keyboard.press('v');
-    await page.click('[data-act=pdf]'); await page.selectOption('#pd-mode', 'fit');
+    await page.click('[data-act=pdf]');
+    await page.selectOption('#pd-mode', 'fit');
     const [cp] = await Promise.all([context.waitForEvent('page'), page.click('#pd-go')]);
     await cp.waitForLoadState();
-    const m = await cp.evaluate(() => { const c = document.querySelector('.card'); const r = c.getBoundingClientRect(); const s = parseFloat(document.querySelector('#world').style.transform.match(/scale\(([\d.]+)\)/)[1]); return { w: r.width / s, bg: getComputedStyle(c.querySelector('.photo')).backgroundImage.startsWith('linear') }; });
+    const m = await cp.evaluate(() => {
+      const c = document.querySelector('.card');
+      const r = c.getBoundingClientRect();
+      const s = parseFloat(document.querySelector('#world').style.transform.match(/scale\(([\d.]+)\)/)[1]);
+      return { w: r.width / s, bg: getComputedStyle(c.querySelector('.photo')).backgroundImage.startsWith('linear') };
+    });
     expect(Math.round(m.w)).toBe(150);
     expect(m.bg).toBe(true);
   });

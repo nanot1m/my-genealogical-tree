@@ -24,13 +24,18 @@ test.describe('card fields', () => {
     await newTree(page);
     await firstPerson(page, 'Ivan');
     await cardOf(page, 'Ivan').dblclick();
-    await page.fill('#sh-place', 'Kazan'); await page.fill('#sh-prof', 'Engineer');
-    await page.fill('#sh-notes', 'Line one'); await page.keyboard.press('Enter'); await page.keyboard.type('Line two');
+    await page.fill('#sh-place', 'Kazan');
+    await page.fill('#sh-prof', 'Engineer');
+    await page.fill('#sh-notes', 'Line one');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('Line two');
     await expect(page.locator('#sheet')).toHaveClass(/show/);
     await page.click('#sh-done');
     await expect(cardOf(page, 'Ivan')).not.toContainText('Kazan');
     await expect(cardOf(page, 'Ivan')).not.toContainText('Engineer');
-    expect(Object.values((await draftState(page)).people)[0]).toEqual(expect.objectContaining({ birthplace: 'Kazan', profession: 'Engineer', notes: 'Line one\nLine two' }));
+    expect(Object.values((await draftState(page)).people)[0]).toEqual(
+      expect.objectContaining({ birthplace: 'Kazan', profession: 'Engineer', notes: 'Line one\nLine two' }),
+    );
     await cardOf(page, 'Ivan').dblclick();
     await expect(page.locator('#sh-place')).toHaveValue('Kazan');
     await expect(page.locator('#sh-prof')).toHaveValue('Engineer');
@@ -65,14 +70,29 @@ test.describe('card fields', () => {
   });
 
   test('files saved with full dates and no marriage order render as before', async ({ page }) => {
-    const draft = { state: { people: {
-      a: { id: 'a', name: 'Ann', birth: '1950-03-04', death: '2020-01-01', alive: false },
-      b: { id: 'b', name: 'Bob', birth: '1948-01-01', alive: true },
-      c: { id: 'c', name: 'Cid', birth: '', alive: true },
-    }, families: {
-      f1: { id: 'f1', parents: ['b', 'c'], children: [], married: '1990-01-01', ended: '', status: 'married' },
-      f2: { id: 'f2', parents: ['b', 'a'], children: [], married: '1970-05-05', ended: '1980-01-01', status: 'divorced' },
-    }, relations: [] }, fileName: 'old.ftree', dirty: true };
+    const draft = {
+      state: {
+        people: {
+          a: { id: 'a', name: 'Ann', birth: '1950-03-04', death: '2020-01-01', alive: false },
+          b: { id: 'b', name: 'Bob', birth: '1948-01-01', alive: true },
+          c: { id: 'c', name: 'Cid', birth: '', alive: true },
+        },
+        families: {
+          f1: { id: 'f1', parents: ['b', 'c'], children: [], married: '1990-01-01', ended: '', status: 'married' },
+          f2: {
+            id: 'f2',
+            parents: ['b', 'a'],
+            children: [],
+            married: '1970-05-05',
+            ended: '1980-01-01',
+            status: 'divorced',
+          },
+        },
+        relations: [],
+      },
+      fileName: 'old.ftree',
+      dirty: true,
+    };
     await openApp(page, { draft });
     await page.click('#w-continue');
     await expect(cardOf(page, 'Ann').locator('.dates')).toHaveText('Mar 4, 1950 – Jan 1, 2020 (69)');
@@ -121,14 +141,19 @@ test.describe('card fields', () => {
 });
 
 test.describe('photos and cropper', () => {
-  test('upload opens the cropper, zoom and drag, apply stores source and crop, re-crop and remove', async ({ page }) => {
+  test('upload opens the cropper, zoom and drag, apply stores source and crop, re-crop and remove', async ({
+    page,
+  }) => {
     await newTree(page);
     await firstPerson(page, 'Anna');
     await cardOf(page, 'Anna').locator('.photo').click();
     await page.locator('#photoInput').setInputFiles(PHOTO);
     await expect(page.locator('#crop.show')).toBeVisible();
     await page.locator('#crop-zoom').fill('500');
-    await page.mouse.move(700, 400); await page.mouse.down(); await page.mouse.move(740, 420, { steps: 3 }); await page.mouse.up();
+    await page.mouse.move(700, 400);
+    await page.mouse.down();
+    await page.mouse.move(740, 420, { steps: 3 });
+    await page.mouse.up();
     await page.click('#crop-ok');
     await expect(cardOf(page, 'Anna').locator('.photo img')).toHaveCount(1);
     const p = Object.values((await draftState(page)).people)[0];
@@ -152,7 +177,14 @@ test.describe('photos and cropper', () => {
     await cardOf(page, 'Rot').locator('.photo').click();
     await page.locator('#photoInput').setInputFiles(PHOTO);
     await expect(page.locator('#crop.show')).toBeVisible();
-    const hash = () => page.evaluate(() => { const c = document.getElementById('crop-canvas'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let h = 0; for (let i = 0; i < d.length; i += 4 * 97) h = (h * 31 + d[i] + d[i + 1] + d[i + 2]) >>> 0; return h; });
+    const hash = () =>
+      page.evaluate(() => {
+        const c = document.getElementById('crop-canvas');
+        const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+        let h = 0;
+        for (let i = 0; i < d.length; i += 4 * 97) h = (h * 31 + d[i] + d[i + 1] + d[i + 2]) >>> 0;
+        return h;
+      });
     const h0 = await hash();
     await page.click('#crop-rr');
     await expect(page.locator('#crop-deg')).toHaveText('90°');
@@ -172,15 +204,18 @@ test.describe('photos and cropper', () => {
 test('desktop editor pops up next to the edited card and follows it', async ({ page }) => {
   await newTree(page);
   await page.click('#empty');
-  await page.keyboard.type('Mary'); await page.keyboard.press('Enter');
+  await page.keyboard.type('Mary');
+  await page.keyboard.press('Enter');
   await cardOf(page, 'Mary').dblclick();
   const box = page.locator('#sheet .sheet');
   await expect(box).toBeVisible();
   const near = async () => {
-    const c = await cardOf(page, 'Mary').boundingBox(), b = await box.boundingBox();
+    const c = await cardOf(page, 'Mary').boundingBox(),
+      b = await box.boundingBox();
     return Math.abs(b.x - (c.x + c.width)) < 40 || Math.abs(b.x + b.width - c.x) < 40;
   };
   await expect.poll(near).toBe(true);
-  await page.mouse.move(700, 450); await page.mouse.wheel(-200, 0);
+  await page.mouse.move(700, 450);
+  await page.mouse.wheel(-200, 0);
   await expect.poll(near).toBe(true);
 });

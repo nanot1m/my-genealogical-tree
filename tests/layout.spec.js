@@ -1,7 +1,21 @@
 import { test, expect } from '@playwright/test';
-import { openApp, newTree, firstPerson, addRelative, cardOf, positions, rows, overlapCount, select, setGender } from './helpers.js';
+import {
+  openApp,
+  newTree,
+  firstPerson,
+  addRelative,
+  cardOf,
+  positions,
+  rows,
+  overlapCount,
+  select,
+  setGender,
+} from './helpers.js';
 
-const center = (pos, name) => { const p = pos.find(x => x.name === name); return p.x + 140; };
+const center = (pos, name) => {
+  const p = pos.find((x) => x.name === name);
+  return p.x + 140;
+};
 
 test.describe('layout', () => {
   test.setTimeout(180_000);
@@ -21,7 +35,8 @@ test.describe('layout', () => {
     expect(r).toHaveLength(3);
     expect(r[1]).toHaveLength(2);
     expect(r[2]).toEqual(['Timur']);
-    const artur = center(pos, 'Artur'), gul = center(pos, 'Gulishat');
+    const artur = center(pos, 'Artur'),
+      gul = center(pos, 'Gulishat');
     const omarSide = Math.sign((center(pos, 'Omar') + center(pos, 'Natella')) / 2 - artur);
     const sharipSide = Math.sign((center(pos, 'Sharip') + center(pos, 'Patimat')) / 2 - gul);
     expect([0, Math.sign(artur - gul)]).toContain(omarSide);
@@ -30,24 +45,47 @@ test.describe('layout', () => {
     expect(Math.abs((center(pos, 'Sharip') + center(pos, 'Patimat')) / 2 - gul)).toBeLessThan(800);
   });
 
-  test('married daughter joins her husband under his parents; relatives on their own sides; no overlaps', async ({ page }) => {
+  test('married daughter joins her husband under his parents; relatives on their own sides; no overlaps', async ({
+    page,
+  }) => {
     await newTree(page);
     await firstPerson(page, 'Sharip');
     await addRelative(page, null, 'm', 'Patimat');
     for (const k of ['Gulishat', 'Patimat jr', 'Magomed', 'Gulnara']) await addRelative(page, 'Sharip', 'c', k);
     await addRelative(page, 'Gulishat', 'm', 'Artur');
-    await addRelative(page, 'Artur', 'p', 'Omar'); await addRelative(page, 'Artur', 'p', 'Natella');
+    await addRelative(page, 'Artur', 'p', 'Omar');
+    await addRelative(page, 'Artur', 'p', 'Natella');
     await addRelative(page, 'Omar', 'c', 'Murad');
     await addRelative(page, 'Artur', 'c', 'Timur');
     await addRelative(page, 'Timur', 'm', 'Hadia');
-    await addRelative(page, 'Hadia', 'p', 'Zilmira'); await addRelative(page, 'Hadia', 'p', 'Ravshan');
-    await addRelative(page, 'Zilmira', 'p', 'Papa Z'); await addRelative(page, 'Zilmira', 'p', 'Mama Z');
-    await addRelative(page, 'Ravshan', 'p', 'Papa R'); await addRelative(page, 'Ravshan', 'p', 'Mama R');
-    for (const [who, sp, kids] of [['Patimat jr', 'Karzin', ['P2', 'Marina']], ['Magomed', 'Zaira', ['Eldar', 'Hadizhat']], ['Gulnara', 'Said', ['Asiyat', 'Jamal']]]) {
+    await addRelative(page, 'Hadia', 'p', 'Zilmira');
+    await addRelative(page, 'Hadia', 'p', 'Ravshan');
+    await addRelative(page, 'Zilmira', 'p', 'Papa Z');
+    await addRelative(page, 'Zilmira', 'p', 'Mama Z');
+    await addRelative(page, 'Ravshan', 'p', 'Papa R');
+    await addRelative(page, 'Ravshan', 'p', 'Mama R');
+    for (const [who, sp, kids] of [
+      ['Patimat jr', 'Karzin', ['P2', 'Marina']],
+      ['Magomed', 'Zaira', ['Eldar', 'Hadizhat']],
+      ['Gulnara', 'Said', ['Asiyat', 'Jamal']],
+    ]) {
       await addRelative(page, who, 'm', sp);
       for (const k of kids) await addRelative(page, who, 'c', k);
     }
-    for (const [n, g] of [['Sharip', 'm'], ['Artur', 'm'], ['Omar', 'm'], ['Timur', 'm'], ['Ravshan', 'm'], ['Papa Z', 'm'], ['Papa R', 'm'], ['Karzin', 'm'], ['Zaira', 'f'], ['Said', 'm'], ['Magomed', 'm']]) await setGender(page, n, g);
+    for (const [n, g] of [
+      ['Sharip', 'm'],
+      ['Artur', 'm'],
+      ['Omar', 'm'],
+      ['Timur', 'm'],
+      ['Ravshan', 'm'],
+      ['Papa Z', 'm'],
+      ['Papa R', 'm'],
+      ['Karzin', 'm'],
+      ['Zaira', 'f'],
+      ['Said', 'm'],
+      ['Magomed', 'm'],
+    ])
+      await setGender(page, n, g);
     const pos = await positions(page);
     expect(await overlapCount(page)).toBe(0);
     const r = rows(pos);
@@ -56,7 +94,8 @@ test.describe('layout', () => {
     expect(center(pos, 'Natella')).toBeLessThan(center(pos, 'Gulishat'));
     expect(center(pos, 'Sharip')).toBeGreaterThan(center(pos, 'Artur'));
     expect(center(pos, 'Timur')).toBeLessThan(center(pos, 'Hadia'));
-    for (const n of ['Zilmira', 'Ravshan', 'Papa Z', 'Mama Z', 'Papa R', 'Mama R']) expect(center(pos, n)).toBeGreaterThan(center(pos, 'Timur'));
+    for (const n of ['Zilmira', 'Ravshan', 'Papa Z', 'Mama Z', 'Papa R', 'Mama R'])
+      expect(center(pos, n)).toBeGreaterThan(center(pos, 'Timur'));
   });
 
   test('children of each marriage sit under their own couple, marriages are numbered', async ({ page }) => {
@@ -65,10 +104,16 @@ test.describe('layout', () => {
     await addRelative(page, null, 'm', 'Mary');
     await addRelative(page, 'John', 'c', 'Kid A');
     await addRelative(page, 'John', 'm', 'Second');
-    await select(page, 'John'); await page.keyboard.press('c'); await page.keyboard.press('2');
-    await page.keyboard.type('Kid B'); await page.keyboard.press('Enter');
-    await select(page, 'John'); await page.keyboard.press('c'); await page.keyboard.press('2');
-    await page.keyboard.type('Kid C'); await page.keyboard.press('Enter');
+    await select(page, 'John');
+    await page.keyboard.press('c');
+    await page.keyboard.press('2');
+    await page.keyboard.type('Kid B');
+    await page.keyboard.press('Enter');
+    await select(page, 'John');
+    await page.keyboard.press('c');
+    await page.keyboard.press('2');
+    await page.keyboard.type('Kid C');
+    await page.keyboard.press('Enter');
     await setGender(page, 'John', 'm');
     const pos = await positions(page);
     expect(await overlapCount(page)).toBe(0);
@@ -119,20 +164,29 @@ test.describe('layout', () => {
 });
 
 test('a late spouse stays next to the person even when earlier children have wide subtrees', async ({ page }) => {
-  const people = {}, families = {};
-  const person = (id, name) => { people[id] = { id, name, alive: true }; };
-  person('hub', 'Hub'); person('wife', 'Wife'); person('late', 'Late');
+  const people = {},
+    families = {};
+  const person = (id, name) => {
+    people[id] = { id, name, alive: true };
+  };
+  person('hub', 'Hub');
+  person('wife', 'Wife');
+  person('late', 'Late');
   families.fa = { id: 'fa', parents: ['hub'], children: [], status: 'married' };
   families.fb = { id: 'fb', parents: ['hub', 'wife'], children: ['late'], status: 'married' };
   for (const k of ['k1', 'k2', 'k3']) {
-    person(k, k.toUpperCase()); person(k + 'w', k.toUpperCase() + 'W'); person(k + 'a', k.toUpperCase() + 'a'); person(k + 'b', k.toUpperCase() + 'b');
+    person(k, k.toUpperCase());
+    person(k + 'w', k.toUpperCase() + 'W');
+    person(k + 'a', k.toUpperCase() + 'a');
+    person(k + 'b', k.toUpperCase() + 'b');
     families.fa.children.push(k);
     families['f' + k] = { id: 'f' + k, parents: [k, k + 'w'], children: [k + 'a', k + 'b'], status: 'married' };
   }
   await openApp(page, { draft: { state: { people, families, relations: [] }, fileName: 'wide.ftree', dirty: true } });
   await page.click('#w-continue');
   const pos = await positions(page);
-  const hub = pos.find(p => p.name === 'Hub'), wife = pos.find(p => p.name === 'Wife');
+  const hub = pos.find((p) => p.name === 'Hub'),
+    wife = pos.find((p) => p.name === 'Wife');
   expect(wife.y).toBe(hub.y);
   expect(Math.abs(wife.x - hub.x)).toBeLessThanOrEqual(2 * 356 + 1);
   expect(await overlapCount(page)).toBe(0);
@@ -144,12 +198,16 @@ test('compact view: V toggles column cards, narrows the tree, persists across re
   await addRelative(page, null, 'm', 'Boris');
   await addRelative(page, 'Anna', 'c', 'Clara');
   await addRelative(page, 'Anna', 'c', 'Dima');
-  const width = async () => { const pos = await positions(page); return Math.max(...pos.map(p => p.x)) - Math.min(...pos.map(p => p.x)); };
+  const width = async () => {
+    const pos = await positions(page);
+    return Math.max(...pos.map((p) => p.x)) - Math.min(...pos.map((p) => p.x));
+  };
   const wide = await width();
   await page.keyboard.press('v');
   await expect(page.locator('body')).toHaveClass(/compact/);
   await page.waitForTimeout(600);
-  const photo = await cardOf(page, 'Anna').locator('.photo').boundingBox(), info = await cardOf(page, 'Anna').locator('.info').boundingBox();
+  const photo = await cardOf(page, 'Anna').locator('.photo').boundingBox(),
+    info = await cardOf(page, 'Anna').locator('.info').boundingBox();
   expect(photo.y + photo.height).toBeLessThanOrEqual(info.y + 1);
   expect(await width()).toBeLessThan(wide);
   expect(await overlapCount(page)).toBe(0);
@@ -165,39 +223,67 @@ test.describe('wide real-world tree (anonymized)', () => {
     const fs = await import('node:fs');
     const state = JSON.parse(fs.readFileSync(new URL('./fixtures/wide-tree.json', import.meta.url), 'utf8'));
     await openApp(page, { draft: { state, fileName: 'wide.ftree', dirty: true } });
-    if (cross) { await page.evaluate((c) => localStorage.setItem('familytree.cross', c), cross); await page.reload(); }
+    if (cross) {
+      await page.evaluate((c) => localStorage.setItem('familytree.cross', c), cross);
+      await page.reload();
+    }
     await page.click('#w-continue');
     await page.waitForTimeout(600);
   };
-  const crossingsLeft = (page) => page.evaluate(() => {
-    const segs = [];
-    for (const p of document.querySelectorAll('#edges path:not(.rel):not(.house)')) {
-      let cur = null;
-      for (const m of (p.getAttribute('d') || '').matchAll(/([MLQA])([^MLQA]*)/g)) {
-        const n = m[2].trim().split(/[\s,]+/).map(Number);
-        if (m[1] === 'M') cur = { x: n[0], y: n[1] };
-        else if (m[1] === 'L') { segs.push({ x1: cur.x, y1: cur.y, x2: n[0], y2: n[1] }); cur = { x: n[0], y: n[1] }; }
-        else cur = { x: n[n.length - 2], y: n[n.length - 1] };
+  const crossingsLeft = (page) =>
+    page.evaluate(() => {
+      const segs = [];
+      for (const p of document.querySelectorAll('#edges path:not(.rel):not(.house)')) {
+        let cur = null;
+        for (const m of (p.getAttribute('d') || '').matchAll(/([MLQA])([^MLQA]*)/g)) {
+          const n = m[2]
+            .trim()
+            .split(/[\s,]+/)
+            .map(Number);
+          if (m[1] === 'M') cur = { x: n[0], y: n[1] };
+          else if (m[1] === 'L') {
+            segs.push({ x1: cur.x, y1: cur.y, x2: n[0], y2: n[1] });
+            cur = { x: n[0], y: n[1] };
+          } else cur = { x: n[n.length - 2], y: n[n.length - 1] };
+        }
       }
-    }
-    const hs = segs.filter(s => s.y1 === s.y2 && s.x1 !== s.x2), vs = segs.filter(s => s.x1 === s.x2 && s.y1 !== s.y2);
-    let n = 0;
-    for (const h of hs) for (const v of vs) {
-      const hx1 = Math.min(h.x1, h.x2) + 1, hx2 = Math.max(h.x1, h.x2) - 1, vy1 = Math.min(v.y1, v.y2) + 1, vy2 = Math.max(v.y1, v.y2) - 1;
-      if (v.x1 > hx1 && v.x1 < hx2 && h.y1 > vy1 && h.y1 < vy2) n++;
-    }
-    return n;
-  });
+      const hs = segs.filter((s) => s.y1 === s.y2 && s.x1 !== s.x2),
+        vs = segs.filter((s) => s.x1 === s.x2 && s.y1 !== s.y2);
+      let n = 0;
+      for (const h of hs)
+        for (const v of vs) {
+          const hx1 = Math.min(h.x1, h.x2) + 1,
+            hx2 = Math.max(h.x1, h.x2) - 1,
+            vy1 = Math.min(v.y1, v.y2) + 1,
+            vy2 = Math.max(v.y1, v.y2) - 1;
+          if (v.x1 > hx1 && v.x1 < hx2 && h.y1 > vy1 && h.y1 < vy2) n++;
+        }
+      return n;
+    });
 
   test('strict sibling order in compact view: no overlaps on the wide tree', async ({ page }) => {
-    await openApp(page, {}); await page.evaluate(() => { localStorage.setItem('familytree.compact', '1'); });
+    await openApp(page, {});
+    await page.evaluate(() => {
+      localStorage.setItem('familytree.compact', '1');
+    });
     const fs = await import('node:fs');
     const state = JSON.parse(fs.readFileSync(new URL('./fixtures/wide-tree.json', import.meta.url), 'utf8'));
-    await page.evaluate((d) => localStorage.setItem('familytree.draft', JSON.stringify(d)), { state, fileName: 'w.ftree', dirty: true });
-    await page.reload(); await page.click('#w-continue'); await page.waitForTimeout(600);
+    await page.evaluate((d) => localStorage.setItem('familytree.draft', JSON.stringify(d)), {
+      state,
+      fileName: 'w.ftree',
+      dirty: true,
+    });
+    await page.reload();
+    await page.click('#w-continue');
+    await page.waitForTimeout(600);
     expect(await overlapCount(page)).toBe(0);
-    const pos = await positions(page), g = (n) => pos.find(p => p.name === n);
-    const split = Object.values(state.families).filter(f => f.parents.length === 2).map(f => f.parents.map(id => g(state.people[id].name))).filter(([a, b]) => a && b && a.y === b.y && Math.abs(a.x - b.x) > 3 * (150 + 40)).map(([a, b]) => [a.name, b.name]);
+    const pos = await positions(page),
+      g = (n) => pos.find((p) => p.name === n);
+    const split = Object.values(state.families)
+      .filter((f) => f.parents.length === 2)
+      .map((f) => f.parents.map((id) => g(state.people[id].name)))
+      .filter(([a, b]) => a && b && a.y === b.y && Math.abs(a.x - b.x) > 3 * (150 + 40))
+      .map(([a, b]) => [a.name, b.name]);
     expect(split).toEqual([]);
     expect(g('Person 181').x).toBeGreaterThan(g('Person 171').x);
     expect(g('Person 177').y).toBe(g('Person 78').y);
@@ -210,11 +296,18 @@ test.describe('wide real-world tree (anonymized)', () => {
     await openApp(page, {});
     const fs = await import('node:fs');
     const state = JSON.parse(fs.readFileSync(new URL('./fixtures/wide-tree.json', import.meta.url), 'utf8'));
-    await page.evaluate((d) => localStorage.setItem('familytree.draft', JSON.stringify(d)), { state, fileName: 'w.ftree', dirty: true });
-    await page.reload(); await page.click('#w-continue'); await page.waitForTimeout(600);
+    await page.evaluate((d) => localStorage.setItem('familytree.draft', JSON.stringify(d)), {
+      state,
+      fileName: 'w.ftree',
+      dirty: true,
+    });
+    await page.reload();
+    await page.click('#w-continue');
+    await page.waitForTimeout(600);
     expect(await overlapCount(page)).toBe(0);
     const pos = await positions(page);
-    const x = (n) => pos.find(p => p.name === n).x, y = (n) => pos.find(p => p.name === n).y;
+    const x = (n) => pos.find((p) => p.name === n).x,
+      y = (n) => pos.find((p) => p.name === n).y;
     expect(y('Person 132')).toBe(y('Person 133'));
     expect(x('Person 133')).toBeLessThan(x('Person 134'));
   });
@@ -223,11 +316,16 @@ test.describe('wide real-world tree (anonymized)', () => {
     await load(page);
     expect(await overlapCount(page)).toBe(0);
     const far = await page.evaluate(() => {
-      const st = JSON.parse(localStorage.getItem('familytree.draft')).state, out = [];
-      const at = (id) => { const el = [...document.querySelectorAll('.card')].find(c => c.dataset.id === id); return el && { x: parseFloat(el.style.left), y: parseFloat(el.style.top) }; };
+      const st = JSON.parse(localStorage.getItem('familytree.draft')).state,
+        out = [];
+      const at = (id) => {
+        const el = [...document.querySelectorAll('.card')].find((c) => c.dataset.id === id);
+        return el && { x: parseFloat(el.style.left), y: parseFloat(el.style.top) };
+      };
       for (const f of Object.values(st.families)) {
         if (f.parents.length !== 2) continue;
-        const [a, b] = f.parents.map(at); if (!a || !b) continue;
+        const [a, b] = f.parents.map(at);
+        if (!a || !b) continue;
         if (a.y === b.y && Math.abs(a.x - b.x) > 3 * 356 + 1) out.push(f.id);
       }
       return out;
@@ -248,11 +346,15 @@ test.describe('wide real-world tree (anonymized)', () => {
 test('strict sibling order keeps 1-2-3 left to right even when the middle child is married', async ({ page }) => {
   await newTree(page);
   await firstPerson(page, 'Mom');
-  await addRelative(page, 'Mom', 'c', 'First'); await addRelative(page, 'Mom', 'c', 'Second'); await addRelative(page, 'Mom', 'c', 'Third');
-  await addRelative(page, 'First', 'm', 'FirstW'); await addRelative(page, 'Second', 'm', 'SecondW');
-  const kids = async () => rows(await positions(page))[1].filter(n => ['First', 'Second', 'Third'].includes(n));
+  await addRelative(page, 'Mom', 'c', 'First');
+  await addRelative(page, 'Mom', 'c', 'Second');
+  await addRelative(page, 'Mom', 'c', 'Third');
+  await addRelative(page, 'First', 'm', 'FirstW');
+  await addRelative(page, 'Second', 'm', 'SecondW');
+  const kids = async () => rows(await positions(page))[1].filter((n) => ['First', 'Second', 'Third'].includes(n));
   expect(await kids()).toEqual(['First', 'Second', 'Third']);
   expect(await overlapCount(page)).toBe(0);
-  await page.reload(); await page.click('#w-continue');
+  await page.reload();
+  await page.click('#w-continue');
   expect(await kids()).toEqual(['First', 'Second', 'Third']);
 });

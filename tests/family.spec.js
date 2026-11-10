@@ -1,5 +1,16 @@
 import { test, expect } from '@playwright/test';
-import { newTree, firstPerson, addRelative, cardOf, select, draftState, familiesByName, positions, rows, setGender } from './helpers.js';
+import {
+  newTree,
+  firstPerson,
+  addRelative,
+  cardOf,
+  select,
+  draftState,
+  familiesByName,
+  positions,
+  rows,
+  setGender,
+} from './helpers.js';
 
 test.describe('spouses and marriages', () => {
   test('add spouse, multiple spouses, child menu asks which partner', async ({ page }) => {
@@ -12,12 +23,15 @@ test.describe('spouses and marriages', () => {
     await page.keyboard.press('c');
     await expect(page.locator('#menu button')).toHaveText(['With Mary', 'With Second Wife']);
     await page.keyboard.press('2');
-    await page.keyboard.type('Kid B'); await page.keyboard.press('Enter');
+    await page.keyboard.type('Kid B');
+    await page.keyboard.press('Enter');
     const fams = familiesByName(await draftState(page));
-    expect(fams).toEqual(expect.arrayContaining([
-      expect.objectContaining({ parents: ['John', 'Mary'], children: ['Kid A'] }),
-      expect.objectContaining({ parents: ['John', 'Second Wife'], children: ['Kid B'] }),
-    ]));
+    expect(fams).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ parents: ['John', 'Mary'], children: ['Kid A'] }),
+        expect.objectContaining({ parents: ['John', 'Second Wife'], children: ['Kid B'] }),
+      ]),
+    );
     const r = rows(await positions(page));
     expect([...r[0]].sort()).toEqual(['John', 'Mary', 'Second Wife']);
     expect(Math.abs(r[0].indexOf('John') - r[0].indexOf('Mary'))).toBe(1);
@@ -29,17 +43,24 @@ test.describe('spouses and marriages', () => {
     await addRelative(page, null, 'm', 'Mary');
     await page.locator('.marriage').first().click();
     await expect(page.locator('#mpop-title')).toHaveText('John & Mary');
-    await page.fill('#m-from', '1975-06-01'); await page.fill('#m-to', '1990-01-01');
+    await page.fill('#m-from', '1975-06-01');
+    await page.fill('#m-to', '1990-01-01');
     await page.keyboard.press('Enter');
     await expect(page.locator('.marriage').first()).toContainText('1975 – 1990');
     await page.locator('.marriage').first().click();
-    await page.selectOption('#m-status', 'divorced'); await page.keyboard.press('Enter');
+    await page.selectOption('#m-status', 'divorced');
+    await page.keyboard.press('Enter');
     await expect(page.locator('.marriage').first()).toContainText('⚡');
     expect((await page.locator('#edges path.slash').getAttribute('d')).length).toBeGreaterThan(0);
     await page.locator('.marriage').first().click();
-    await page.selectOption('#m-status', 'partners'); await page.keyboard.press('Enter');
-    expect((await page.locator('#edges path.partners').evaluateAll(ps => ps.map(x => x.getAttribute('d')).join(''))).length).toBeGreaterThan(0);
-    for (let i = 0; i < 5 && (await page.locator('.marriage').first().textContent()) !== '♥'; i++) await page.keyboard.press('Meta+z');
+    await page.selectOption('#m-status', 'partners');
+    await page.keyboard.press('Enter');
+    expect(
+      (await page.locator('#edges path.partners').evaluateAll((ps) => ps.map((x) => x.getAttribute('d')).join('')))
+        .length,
+    ).toBeGreaterThan(0);
+    for (let i = 0; i < 5 && (await page.locator('.marriage').first().textContent()) !== '♥'; i++)
+      await page.keyboard.press('Meta+z');
     await expect(page.locator('.marriage').first()).toHaveText('♥');
     await page.locator('.marriage').first().click();
     await page.click('#m-unlink');
@@ -55,14 +76,18 @@ test.describe('replacing parents and marriage order', () => {
     await addRelative(page, 'Dad', 'c', 'Kid');
     await addRelative(page, 'Dad', 'c', 'Sib');
     await addRelative(page, 'Mom', 'm', 'Step');
-    await select(page, 'Step'); await page.keyboard.press('l'); await cardOf(page, 'Kid').click();
+    await select(page, 'Step');
+    await page.keyboard.press('l');
+    await cardOf(page, 'Kid').click();
     await page.locator('#menu button', { hasText: 'Set as child' }).click();
     await expect(page.locator('#menu button')).toHaveText(['Replace Dad', 'Replace Mom']);
     await page.locator('#menu button', { hasText: 'Replace Dad' }).click();
     await expect(page.locator('#toast')).toHaveText('Linked');
     const fams = familiesByName(await draftState(page));
-    expect(fams.find(f => f.children.includes('Kid'))).toEqual(expect.objectContaining({ parents: ['Mom', 'Step'] }));
-    expect(fams.find(f => f.children.includes('Sib'))).toEqual(expect.objectContaining({ parents: ['Dad', 'Mom'], children: ['Sib'] }));
+    expect(fams.find((f) => f.children.includes('Kid'))).toEqual(expect.objectContaining({ parents: ['Mom', 'Step'] }));
+    expect(fams.find((f) => f.children.includes('Sib'))).toEqual(
+      expect.objectContaining({ parents: ['Dad', 'Mom'], children: ['Sib'] }),
+    );
   });
 
   test('P on a child with two parents replaces the chosen one with a new person', async ({ page }) => {
@@ -70,13 +95,15 @@ test.describe('replacing parents and marriage order', () => {
     await firstPerson(page, 'Kid');
     await addRelative(page, 'Kid', 'p', 'Dad');
     await addRelative(page, 'Kid', 'p', 'Mom');
-    await select(page, 'Kid'); await page.keyboard.press('p');
+    await select(page, 'Kid');
+    await page.keyboard.press('p');
     await expect(page.locator('#menu button')).toHaveText(['Replace Dad', 'Replace Mom']);
     await page.keyboard.press('2');
-    await page.keyboard.type('New Mom'); await page.keyboard.press('Enter');
+    await page.keyboard.type('New Mom');
+    await page.keyboard.press('Enter');
     const fams = familiesByName(await draftState(page));
-    expect(fams.find(f => f.children.includes('Kid')).parents.sort()).toEqual(['Dad', 'New Mom']);
-    expect(fams.find(f => f.parents.includes('Mom')).children).toEqual([]);
+    expect(fams.find((f) => f.children.includes('Kid')).parents.sort()).toEqual(['Dad', 'New Mom']);
+    expect(fams.find((f) => f.parents.includes('Mom')).children).toEqual([]);
   });
 
   test('marriage with no end date ends at the first death', async ({ page }) => {
@@ -84,11 +111,13 @@ test.describe('replacing parents and marriage order', () => {
     await firstPerson(page, 'John');
     await addRelative(page, null, 'm', 'Mary');
     await page.locator('.marriage').first().click();
-    await page.click('.df-mode[data-for=m-from]'); await page.fill('#m-from', '1950');
+    await page.click('.df-mode[data-for=m-from]');
+    await page.fill('#m-from', '1950');
     await page.keyboard.press('Enter');
     await expect(page.locator('.marriage').first()).toContainText('1950 – present');
     await cardOf(page, 'John').dblclick();
-    await page.locator('#sh-alive').uncheck(); await page.fill('#sh-death', '2007-08-29');
+    await page.locator('#sh-alive').uncheck();
+    await page.fill('#sh-death', '2007-08-29');
     await page.keyboard.press('Enter');
     await expect(page.locator('.marriage').first()).toContainText('1950 – † 2007');
   });
@@ -99,12 +128,15 @@ test.describe('replacing parents and marriage order', () => {
     await addRelative(page, null, 'm', 'First');
     await addRelative(page, 'Hub', 'm', 'Second');
     await addRelative(page, 'Second', 'm', 'Other');
-    await setGender(page, 'Hub', 'm'); await setGender(page, 'Other', 'm');
+    await setGender(page, 'Hub', 'm');
+    await setGender(page, 'Other', 'm');
     const r = rows(await positions(page));
     expect(r[0]).toEqual(['Other', 'Hub', 'First', 'Second']);
   });
 
-  test('three or more marriages: person anchored at the edge, later marriages routed below the row', async ({ page }) => {
+  test('three or more marriages: person anchored at the edge, later marriages routed below the row', async ({
+    page,
+  }) => {
     await newTree(page);
     await firstPerson(page, 'Hub');
     await addRelative(page, null, 'm', 'S1');
@@ -112,8 +144,10 @@ test.describe('replacing parents and marriage order', () => {
     await addRelative(page, 'Hub', 'm', 'S3');
     const r = rows(await positions(page));
     expect(r[0]).toEqual(['Hub', 'S1', 'S2', 'S3']);
-    const hub = (await positions(page)).find(p => p.name === 'Hub');
-    const ys = await page.locator('.marriage').evaluateAll(els => els.map(e => parseFloat(e.style.top)).sort((a, b) => a - b));
+    const hub = (await positions(page)).find((p) => p.name === 'Hub');
+    const ys = await page
+      .locator('.marriage')
+      .evaluateAll((els) => els.map((e) => parseFloat(e.style.top)).sort((a, b) => a - b));
     expect(ys[0]).toBeLessThan(hub.y + 112);
     expect(ys[1]).toBeGreaterThan(hub.y + 112);
     expect(ys[2]).toBeGreaterThan(ys[1]);
@@ -126,8 +160,11 @@ test.describe('replacing parents and marriage order', () => {
     await addRelative(page, 'Hub', 'c', 'K1');
     await addRelative(page, 'Hub', 'm', 'S2');
     await addRelative(page, 'Hub', 'm', 'S3');
-    const allD = () => page.locator('#edges path:not(.rel)').evaluateAll(ps => ps.map(x => x.getAttribute('d') || '').join(' '));
-    await page.keyboard.press('g'); await page.click('#legend [data-x=default]'); await page.keyboard.press('Escape');
+    const allD = () =>
+      page.locator('#edges path:not(.rel)').evaluateAll((ps) => ps.map((x) => x.getAttribute('d') || '').join(' '));
+    await page.keyboard.press('g');
+    await page.click('#legend [data-x=default]');
+    await page.keyboard.press('Escape');
     const plain = await allD();
     expect(plain).not.toMatch(/A\d/);
     await page.keyboard.press('g');
@@ -138,7 +175,8 @@ test.describe('replacing parents and marriage order', () => {
     const gaps = await allD();
     expect(gaps).not.toMatch(/A\d/);
     expect((gaps.match(/M/g) || []).length).toBeGreaterThan((plain.match(/M/g) || []).length);
-    await page.reload(); await page.click('#w-continue');
+    await page.reload();
+    await page.click('#w-continue');
     expect(await allD()).not.toMatch(/A\d/);
     expect((await allD()).match(/M/g).length).toBe((gaps.match(/M/g) || []).length);
   });
@@ -153,9 +191,11 @@ test.describe('replacing parents and marriage order', () => {
     await page.locator('.marriage', { hasText: '³' }).click();
     await expect(page.locator('#mpop-title')).toHaveText('John & Third');
     await expect(page.locator('#m-order-row')).toBeVisible();
-    await page.click('#m-earlier'); await page.click('#m-earlier');
+    await page.click('#m-earlier');
+    await page.click('#m-earlier');
     await page.keyboard.press('Enter');
-    await select(page, 'John'); await page.keyboard.press('c');
+    await select(page, 'John');
+    await page.keyboard.press('c');
     await expect(page.locator('#menu button')).toHaveText(['With Third', 'With Mary', 'With Second']);
     await page.keyboard.press('Escape');
     const r = rows(await positions(page));
@@ -171,26 +211,39 @@ test.describe('birth order', () => {
     await addRelative(page, 'Mom', 'c', 'B');
     await addRelative(page, 'Mom', 'c', 'C');
     const badge = (n) => cardOf(page, n).locator('.ord');
-    await expect(badge('A')).toHaveText('1'); await expect(badge('B')).toHaveText('2'); await expect(badge('C')).toHaveText('3');
+    await expect(badge('A')).toHaveText('1');
+    await expect(badge('B')).toHaveText('2');
+    await expect(badge('C')).toHaveText('3');
     await expect(cardOf(page, 'Mom').locator('.ord')).toHaveCount(0);
     await cardOf(page, 'C').dblclick();
     await expect(page.locator('#sh-order-row')).toBeVisible();
     await page.click('#sh-order [data-ord="-1"]');
-    await expect(badge('C')).toHaveText('2'); await expect(badge('B')).toHaveText('3');
+    await expect(badge('C')).toHaveText('2');
+    await expect(badge('B')).toHaveText('3');
     await page.keyboard.press('Escape');
-    await cardOf(page, 'A').dblclick(); await page.fill('#sh-birth', '1990-01-01');
+    await cardOf(page, 'A').dblclick();
+    await page.fill('#sh-birth', '1990-01-01');
     await expect(page.locator('#sh-order [data-ord="1"]')).toBeDisabled();
     await expect(page.locator('#sh-order-hint')).toBeVisible();
     await page.keyboard.press('Escape');
-    await cardOf(page, 'B').dblclick(); await page.fill('#sh-birth', '1980-01-01'); await page.keyboard.press('Escape');
-    await expect(badge('B')).toHaveText('1'); await expect(badge('C')).toHaveText('2'); await expect(badge('A')).toHaveText('3');
+    await cardOf(page, 'B').dblclick();
+    await page.fill('#sh-birth', '1980-01-01');
+    await page.keyboard.press('Escape');
+    await expect(badge('B')).toHaveText('1');
+    await expect(badge('C')).toHaveText('2');
+    await expect(badge('A')).toHaveText('3');
     const fams = familiesByName(await draftState(page));
-    expect(fams.find(f => f.parents.includes('Mom')).children).toEqual(['A', 'C', 'B']);
-    await page.keyboard.press('g'); await page.locator('#lg-badges').uncheck(); await page.keyboard.press('Escape');
+    expect(fams.find((f) => f.parents.includes('Mom')).children).toEqual(['A', 'C', 'B']);
+    await page.keyboard.press('g');
+    await page.locator('#lg-badges').uncheck();
+    await page.keyboard.press('Escape');
     await expect(badge('A')).toBeHidden();
-    await page.reload(); await page.click('#w-continue');
+    await page.reload();
+    await page.click('#w-continue');
     await expect(badge('A')).toBeHidden();
-    await page.keyboard.press('g'); await page.locator('#lg-badges').check(); await page.keyboard.press('Escape');
+    await page.keyboard.press('g');
+    await page.locator('#lg-badges').check();
+    await page.keyboard.press('Escape');
     await expect(badge('A')).toBeVisible();
   });
 });
@@ -214,18 +267,26 @@ test.describe('linking existing people', () => {
     await expect(page.locator('#toast')).toHaveText('Linked');
     let fams = familiesByName(await draftState(page));
     expect(fams).toContainEqual(expect.objectContaining({ parents: ['X2', 'Y1'] }));
-    await select(page, 'X1'); await page.keyboard.press('l'); await cardOf(page, 'PX').click();
+    await select(page, 'X1');
+    await page.keyboard.press('l');
+    await cardOf(page, 'PX').click();
     await page.locator('#menu button', { hasText: 'Set as child' }).click();
     await expect(page.locator('#toast')).toHaveText('That would make someone their own ancestor');
-    await select(page, 'X1'); await page.keyboard.press('l'); await cardOf(page, 'Y2').click();
+    await select(page, 'X1');
+    await page.keyboard.press('l');
+    await cardOf(page, 'Y2').click();
     await page.locator('#menu button', { hasText: 'Set as spouse' }).click();
     await expect(page.locator('#toast')).toHaveText('These people are already linked this way');
     await addRelative(page, 'PY', 'c', 'Orphan');
-    await select(page, 'X1'); await page.keyboard.press('l'); await cardOf(page, 'Orphan').click();
+    await select(page, 'X1');
+    await page.keyboard.press('l');
+    await cardOf(page, 'Orphan').click();
     await page.locator('#menu button', { hasText: 'Set as child' }).click();
     fams = familiesByName(await draftState(page));
-    expect(fams.find(f => f.children.includes('Orphan')).parents).toEqual(['PY', 'X1']);
-    await select(page, 'X2'); await page.keyboard.press('l'); await page.keyboard.press('Escape');
+    expect(fams.find((f) => f.children.includes('Orphan')).parents).toEqual(['PY', 'X1']);
+    await select(page, 'X2');
+    await page.keyboard.press('l');
+    await page.keyboard.press('Escape');
     await expect(page.locator('body')).not.toHaveClass(/linking/);
   });
 
@@ -233,13 +294,17 @@ test.describe('linking existing people', () => {
     await newTree(page);
     await firstPerson(page, 'A');
     await addRelative(page, null, 'c', 'B');
-    await select(page, 'A'); await page.keyboard.press('l'); await cardOf(page, 'B').click();
+    await select(page, 'A');
+    await page.keyboard.press('l');
+    await cardOf(page, 'B').click();
     await page.locator('#menu button', { hasText: 'Conflict' }).click();
     await expect(page.locator('#edges path.rel.conflict')).toHaveCount(1);
     await expect(page.locator('.relbadge')).toHaveText('Conflict');
     await page.locator('.relbadge').click();
     await expect(page.locator('#rpop')).toBeVisible();
-    await page.fill('#r-label', 'feud'); await page.selectOption('#r-type', 'close'); await page.keyboard.press('Enter');
+    await page.fill('#r-label', 'feud');
+    await page.selectOption('#r-type', 'close');
+    await page.keyboard.press('Enter');
     await expect(page.locator('.relbadge')).toHaveText('feud');
     await expect(page.locator('#edges path.rel.close')).toHaveCount(1);
     await expect(page.locator('#edges path.rel.inner')).toHaveCount(1);
@@ -251,12 +316,22 @@ test.describe('linking existing people', () => {
 });
 
 test.describe('genogram markers', () => {
-  test('standard symbols: deceased cross, index person, gender ordering, pregnancy, adopted/foster, twins, line styles', async ({ page }) => {
+  test('standard symbols: deceased cross, index person, gender ordering, pregnancy, adopted/foster, twins, line styles', async ({
+    page,
+  }) => {
     await newTree(page);
     await firstPerson(page, 'Anna');
     await addRelative(page, null, 'm', 'Boris');
-    const edit = async (name, fn) => { await select(page, name); await cardOf(page, name).dblclick(); await fn(); await page.keyboard.press('Enter'); await page.waitForTimeout(150); };
-    await edit('Anna', async () => { await page.click('#sh-gender [data-v=f]'); });
+    const edit = async (name, fn) => {
+      await select(page, name);
+      await cardOf(page, name).dblclick();
+      await fn();
+      await page.keyboard.press('Enter');
+      await page.waitForTimeout(150);
+    };
+    await edit('Anna', async () => {
+      await page.click('#sh-gender [data-v=f]');
+    });
     await edit('Boris', async () => {
       await page.click('#sh-gender [data-v=m]');
       await page.locator('#sh-alive').uncheck();
@@ -270,31 +345,52 @@ test.describe('genogram markers', () => {
     let r = rows(await positions(page));
     expect(r[0]).toEqual(['Boris', 'Anna']);
     for (const k of ['Twin1', 'Twin2', 'Adopted', 'Foster', 'Preg']) await addRelative(page, 'Anna', 'c', k);
-    await edit('Twin1', async () => { await page.selectOption('#sh-twin', { label: 'Twin2' }); await page.locator('#sh-identical').check(); });
-    await edit('Adopted', async () => { await page.selectOption('#sh-kind', 'adopted'); });
-    await edit('Foster', async () => { await page.selectOption('#sh-kind', 'foster'); });
-    await edit('Preg', async () => { await page.selectOption('#sh-fate', 'pregnancy'); });
+    await edit('Twin1', async () => {
+      await page.selectOption('#sh-twin', { label: 'Twin2' });
+      await page.locator('#sh-identical').check();
+    });
+    await edit('Adopted', async () => {
+      await page.selectOption('#sh-kind', 'adopted');
+    });
+    await edit('Foster', async () => {
+      await page.selectOption('#sh-kind', 'foster');
+    });
+    await edit('Preg', async () => {
+      await page.selectOption('#sh-fate', 'pregnancy');
+    });
     await expect(cardOf(page, 'Preg').locator('.photo svg.fg path')).toHaveCount(1);
     expect((await page.locator('#edges path.adopted').getAttribute('d')).length).toBeGreaterThan(0);
     expect((await page.locator('#edges path.foster').getAttribute('d')).length).toBeGreaterThan(0);
     r = rows(await positions(page));
     expect(r[1].indexOf('Twin2') - r[1].indexOf('Twin1')).toBe(1);
-    await select(page, 'Twin1'); await page.keyboard.press('l'); await cardOf(page, 'Adopted').click();
+    await select(page, 'Twin1');
+    await page.keyboard.press('l');
+    await cardOf(page, 'Adopted').click();
     await page.locator('#menu button', { hasText: 'Fused' }).click();
     await expect(page.locator('#edges path.rel.fused')).toHaveCount(2);
     await expect(page.locator('#edges path.rel.inner')).toHaveCount(1);
-    await select(page, 'Anna'); await page.keyboard.press('l'); await cardOf(page, 'Foster').click();
+    await select(page, 'Anna');
+    await page.keyboard.press('l');
+    await cardOf(page, 'Foster').click();
     await page.locator('#menu button', { hasText: 'Focused' }).click();
     await expect(page.locator('#edges path.rel.focused')).toHaveAttribute('marker-end', /arrow-head/);
     await expect(page.locator('#edges path.rel.close[marker-start]')).toHaveCount(0);
-    await select(page, 'Boris'); await page.keyboard.press('i');
+    await select(page, 'Boris');
+    await page.keyboard.press('i');
     await expect(cardOf(page, 'Boris')).not.toHaveClass(/index/);
-    await page.locator('.marriage').first().click(); await page.selectOption('#m-status', 'reconciled_div'); await page.keyboard.press('Enter');
+    await page.locator('.marriage').first().click();
+    await page.selectOption('#m-status', 'reconciled_div');
+    await page.keyboard.press('Enter');
     expect(((await page.locator('#edges path.slash').getAttribute('d')).match(/M/g) || []).length).toBe(3);
-    await edit('Boris', async () => { await page.selectOption('#sh-illness', 'active'); await page.selectOption('#sh-substance', 'recovered'); });
+    await edit('Boris', async () => {
+      await page.selectOption('#sh-illness', 'active');
+      await page.selectOption('#sh-substance', 'recovered');
+    });
     await expect(cardOf(page, 'Boris').locator('.photo .hx.ill.active')).toHaveCount(1);
     await expect(cardOf(page, 'Boris').locator('.photo .hx.sub.recovered')).toHaveCount(1);
-    await select(page, 'Anna'); await page.keyboard.press('l'); await cardOf(page, 'Twin1').click();
+    await select(page, 'Anna');
+    await page.keyboard.press('l');
+    await cardOf(page, 'Twin1').click();
     await page.locator('#menu button', { hasText: 'household' }).click();
     await expect(page.locator('.relbadge.house')).toHaveText('⌂ 2');
     expect((await page.locator('#edges path.house').getAttribute('d')).length).toBeGreaterThan(0);
@@ -302,7 +398,13 @@ test.describe('genogram markers', () => {
     await page.locator('#menu button', { hasText: 'Dissolve' }).click();
     await expect(page.locator('.relbadge.house')).toHaveCount(0);
     const st = await draftState(page);
-    expect(Object.values(st.families).find(f => f.children.length === 5).kinds).toEqual(expect.objectContaining({ [Object.keys(st.people).find(k => st.people[k].name === 'Adopted')]: expect.objectContaining({ type: 'adopted' }) }));
+    expect(Object.values(st.families).find((f) => f.children.length === 5).kinds).toEqual(
+      expect.objectContaining({
+        [Object.keys(st.people).find((k) => st.people[k].name === 'Adopted')]: expect.objectContaining({
+          type: 'adopted',
+        }),
+      }),
+    );
   });
 
   test('miscarriage/abortion/stillborn cards and line-ended glyph', async ({ page }) => {
@@ -316,7 +418,7 @@ test.describe('genogram markers', () => {
     await expect(cardOf(page, 'Z')).toHaveClass(/unborn/);
     await expect(cardOf(page, 'Z').locator('.fate-chip')).toHaveText('Miscarriage');
     expect((await page.locator('#edges path.ended').getAttribute('d')).length).toBeGreaterThan(0);
-    const p = Object.values((await draftState(page)).people).find(x => x.name === 'Z');
+    const p = Object.values((await draftState(page)).people).find((x) => x.name === 'Z');
     expect(p.fate).toBe('miscarriage');
     expect(p.lineEnded).toBe(true);
   });

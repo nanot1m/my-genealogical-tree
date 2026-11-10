@@ -1,5 +1,15 @@
 import { test, expect } from '@playwright/test';
-import { newTree, firstPerson, addRelative, cardOf, cards, select, deselect, positions, attachConsoleGuard } from './helpers.js';
+import {
+  newTree,
+  firstPerson,
+  addRelative,
+  cardOf,
+  cards,
+  select,
+  deselect,
+  positions,
+  attachConsoleGuard,
+} from './helpers.js';
 
 test.describe('canvas and first person', () => {
   test('starts with an empty grid and a plus button, click creates the first card', async ({ page }) => {
@@ -23,7 +33,9 @@ test.describe('canvas and first person', () => {
     await page.mouse.wheel(0, 120);
     expect(await transform()).not.toBe(before);
     const zoomBefore = await page.locator('#zoomlvl').textContent();
-    await page.keyboard.down('Control'); await page.mouse.wheel(0, -200); await page.keyboard.up('Control');
+    await page.keyboard.down('Control');
+    await page.mouse.wheel(0, -200);
+    await page.keyboard.up('Control');
     expect(await page.locator('#zoomlvl').textContent()).not.toBe(zoomBefore);
     await page.keyboard.press('0');
     await expect(page.locator('#zoomlvl')).toHaveText('100%');
@@ -39,7 +51,10 @@ test.describe('canvas and first person', () => {
     await expect(page.locator('#zoomlvl')).toHaveText('150%');
     const before = await page.evaluate(() => document.getElementById('world').style.transform);
     await page.keyboard.down(' ');
-    await page.mouse.move(300, 300); await page.mouse.down(); await page.mouse.move(400, 350, { steps: 5 }); await page.mouse.up();
+    await page.mouse.move(300, 300);
+    await page.mouse.down();
+    await page.mouse.move(400, 350, { steps: 5 });
+    await page.mouse.up();
     await page.keyboard.up(' ');
     expect(await page.evaluate(() => document.getElementById('world').style.transform)).not.toBe(before);
   });
@@ -53,37 +68,50 @@ test.describe('hover plus buttons', () => {
     await expect(cardOf(page, 'Kid').locator('.plus[data-add=parent]')).toHaveCount(1);
     await expect(cardOf(page, 'Kid').locator('.plus.left, .plus.right, .plus.bottom, .plus.spouse')).toHaveCount(4);
     await cardOf(page, 'Kid').locator('.plus.top').click();
-    await page.keyboard.type('Dad'); await page.keyboard.press('Enter');
+    await page.keyboard.type('Dad');
+    await page.keyboard.press('Enter');
     await select(page, 'Kid');
     await cardOf(page, 'Kid').locator('.plus.top').click();
-    await page.keyboard.type('Mom'); await page.keyboard.press('Enter');
+    await page.keyboard.type('Mom');
+    await page.keyboard.press('Enter');
     await expect(cardOf(page, 'Kid').locator('.plus.top')).toHaveCount(0);
     await select(page, 'Kid');
     await cardOf(page, 'Kid').locator('.plus.bottom').click();
-    await page.keyboard.type('Grandkid'); await page.keyboard.press('Enter');
+    await page.keyboard.type('Grandkid');
+    await page.keyboard.press('Enter');
     await select(page, 'Kid');
     await cardOf(page, 'Kid').locator('.plus.right').click();
-    await page.keyboard.type('Sister'); await page.keyboard.press('Enter');
+    await page.keyboard.type('Sister');
+    await page.keyboard.press('Enter');
     const pos = await positions(page);
-    expect(pos.map(p => p.name)).toEqual(['Dad', 'Mom', 'Kid', 'Sister', 'Grandkid']);
+    expect(pos.map((p) => p.name)).toEqual(['Dad', 'Mom', 'Kid', 'Sister', 'Grandkid']);
   });
 });
 
 test.describe('keyboard', () => {
   test('arrows navigate, P/C/S create, Backspace deletes, undo and redo work', async ({ page }) => {
-    const errors = []; attachConsoleGuard(page, errors);
+    const errors = [];
+    attachConsoleGuard(page, errors);
     await newTree(page);
     await firstPerson(page, 'Anna', '1950-03-04');
-    await page.keyboard.press('p'); await page.keyboard.type('Grandpa'); await page.keyboard.press('Enter');
+    await page.keyboard.press('p');
+    await page.keyboard.type('Grandpa');
+    await page.keyboard.press('Enter');
     await page.keyboard.press('ArrowDown');
     await expect(cardOf(page, 'Anna')).toHaveClass(/selected/);
-    await page.keyboard.press('c'); await page.keyboard.type('Kid One'); await page.keyboard.press('Enter');
-    await page.keyboard.press('s'); await page.keyboard.type('Kid Two'); await page.keyboard.press('Enter');
+    await page.keyboard.press('c');
+    await page.keyboard.type('Kid One');
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('s');
+    await page.keyboard.type('Kid Two');
+    await page.keyboard.press('Enter');
     await page.keyboard.press('ArrowLeft');
     await expect(cardOf(page, 'Kid One')).toHaveClass(/selected/);
     await page.keyboard.press('ArrowUp');
     await expect(cardOf(page, 'Anna')).toHaveClass(/selected/);
-    await page.keyboard.press('Shift+ArrowUp'); await page.keyboard.type('Grandma'); await page.keyboard.press('Enter');
+    await page.keyboard.press('Shift+ArrowUp');
+    await page.keyboard.type('Grandma');
+    await page.keyboard.press('Enter');
     await expect(cards(page)).toHaveCount(5);
     await page.keyboard.press('Meta+z');
     await expect(cards(page)).toHaveCount(4);
@@ -103,7 +131,9 @@ test.describe('keyboard', () => {
   test('typing shortcut letters into a freshly created card does not leak into the name', async ({ page }) => {
     await newTree(page);
     await firstPerson(page, 'Anna');
-    await page.keyboard.press('c'); await page.keyboard.type('pcsm'); await page.keyboard.press('Enter');
+    await page.keyboard.press('c');
+    await page.keyboard.type('pcsm');
+    await page.keyboard.press('Enter');
     await expect(cardOf(page, 'pcsm')).toBeVisible();
   });
 
@@ -123,8 +153,12 @@ test.describe('animations', () => {
     await page.waitForTimeout(500);
     const sampling = page.evaluate(async () => {
       const el = document.querySelectorAll('.card')[0];
-      const seen = new Set(); const t0 = performance.now();
-      while (performance.now() - t0 < 500) { await new Promise(r => requestAnimationFrame(r)); seen.add(Math.round(parseFloat(el.style.left))); }
+      const seen = new Set();
+      const t0 = performance.now();
+      while (performance.now() - t0 < 500) {
+        await new Promise((r) => requestAnimationFrame(r));
+        seen.add(Math.round(parseFloat(el.style.left)));
+      }
       return seen.size;
     });
     await page.waitForTimeout(50);
@@ -155,7 +189,8 @@ test('Cmd+F finds a person by name and centers the view on them', async ({ page 
   const box = await cardOf(page, 'Clara Ivanova').boundingBox();
   const vp = page.viewportSize();
   expect(Math.abs(box.x + box.width / 2 - vp.width / 2)).toBeLessThan(5);
-  await page.keyboard.press('Meta+f'); await page.keyboard.type('zzz');
+  await page.keyboard.press('Meta+f');
+  await page.keyboard.type('zzz');
   await expect(page.locator('#s-list .none')).toHaveText('No matches');
   await page.keyboard.press('Escape');
   await expect(page.locator('#search')).toBeHidden();
@@ -192,22 +227,34 @@ test('shift-click selects several people and highlights their nearest common anc
   await page.keyboard.press('Escape');
   await expect(page.locator('body')).not.toHaveClass(/has-multi/);
   await expect(page.locator('#relbar')).toBeHidden();
-  await cardOf(page, 'Grandpa').dblclick(); await page.click('#sh-gender [data-v=m]'); await page.keyboard.press('Escape');
-  await cardOf(page, 'Me').dblclick(); await page.click('#sh-gender [data-v=f]'); await page.keyboard.press('Escape');
-  await select(page, 'Grandpa'); await cardOf(page, 'Me').click({ modifiers: ['Shift'] });
-  await expect(page.locator('#relbar')).toHaveText('Grandpa is the grandfather of Me · Me is the granddaughter of Grandpa');
-  await select(page, 'Grandpa'); await cardOf(page, 'Kid').click({ modifiers: ['Shift'] });
+  await cardOf(page, 'Grandpa').dblclick();
+  await page.click('#sh-gender [data-v=m]');
+  await page.keyboard.press('Escape');
+  await cardOf(page, 'Me').dblclick();
+  await page.click('#sh-gender [data-v=f]');
+  await page.keyboard.press('Escape');
+  await select(page, 'Grandpa');
+  await cardOf(page, 'Me').click({ modifiers: ['Shift'] });
+  await expect(page.locator('#relbar')).toHaveText(
+    'Grandpa is the grandfather of Me · Me is the granddaughter of Grandpa',
+  );
+  await select(page, 'Grandpa');
+  await cardOf(page, 'Kid').click({ modifiers: ['Shift'] });
   await expect(page.locator('#relbar')).toContainText('great-grandfather');
-  await select(page, 'Aunt'); await cardOf(page, 'Me').click({ modifiers: ['Shift'] });
+  await select(page, 'Aunt');
+  await cardOf(page, 'Me').click({ modifiers: ['Shift'] });
   await expect(page.locator('#relbar')).toHaveText('Aunt is the uncle/aunt of Me · Me is the niece of Aunt');
   await expect(page.locator('#bottom')).toBeHidden();
   await page.selectOption('#lang', 'ru');
-  await select(page, 'Me'); await cardOf(page, 'Cousin').click({ modifiers: ['Shift'] });
+  await select(page, 'Me');
+  await cardOf(page, 'Cousin').click({ modifiers: ['Shift'] });
   await expect(page.locator('#relbar')).toHaveText('Me — двоюродная сестра Cousin');
-  await select(page, 'Cousin'); await cardOf(page, 'Kid').click({ modifiers: ['Shift'] });
+  await select(page, 'Cousin');
+  await cardOf(page, 'Kid').click({ modifiers: ['Shift'] });
   await expect(page.locator('#relbar')).toHaveText('Cousin — двоюродный дядя Kid · Kid — двоюродный племянник Cousin');
   await page.selectOption('#lang', 'en');
-  await select(page, 'Cousin'); await cardOf(page, 'Kid').click({ modifiers: ['Shift'] });
+  await select(page, 'Cousin');
+  await cardOf(page, 'Kid').click({ modifiers: ['Shift'] });
   await expect(page.locator('#relbar')).toHaveText('Cousin is the first cousin once removed of Kid');
 });
 
@@ -240,9 +287,12 @@ test('collapsing a branch hides descendants, survives reload, and search expands
   await expect(cardOf(page, 'Dad').locator('.fold')).toHaveText('▸ 2');
   await expect(page.locator('#actions [data-sel=fold]')).toHaveText('Expand branch');
   await page.waitForTimeout(600);
-  await page.reload(); await page.click('#w-continue');
+  await page.reload();
+  await page.click('#w-continue');
   await expect(cards(page)).toHaveCount(2);
-  await page.keyboard.press('Meta+f'); await page.keyboard.type('Kid'); await page.keyboard.press('Enter');
+  await page.keyboard.press('Meta+f');
+  await page.keyboard.type('Kid');
+  await page.keyboard.press('Enter');
   await expect(cards(page)).toHaveCount(5);
   await expect(cardOf(page, 'Kid')).toHaveClass(/selected/);
   await cardOf(page, 'Dad').hover();

@@ -11,8 +11,8 @@ test.describe('installable app', () => {
     const manifest = await (await request.get('/manifest.webmanifest')).json();
     expect(manifest.display).toBe('standalone');
     expect(manifest.start_url).toBe('./');
-    expect(manifest.icons.map(i => i.sizes)).toEqual(expect.arrayContaining(['192x192', '512x512']));
-    expect(manifest.icons.some(i => i.purpose === 'maskable')).toBe(true);
+    expect(manifest.icons.map((i) => i.sizes)).toEqual(expect.arrayContaining(['192x192', '512x512']));
+    expect(manifest.icons.some((i) => i.purpose === 'maskable')).toBe(true);
     expect(manifest.file_handlers[0].accept['application/octet-stream']).toEqual(['.ftree']);
     for (const icon of manifest.icons) {
       const res = await request.get('/' + icon.src);
@@ -22,13 +22,19 @@ test.describe('installable app', () => {
     const sw = await request.get('/sw.js');
     expect(sw.status()).toBe(200);
     expect(await sw.text()).toContain("addEventListener('fetch'");
-    await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length), { timeout: 10_000 }).toBe(1);
+    await expect
+      .poll(() => page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length), {
+        timeout: 10_000,
+      })
+      .toBe(1);
   });
 
   test('cached shell loads while offline', async ({ page, context }) => {
     await openApp(page);
     await page.evaluate(() => navigator.serviceWorker.ready);
-    await expect.poll(() => page.evaluate(async () => !!(await caches.match('./index.html'))), { timeout: 10_000 }).toBe(true);
+    await expect
+      .poll(() => page.evaluate(async () => !!(await caches.match('./index.html'))), { timeout: 10_000 })
+      .toBe(true);
     await context.setOffline(true);
     await page.reload();
     await expect(page.locator('#welcome.show')).toBeVisible();
@@ -41,10 +47,11 @@ test.describe('auto-update', () => {
 
   test('new deployed version shows an update button that reloads and keeps the draft', async ({ page }) => {
     let v = 'a';
-    await page.route('**/version.json', r => r.fulfill({ json: { v } }));
+    await page.route('**/version.json', (r) => r.fulfill({ json: { v } }));
     await newTree(page);
     await page.click('#empty');
-    await page.keyboard.type('Mary'); await page.keyboard.press('Enter');
+    await page.keyboard.type('Mary');
+    await page.keyboard.press('Enter');
     v = 'b';
     await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
     await expect(page.locator('#update')).toBeVisible();
@@ -70,15 +77,25 @@ test.describe('in-app documentation', () => {
     await page.click('[data-act=legend]');
     await expect(page.locator('#legend.show')).toBeVisible();
     await expect(page.locator('#legend .item')).toHaveCount(29);
-    await expect(page.locator('#legend h3')).toHaveText(['Couples', 'Children', 'People', 'Relationships', 'Line crossings']);
+    await expect(page.locator('#legend h3')).toHaveText([
+      'Couples',
+      'Children',
+      'People',
+      'Relationships',
+      'Line crossings',
+    ]);
     await page.keyboard.press('Escape');
     await expect(page.locator('#legend.show')).toHaveCount(0);
     await page.keyboard.press('g');
     await expect(page.locator('#legend.show')).toBeVisible();
     await page.keyboard.press('Escape');
-    await select(page, 'A'); await page.keyboard.press('l'); await cardOf(page, 'B').click();
+    await select(page, 'A');
+    await page.keyboard.press('l');
+    await cardOf(page, 'B').click();
     await expect(page.locator('#menu button small').first()).toHaveText('Draw a marriage line between the two');
-    await expect(page.locator('#menu button', { hasText: 'Conflict' }).locator('small')).toHaveText('Zigzag: frequent conflict');
+    await expect(page.locator('#menu button', { hasText: 'Conflict' }).locator('small')).toHaveText(
+      'Zigzag: frequent conflict',
+    );
     await page.keyboard.press('Escape');
     await page.selectOption('#lang', 'ru');
     await page.keyboard.press('g');
