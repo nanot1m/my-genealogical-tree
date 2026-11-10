@@ -37,13 +37,26 @@ export const cardOf = (page, name) =>
 export const cards = (page) => page.locator('.card:not(.leave)');
 
 export async function deselect(page) {
-  await page.mouse.click(5, 450);
+  for (let i = 0; i < 3 && (await page.locator('.card.selected').count()); i++) await page.keyboard.press('Escape');
+  if (await page.locator('.card.selected').count()) await page.mouse.click(5, 450);
 }
 
+async function inView(page, loc) {
+  const vp = page.viewportSize();
+  let prev = null;
+  for (let i = 0; i < 30; i++) {
+    const b = await loc.boundingBox();
+    const inside = b && b.x >= 0 && b.y >= 0 && b.x + b.width <= vp.width && b.y + b.height <= vp.height;
+    if (inside && prev && Math.abs(prev.x - b.x) < 0.5 && Math.abs(prev.y - b.y) < 0.5) return;
+    prev = b;
+    await page.waitForTimeout(100);
+  }
+}
 export async function select(page, name) {
   await deselect(page);
   await page.keyboard.press('f');
   await page.waitForTimeout(400);
+  await inView(page, cardOf(page, name));
   await cardOf(page, name).click();
   await expect(cardOf(page, name)).toHaveClass(/selected/);
 }
@@ -154,6 +167,7 @@ export async function setGender(page, name, g) {
   await deselect(page);
   await page.keyboard.press('f');
   await page.waitForTimeout(400);
+  await inView(page, cardOf(page, name));
   await cardOf(page, name).dblclick();
   await page.click(`#sh-gender [data-v=${g}]`);
   await page.keyboard.press('Escape');

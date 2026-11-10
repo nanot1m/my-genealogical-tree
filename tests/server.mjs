@@ -7,6 +7,7 @@ const port = Number(process.argv[2] || 4173);
 const types = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
+  '.mjs': 'text/javascript',
   '.css': 'text/css',
   '.json': 'application/json',
   '.png': 'image/png',
@@ -17,7 +18,7 @@ const types = {
 
 createServer(async (req, res) => {
   const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^(\.\.[/\\])+/, '');
-  const file = join(root, path === '/' ? 'index.html' : path);
+  const file = join(root, path.endsWith('/') ? path + 'index.html' : path);
   if (path === '/version.json') {
     res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
     return res.end('{"v":"dev"}');

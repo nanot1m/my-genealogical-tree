@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Layout trace</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        --bg: #f6f7fb;
+        --panel: #fff;
+        --line: #b8bfd0;
+        --text: #1d2233;
+        --muted: #6b7286;
+        --accent: #4f63ff;
+        --before: #d97706;
+        --after: #0f9d73;
+        --diff: #e11d48;
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        height: 100vh;
+        overflow: hidden;
+      }
+      header {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        padding: 8px 14px;
+        background: var(--panel);
+        border-bottom: 1px solid #e3e6ef;
+        flex-wrap: wrap;
+      }
+      header h1 {
+        font-size: 15px;
+        margin: 0 12px 0 0;
+      }
+      button,
+      select,
+      input[type='file'] {
+        font: inherit;
+        font-size: 13px;
+      }
+      button {
+        border: 1px solid #d5d9e6;
+        background: #fff;
+        border-radius: 6px;
+        padding: 4px 10px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #f0f2f8;
+      }
+      button.on {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      main {
+        display: grid;
+        grid-template-columns: 1fr 1fr 320px;
+        min-height: 0;
+      }
+      main.single {
+        grid-template-columns: 1fr 320px;
+      }
+      main.single .pane.before {
+        display: none;
+      }
+      .pane {
+        position: relative;
+        border-right: 1px solid #e3e6ef;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .pane canvas {
+        flex: 1;
+        width: 100%;
+        height: 100%;
+        display: block;
+        cursor: grab;
+      }
+      .pane .label {
+        position: absolute;
+        top: 8px;
+        left: 10px;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 999px;
+        color: #fff;
+        pointer-events: none;
+      }
+      .pane.before .label {
+        background: var(--before);
+      }
+      .pane.after .label {
+        background: var(--after);
+      }
+      .pane .desc {
+        border-top: 1px solid #e3e6ef;
+        background: var(--panel);
+        padding: 10px 14px;
+        min-height: 96px;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+      .desc .phase {
+        display: inline-block;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        margin-right: 8px;
+      }
+      .desc .title {
+        font-weight: 600;
+      }
+      .desc .detail {
+        color: #3a4156;
+        margin-top: 4px;
+      }
+      .desc.diff .title::after {
+        content: ' ≠';
+        color: var(--diff);
+      }
+      aside {
+        overflow: auto;
+        background: var(--panel);
+        font-size: 12px;
+      }
+      aside .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        border-bottom: 1px solid #eef0f6;
+        cursor: pointer;
+      }
+      aside .row > div {
+        padding: 5px 8px;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      aside .row.cur {
+        background: #eef1ff;
+      }
+      aside .row.diff > div {
+        color: var(--diff);
+      }
+      aside .row.gap > div.empty {
+        background: repeating-linear-gradient(45deg, #fff, #fff 4px, #f3f4f8 4px, #f3f4f8 8px);
+      }
+      aside .row .ph {
+        color: var(--muted);
+        margin-right: 4px;
+      }
+      aside .head {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        font-weight: 600;
+        border-bottom: 1px solid #e3e6ef;
+      }
+      footer {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 8px 14px;
+        background: var(--panel);
+        border-top: 1px solid #e3e6ef;
+      }
+      footer input[type='range'] {
+        flex: 1;
+      }
+      .stat {
+        color: var(--muted);
+        font-size: 12px;
+        min-width: 120px;
+        text-align: right;
+      }
+      .drop {
+        outline: 3px dashed var(--accent);
+        outline-offset: -3px;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Layout trace</h1>
+      <select id="sample">
+        <option value="fixture">Fixture: wide tree</option>
+        <option value="couple">Sample: couple with in-laws</option>
+        <option value="marriages">Sample: multiple marriages</option>
+        <option value="pulled">Sample: pulled daughter</option>
+      </select>
+      <input type="file" id="file" accept=".ftree,.json" />
+      <span class="muted">or drop a file anywhere</span>
+      <span style="flex: 1"></span>
+      <button id="compare" class="on">Compare with snapshot</button>
+      <button id="link">Linked camera</button>
+      <button id="follow" class="on">Follow focus</button>
+      <button id="firstdiff">Jump to first difference</button>
+      <span id="snapinfo" class="muted"></span>
+    </header>
+    <main>
+      <div class="pane before">
+        <span class="label">BEFORE (snapshot)</span>
+        <canvas></canvas>
+        <div class="desc"></div>
+      </div>
+      <div class="pane after">
+        <span class="label">AFTER (src/engine.js)</span>
+        <canvas></canvas>
+        <div class="desc"></div>
+      </div>
+      <aside>
+        <div class="row head">
+          <div>Before</div>
+          <div>After</div>
+        </div>
+        <div id="steps"></div>
+      </aside>
+    </main>
+    <footer>
+      <button id="prev">←</button>
+      <button id="play">Play</button>
+      <button id="next">→</button>
+      <select id="speed">
+        <option value="900">slow</option>
+        <option value="450" selected>normal</option>
+        <option value="150">fast</option>
+      </select>
+      <input type="range" id="pos" min="0" max="0" value="0" />
+      <span class="stat" id="stat"></span>
+      <button id="fit">Fit</button>
+    </footer>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

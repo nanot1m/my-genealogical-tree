@@ -7,6 +7,12 @@ export function computeLayout(model, opts) {
   const famList = Object.values(families);
   const famIndex = new Map(famList.map((f, i) => [f.id, i]));
   const isMale = (id) => people[id]?.gender === 'm';
+  const trace = opts.trace;
+  const nm = (id) => people[id]?.name?.trim() || id;
+  const unm = (u) => u.members.map(nm).join(' + ');
+  const step = (phase, title, detail, focus = [], extra = {}) => {
+    if (trace) trace.push({ phase, title, detail, focus, ...extra });
+  };
 
   const parentFams = new Map(),
     childFam = new Map();
@@ -69,6 +75,14 @@ export function computeLayout(model, opts) {
   const visible = Object.keys(people).filter((id) => !hidden.has(id));
   const vis = new Set(visible);
   const positions = new Map();
+  step(
+    'visibility',
+    hidden.size ? `${hidden.size} people hidden` : 'Nothing hidden',
+    hidden.size
+      ? 'Descendants of collapsed people and their spouses are hidden; in-laws whose only visible link was hidden are hidden too.'
+      : 'No branch is collapsed, so everyone takes part in the layout.',
+    [...hidden],
+  );
   if (!visible.length) return { positions, hidden };
 
   // ---- 2. units: everyone joined by marriage, men first then women (rules 1, 5, 6)
@@ -104,7 +118,20 @@ export function computeLayout(model, opts) {
     u.width = u.members.length * CARD_W + (u.members.length - 1) * COUPLE_GAP;
     for (const m of u.members) unitOf.set(m, u);
     units.push(u);
+    if (u.members.length > 1)
+      step(
+        'units',
+        `Unit: ${unm(u)}`,
+        `Everyone joined by marriage forms one unit. Men first, then women; spouses ordered by marriage order (rules 1, 5, 6).`,
+        u.members,
+      );
   }
+  step(
+    'units',
+    `${units.length} units`,
+    `${units.filter((u) => u.members.length > 1).length} couples or marriage groups, the rest single people.`,
+    [],
+  );
   const memberOffset = (u, m) => u.members.indexOf(m) * (CARD_W + COUPLE_GAP);
 
   // ---- 3 + 4. placement tree with rows assigned along it (rules 2, 3, 4, 7, 9, 10)
@@ -112,19 +139,20 @@ export function computeLayout(model, opts) {
     const ps = vParents(m);
     return ps.length ? unitOf.get(ps[0]) : null;
   };
-  function build(u, row) {
+  function build(u, row, why = 'Root of a tree: nobody above is visible.') {
     u.row = row;
+    step('tree', `Row ${row}: ${unm(u)}`, why, u.members, { row, unit: u.id });
     for (const m of u.members.filter(isMale)) {
       const pu = parentUnit(m);
       if (pu && pu.row === null) {
-        build(pu, row - 1);
+        build(pu, row - 1, `Parents of ${nm(m)}: a man's relatives open to the left of his unit (rule 4).`);
         u.left.push(pu);
       }
     }
     for (const w of u.members.filter((m) => !isMale(m))) {
       const pu = parentUnit(w);
       if (pu && pu.row === null) {
-        build(pu, row - 1);
+        build(pu, row - 1, `Parents of ${nm(w)}: a woman's relatives open to the right of her unit (rule 4).`);
         u.right.push(pu);
       }
     }
@@ -133,14 +161,28 @@ export function computeLayout(model, opts) {
     );
     const sided = (c) => isMale(c) && vSpouses(c).some((w) => !isMale(w) && vParents(w).length);
     for (const f of fams) {
-      const kids = byBirth(f.children.filter((c) => vis.has(c))).filter((c) => {
+      const all = byBirth(f.children.filter((c) => vis.has(c)));
+      const pulled = all.filter((c) => {
         const h = husbandOf(c);
-        return !(h && vis.has(h));
+        return h && vis.has(h);
       });
-      for (const c of [...kids.filter((c) => !sided(c)), ...kids.filter(sided)]) {
+      if (pulled.length)
+        step(
+          'tree',
+          `Pulled out: ${pulled.map(nm).join(', ')}`,
+          `Married daughters whose husband has parents in the tree leave the sibling row and stand next to him (rule 3).`,
+          pulled,
+        );
+      const kids = all.filter((c) => !pulled.includes(c));
+      const ordered = [...kids.filter((c) => !sided(c)), ...kids.filter(sided)];
+      for (const c of ordered) {
         const cu = unitOf.get(c);
         if (cu.row === null) {
-          build(cu, row + 1);
+          const i = all.indexOf(c) + 1;
+          const why = sided(c)
+            ? `Child ${i} of ${f.parents.map(nm).join(' + ')}: his wife's parents hang on his right, so he goes after his siblings to keep them clear.`
+            : `Child ${i} of ${f.parents.map(nm).join(' + ')}: children in birth order, families in marriage order (rules 2, 7).`;
+          build(cu, row + 1, why);
           u.kids.push(cu);
         }
       }
@@ -221,6 +263,14 @@ export function computeLayout(model, opts) {
       done.add(pick.id);
       ordered.push(pick);
     }
+    step(
+      'roots',
+      `Component ${trees.length + 1}: ${ordered.length} roots`,
+      `Order: ${ordered.map(unm).join(' → ')}. Roots above a husband come before roots above his wife; ${
+        preferred.size ? "roots above the index couple's husband go first." : 'no index person in this component.'
+      }`,
+      ordered.flatMap((u) => u.members),
+    );
     const compTrees = [];
     for (const r of [...ordered, ...cunits]) if (r.row === null) compTrees.push(build(r, 0));
     trees.push(compTrees);
@@ -275,9 +325,22 @@ export function computeLayout(model, opts) {
     }
     return dx;
   };
+  const subUnits = (u, out = []) => {
+    out.push(u.id);
+    for (const k of [...u.left, ...u.kids, ...u.right]) subUnits(k, out);
+    return out;
+  };
+  const snap = (contour) => [...contour].map(([r, segs]) => [r, segs.map((s) => [...s])]);
   function layoutNode(u, align = 'center') {
     let contour = new Map([[u.row, [[0, u.width]]]]);
     const xs = new Map([[u, 0]]);
+    const report = (title, detail, b) =>
+      step('coords', title, detail, [...u.members, ...(b ? b.members : [])], {
+        unit: u.id,
+        reveal: b ? subUnits(b) : subUnits(u),
+        contour: snap(contour),
+        local: [...xs].map(([k, v]) => [k.id, v]),
+      });
     const place = (frame, dx) => {
       for (const [k, v] of frame.x) xs.set(k, v + dx);
       contour = merge(contour, shiftContour(frame.contour, dx));
@@ -287,12 +350,24 @@ export function computeLayout(model, opts) {
     const putLeft = (b) => {
       const f = layoutNode(b, 'right');
       const dx0 = memberOffset(u, anchorOf(b)) + CARD_W - b.width;
-      place(f, dx0 + settle(contour, shiftContour(f.contour, dx0), -1));
+      const push = settle(contour, shiftContour(f.contour, dx0), -1);
+      place(f, dx0 + push);
+      report(
+        `Left block: ${unm(b)}`,
+        `Parents of ${nm(anchorOf(b))} end at his column and grow leftwards${push ? `, pushed ${-push}px further left to clear what is already placed` : ''} (rule 4).`,
+        b,
+      );
     };
     const putRight = (b) => {
       const f = layoutNode(b, 'left');
       const dx0 = memberOffset(u, anchorOf(b));
-      place(f, dx0 + settle(contour, shiftContour(f.contour, dx0), 1));
+      const push = settle(contour, shiftContour(f.contour, dx0), 1);
+      place(f, dx0 + push);
+      report(
+        `Right block: ${unm(b)}`,
+        `Parents of ${nm(anchorOf(b))} start at her column and grow rightwards${push ? `, pushed ${push}px further right to clear what is already placed` : ''} (rule 4).`,
+        b,
+      );
     };
     const blocksAfterKids = align !== 'center';
     if (!blocksAfterKids) {
@@ -315,8 +390,19 @@ export function computeLayout(model, opts) {
       const kidsCenter = (firstLeft + first[0].width / 2 + lastRight - last[0].width / 2) / 2;
       let shift = align === 'left' ? -firstLeft : align === 'right' ? u.width - lastRight : u.width / 2 - kidsCenter;
       // children's frames carry hoisted in-law blocks in the rows above; keep them clear of this unit and its own blocks
-      shift += settle(contour, shiftContour(acc, shift), 1);
+      const extra = settle(contour, shiftContour(acc, shift), 1);
+      shift += extra;
       for (const [, f, dx] of placed) place(f, dx + shift);
+      const how =
+        align === 'center'
+          ? 'centred under the parents (rule 8)'
+          : `aligned to the ${align} edge, so the block keeps opening ${align === 'left' ? 'right' : 'left'}wards`;
+      report(
+        `Children of ${unm(u)}`,
+        `${placed.length} subtree${placed.length > 1 ? 's' : ''} packed left to right with ${H_GAP}px between contours, ${how}${
+          extra ? `; moved ${extra}px right to clear in-law blocks hoisted beside the parents` : ''
+        }.`,
+      );
     }
     if (blocksAfterKids) {
       for (const b of [...u.left, ...u.right]) (align === 'left' ? putRight : putLeft)(b);
@@ -333,6 +419,13 @@ export function computeLayout(model, opts) {
       frames.push([f, dx]);
       acc = acc ? merge(acc, shiftContour(f.contour, dx)) : shiftContour(f.contour, dx);
     }
+    step(
+      'pack',
+      `Component ${trees.indexOf(compTrees) + 1}: ${compTrees.length} tree${compTrees.length > 1 ? 's' : ''}`,
+      `Root trees packed left to right in root order; the whole component is placed after the previous one with ${TREE_GAP}px gap.`,
+      compTrees.flatMap((t) => t.members),
+      { reveal: compTrees.flatMap((t) => subUnits(t)) },
+    );
     let minX = Infinity,
       maxX = -Infinity,
       minRow = Infinity;
@@ -351,5 +444,16 @@ export function computeLayout(model, opts) {
   }
   for (const u of units)
     for (const m of u.members) positions.set(m, { x: u.x + memberOffset(u, m), y: u.row * (CARD_H + V_GAP) });
+  if (trace)
+    trace.units = units.map((u) => ({
+      id: u.id,
+      members: u.members,
+      row: u.row,
+      x: u.x,
+      width: u.width,
+      kids: u.kids.map((k) => k.id),
+      left: u.left.map((k) => k.id),
+      right: u.right.map((k) => k.id),
+    }));
   return { positions, hidden };
 }

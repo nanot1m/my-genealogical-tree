@@ -8,7 +8,10 @@
     "test:ui": "playwright test --ui",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
-    "prepare": "git config core.hooksPath .githooks"
+    "prepare": "git config core.hooksPath .githooks",
+    "layout:snapshot": "git show HEAD:src/engine.js > tools/layout-trace/engine-before.js",
+    "layout:trace": "node tests/server.mjs 4173 & sleep 1; open http://127.0.0.1:4173/tools/layout-trace/",
+    "layout:report": "node tools/layout-trace/report.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",

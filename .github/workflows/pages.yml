@@ -20,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -27,6 +29,14 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm test
+      - name: Layout report against the previous commit
+        run: |
+          git show HEAD~1:src/engine.js > tools/layout-trace/engine-before.js || echo "export function computeLayout() { return { positions: new Map(), hidden: new Set() }; }" > tools/layout-trace/engine-before.js
+          npm run -s layout:report
+      - uses: actions/upload-artifact@v7
+        with:
+          name: layout-report
+          path: layout-report.md
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
@@ -43,8 +53,11 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
       - uses: actions/configure-pages@v6
       - run: echo "{\"v\":\"$GITHUB_SHA\"}" > version.json
+      - run: git show HEAD~1:src/engine.js > tools/layout-trace/engine-before.js
       - uses: actions/upload-pages-artifact@v5
         with:
           path: .
