@@ -10,6 +10,7 @@ const ASSETS = [
   './src/model.js',
   './src/engine.js',
   './src/gl.js',
+  './src/ftree.js',
   './vendor/pixi.min.mjs',
   './src/render.js',
   './src/pdf.js',

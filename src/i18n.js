@@ -115,6 +115,8 @@ export const I18N = {
     autosave_failed: 'Autosave failed',
     saved: 'Saved',
     opened: 'Opened',
+    reloaded: 'File changed on disk, reloaded',
+    file_changed: 'The file changed on disk. Save to overwrite it, or reopen it to discard your edits.',
     save_failed: 'Save failed',
     open_failed: 'Open failed',
     not_tree: 'Not a family tree file',
@@ -451,6 +453,9 @@ export const I18N = {
     autosave_failed: 'Автосохранение не удалось',
     saved: 'Сохранено',
     opened: 'Открыто',
+    reloaded: 'Файл изменён на диске, перезагружен',
+    file_changed:
+      'Файл изменён на диске. Сохраните, чтобы перезаписать его, или откройте заново, чтобы отменить правки.',
     save_failed: 'Ошибка сохранения',
     open_failed: 'Ошибка открытия',
     not_tree: 'Это не файл семейного древа',
@@ -787,6 +792,9 @@ export const I18N = {
     autosave_failed: 'Automatisches Speichern fehlgeschlagen',
     saved: 'Gespeichert',
     opened: 'Geöffnet',
+    reloaded: 'Datei auf der Festplatte geändert, neu geladen',
+    file_changed:
+      'Die Datei wurde auf der Festplatte geändert. Speichern überschreibt sie, erneutes Öffnen verwirft Ihre Änderungen.',
     save_failed: 'Speichern fehlgeschlagen',
     open_failed: 'Öffnen fehlgeschlagen',
     not_tree: 'Keine Stammbaum-Datei',
@@ -1010,7 +1018,9 @@ export const I18N = {
 };
 
 export const LANG_KEY = 'familytree.lang';
-export let lang = localStorage.getItem(LANG_KEY) || (navigator.language || 'en').slice(0, 2);
+export let lang =
+  (typeof localStorage !== 'undefined' && localStorage.getItem(LANG_KEY)) ||
+  (typeof navigator !== 'undefined' && navigator.language ? navigator.language : 'en').slice(0, 2);
 if (!I18N[lang]) lang = 'en';
 export function setLangValue(l) {
   lang = l;

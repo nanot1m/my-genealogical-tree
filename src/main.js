@@ -25,6 +25,7 @@ import {
   cardEl,
 } from './render.js';
 import { initGL, glSetView, glActive } from './gl.js';
+import { encodeTree, decodeTree } from './ftree.js';
 import { initPdf, exportPdf } from './pdf.js';
 import { t, lang, setLangValue, LANG_KEY } from './i18n.js';
 import {
@@ -2022,81 +2023,15 @@ const pickerOpts = {
 const openTypes = [
   { description: 'Family tree', accept: { 'application/octet-stream': [EXT], 'application/json': ['.json'] } },
 ];
-const MAGIC = [0x46, 0x54, 0x52, 0x45, 0x45, 0x01];
-
 function serialize() {
-  const blobs = [];
-  const ref = (url) => {
-    if (!url) return null;
-    const { mime, bytes } = dataUrlToBytes(url);
-    blobs.push({ mime, bytes });
-    return blobs.length - 1;
-  };
-  const people = {};
-  for (const p of Object.values(state.people)) {
-    const { photo, photoSrc, ...rest } = p;
-    people[p.id] = { ...rest, thumbRef: ref(photo), photoRef: ref(photoSrc) };
-  }
-  const meta = new TextEncoder().encode(
-    JSON.stringify({
-      version: 1,
-      people,
-      families: state.families,
-      relations: state.relations,
-      indexPerson: state.indexPerson || null,
-      households: state.households || [],
-      collapsed: state.collapsed || [],
-      blobs: blobs.map((b) => b.mime),
-    }),
-  );
-  const head = new Uint8Array(MAGIC.length + 4);
-  head.set(MAGIC);
-  new DataView(head.buffer).setUint32(MAGIC.length, meta.length, true);
-  const parts = [head, meta];
-  for (const b of blobs) {
-    const len = new Uint8Array(4);
-    new DataView(len.buffer).setUint32(0, b.bytes.length, true);
-    parts.push(len, b.bytes);
-  }
-  return new Blob(parts, { type: 'application/octet-stream' });
+  return new Blob([encodeTree(state)], { type: 'application/octet-stream' });
 }
 function deserialize(buf) {
-  const u8 = new Uint8Array(buf);
-  if (!MAGIC.slice(0, 5).every((b, i) => u8[i] === b)) {
-    const text = new TextDecoder().decode(u8).trim();
-    if (!text.startsWith('{')) throw new Error(t('not_tree'));
-    return JSON.parse(text);
+  try {
+    return decodeTree(buf);
+  } catch (e) {
+    throw e.message === 'not_tree' ? new Error(t('not_tree')) : e;
   }
-  const dv = new DataView(buf);
-  let off = MAGIC.length;
-  const metaLen = dv.getUint32(off, true);
-  off += 4;
-  const meta = JSON.parse(new TextDecoder().decode(u8.subarray(off, off + metaLen)));
-  off += metaLen;
-  const blobs = [];
-  for (const mime of meta.blobs || []) {
-    const len = dv.getUint32(off, true);
-    off += 4;
-    blobs.push(bytesToDataUrl(u8.subarray(off, off + len), mime));
-    off += len;
-  }
-  const people = {};
-  for (const p of Object.values(meta.people || {})) {
-    const { thumbRef, photoRef, ...rest } = p;
-    people[p.id] = {
-      ...rest,
-      photo: thumbRef == null ? null : blobs[thumbRef],
-      photoSrc: photoRef == null ? null : blobs[photoRef],
-    };
-  }
-  return {
-    version: 1,
-    people,
-    families: meta.families || {},
-    relations: meta.relations || [],
-    indexPerson: meta.indexPerson || null,
-    households: meta.households || [],
-  };
 }
 
 async function save(as) {
@@ -2116,6 +2051,7 @@ async function save(as) {
       const w = await fileHandle.createWritable();
       await w.write(blob);
       await w.close();
+      await noteFileTime();
     } else {
       if (isUntitled() || as || !libraryId) {
         const n = prompt(t('file_name'), isUntitled() ? 'family-tree' + EXT : fileName.replace(/\.json$/, EXT));
@@ -2147,6 +2083,7 @@ async function open(fromWelcome) {
       loadData(buf, h.name);
       fileHandle = h.name.endsWith(EXT) ? h : null;
       if (fileHandle) recents.remember(h);
+      await noteFileTime();
     } else fileInput.click();
   } catch (err) {
     if (err.name !== 'AbortError') toast(t('open_failed') + ': ' + err.message);
@@ -2327,6 +2264,7 @@ async function openHandle(h, id) {
     loadData(buf, h.name);
     fileHandle = h;
     recents.remember(h);
+    await noteFileTime();
     hideWelcome();
   } catch (err) {
     if (err.name === 'NotFoundError') {
@@ -2403,6 +2341,37 @@ function scheduleAutosave() {
 }
 let autosaving = false,
   autosaveAgain = false;
+// another program (for example the MCP server) may edit the open file; pick the change up unless we have unsaved edits
+let fileMtime = 0;
+async function noteFileTime() {
+  if (!fileHandle) return;
+  try {
+    fileMtime = (await fileHandle.getFile()).lastModified;
+  } catch (_) {}
+}
+async function watchFile() {
+  if (!fileHandle || autosaving || document.hidden) return;
+  let f;
+  try {
+    f = await fileHandle.getFile();
+  } catch (_) {
+    return;
+  }
+  if (!fileMtime || f.lastModified === fileMtime) {
+    fileMtime = f.lastModified;
+    return;
+  }
+  fileMtime = f.lastModified;
+  if (dirty) return toast(t('file_changed'));
+  const h = fileHandle,
+    sel = selectedId;
+  loadData(await f.arrayBuffer(), h.name);
+  fileHandle = h;
+  dirty = false;
+  if (sel && state.people[sel]) select(sel, { scroll: false });
+  toast(t('reloaded'));
+}
+setInterval(watchFile, 2500);
 async function autosave() {
   if (!dirty || !canAutosave()) return;
   if (autosaving) {
@@ -2418,6 +2387,7 @@ async function autosave() {
       await w.close();
     } else await saveToLibrary(blob, false);
     dirty = false;
+    await noteFileTime();
     $('#filename').classList.remove('dirty');
     document.title = shownName(fileName) + ' — ' + t('app');
     scheduleDraft();

@@ -4,3 +4,4 @@ test-results/
 playwright-report/
 tools/layout-trace/engine-before.js
 layout-report.md
+dist/

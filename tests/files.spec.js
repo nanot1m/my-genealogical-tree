@@ -153,6 +153,39 @@ test.describe('file handles and launch screen (File System Access API)', () => {
   });
 });
 
+test.describe('external edits', () => {
+  test('a change written to the open file by another program is reloaded', async ({ page }) => {
+    await page.addInitScript(opfsSavePicker('ext.ftree'));
+    await newTree(page);
+    await firstPerson(page, 'Local One');
+    await page.keyboard.press('Meta+s');
+    await expect(page.locator('#filename')).not.toHaveClass(/dirty/);
+    await page.waitForTimeout(300);
+    await page.evaluate(async () => {
+      const { encodeTree, decodeTree } = await import('/src/ftree.js');
+      const h = await (await navigator.storage.getDirectory()).getFileHandle('ext.ftree');
+      const st = decodeTree(new Uint8Array(await (await h.getFile()).arrayBuffer()));
+      const id = 'pext';
+      st.people[id] = { id, name: 'From Outside', gender: 'f', birth: '', death: '', alive: true, birthName: '' };
+      const parent = Object.keys(st.people).find((k) => k !== id);
+      st.families.fext = {
+        id: 'fext',
+        parents: [parent],
+        children: [id],
+        married: '',
+        ended: '',
+        status: 'married',
+        kinds: {},
+      };
+      const w = await h.createWritable();
+      await w.write(encodeTree(st));
+      await w.close();
+    });
+    await expect(cardOf(page, 'From Outside')).toHaveCount(1, { timeout: 8000 });
+    await expect(page.locator('#toast')).toContainText('reloaded');
+  });
+});
+
 test.describe('PDF export', () => {
   test('dialog offers fit or poster; poster tiles the tree across A4 sheets with labels', async ({ page, context }) => {
     await newTree(page);

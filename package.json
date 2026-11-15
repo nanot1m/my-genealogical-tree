@@ -4,14 +4,21 @@
   "type": "module",
   "scripts": {
     "start": "node tests/server.mjs",
-    "test": "playwright test",
+    "test": "node --test 'tests/unit/**/*.test.mjs' && playwright test",
     "test:ui": "playwright test --ui",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "prepare": "git config core.hooksPath .githooks",
     "layout:snapshot": "git show HEAD:src/engine.js > tools/layout-trace/engine-before.js",
     "layout:trace": "node tests/server.mjs 4173 & sleep 1; open http://127.0.0.1:4173/tools/layout-trace/",
-    "layout:report": "node tools/layout-trace/report.mjs"
+    "layout:report": "node tools/layout-trace/report.mjs",
+    "mcp": "node mcp/main.mjs",
+    "mcp:build": "bun build --compile mcp/main.mjs --outfile dist/family-tree-mcp",
+    "test:unit": "node --test 'tests/unit/**/*.test.mjs'"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
