@@ -93,6 +93,9 @@ button {
   transform-origin: 0 0;
   will-change: transform;
 }
+body.zooming .card {
+  box-shadow: none;
+}
 #world.anim {
   transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
 }

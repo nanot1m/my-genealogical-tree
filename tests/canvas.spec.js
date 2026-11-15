@@ -157,7 +157,7 @@ test.describe('animations', () => {
       const t0 = performance.now();
       while (performance.now() - t0 < 500) {
         await new Promise((r) => requestAnimationFrame(r));
-        seen.add(Math.round(parseFloat(el.style.left)));
+        seen.add(el.style.translate);
       }
       return seen.size;
     });

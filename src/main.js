@@ -705,6 +705,9 @@ function applyView() {
   $('#zoomlvl').textContent = Math.round(view.s * 100) + '%';
 }
 function zoomAt(factor, mx, my, anim) {
+  document.body.classList.add('zooming');
+  clearTimeout(zoomAt.t);
+  zoomAt.t = setTimeout(() => document.body.classList.remove('zooming'), 160);
   const ns = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, view.s * factor));
   const k = ns / view.s;
   view = { x: mx - (mx - view.x) * k, y: my - (my - view.y) * k, s: ns };

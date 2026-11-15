@@ -143,13 +143,15 @@ export function cardHTML(p) {
       <button class="plus spouse" data-add="spouse" data-tip="${t('tip_spouse')}">♥</button>`;
 }
 
-export function applyPositions(map) {
+// cards sit at their final left/top; in-flight motion is a compositor-only translate offset
+export function applyPositions(map, final = map) {
   for (const [id, p] of map) {
     const el = cardEl(id);
-    if (el) {
-      el.style.left = p.x + 'px';
-      el.style.top = p.y + 'px';
-    }
+    if (!el) continue;
+    const f = final.get(id) || p;
+    el.style.left = f.x + 'px';
+    el.style.top = f.y + 'px';
+    el.style.translate = f === p || (f.x === p.x && f.y === p.y) ? '' : `${p.x - f.x}px ${p.y - f.y}px`;
   }
   renderEdges(map);
 }
@@ -171,7 +173,7 @@ export function animatePositions() {
     applyPositions(displayPos);
     return;
   }
-  applyPositions(from);
+  applyPositions(from, ctx.positions);
   const start = performance.now(),
     dur = 340;
   const step = (now) => {
@@ -182,7 +184,7 @@ export function animatePositions() {
       const f = from.get(id);
       displayPos.set(id, { x: f.x + (p.x - f.x) * e, y: f.y + (p.y - f.y) * e });
     }
-    applyPositions(displayPos);
+    applyPositions(displayPos, ctx.positions);
     if (k < 1) animFrame = requestAnimationFrame(step);
   };
   animFrame = requestAnimationFrame(step);
@@ -292,7 +294,7 @@ export function renderEdges(pos = ctx.positions) {
   const segs = [],
     badges = [];
   const blocked = (y, x1, x2, bx) =>
-    segs.some((s) => Math.abs(s.y - y) < 10 && x1 <= s.x2 + 8 && x2 >= s.x1 - 8) ||
+    segs.some((s) => Math.abs(s.y - y) < 12 && x1 <= s.x2 + 8 && x2 >= s.x1 - 8) ||
     badges.some((b) => Math.abs(b.y - y) < 22 && b.x > x1 - 22 && b.x < x2 + 22) ||
     (bx != null && segs.some((s) => Math.abs(s.y - y) < 22 && bx > s.x1 - 22 && bx < s.x2 + 22));
   const freeY = (y, x1, x2, steps, bx) => {
@@ -323,14 +325,7 @@ export function renderEdges(pos = ctx.positions) {
           marriages.push({ f, x: origin.x, y: a.cy + 27, past });
           slashes(origin.x, a.cy, f.status);
         } else {
-          const gap = Math.round((b.cx - a.cx) / (ctx.CARD_W + ctx.COUPLE_GAP));
-          const stepY = freeY(
-            Math.max(a.bottom, b.bottom) + 18 + 12 * Math.max(0, gap - 2),
-            a.cx,
-            b.cx,
-            [0, 14, 28, 42, 56],
-            (a.cx + b.cx) / 2,
-          );
+          const stepY = freeY(Math.max(a.bottom, b.bottom) + 18, a.cx, b.cx, [0, 14, 28, 42, 56], (a.cx + b.cx) / 2);
           bucket.push(
             rounded([
               { x: a.cx, y: a.bottom },
