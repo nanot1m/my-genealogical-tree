@@ -2363,9 +2363,11 @@ function saveDraft() {
   try {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ state, fileName, dirty, libraryId }));
   } catch (_) {}
+  delete document.body.dataset.draftPending;
 }
 function scheduleDraft() {
   clearTimeout(scheduleDraft.t);
+  document.body.dataset.draftPending = '1';
   scheduleDraft.t = setTimeout(saveDraft, 400);
   if (dirty) scheduleAutosave();
 }

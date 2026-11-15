@@ -9,6 +9,7 @@ import {
   deselect,
   positions,
   attachConsoleGuard,
+  reloadApp,
 } from './helpers.js';
 
 test.describe('canvas and first person', () => {
@@ -146,6 +147,7 @@ test.describe('keyboard', () => {
 });
 
 test.describe('animations', () => {
+  test.use({ reducedMotion: 'no-preference' });
   test('cards glide to new positions, new cards enter, deleted cards leave', async ({ page }) => {
     await newTree(page);
     await firstPerson(page, 'Root');
@@ -268,7 +270,7 @@ test('viewport position and zoom survive a reload', async ({ page }) => {
   await page.waitForTimeout(500);
   const transform = () => page.evaluate(() => document.getElementById('world').style.transform);
   const before = await transform();
-  await page.reload();
+  await reloadApp(page);
   await page.click('#w-continue');
   await page.waitForTimeout(300);
   expect(await transform()).toBe(before);
@@ -315,7 +317,7 @@ test('collapsing a branch hides descendants, survives reload, and search expands
   await expect(cardOf(page, 'Dad').locator('.fold')).toHaveText('▸ 2');
   await expect(page.locator('#actions [data-sel=fold]')).toHaveText('Expand branch');
   await page.waitForTimeout(600);
-  await page.reload();
+  await reloadApp(page);
   await page.click('#w-continue');
   await expect(cards(page)).toHaveCount(2);
   await page.keyboard.press('Meta+f');

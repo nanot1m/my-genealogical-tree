@@ -10,6 +10,7 @@ import {
   overlapCount,
   select,
   setGender,
+  reloadApp,
 } from './helpers.js';
 
 const center = (pos, name) => {
@@ -211,7 +212,7 @@ test('compact view: V toggles column cards, narrows the tree, persists across re
   expect(photo.y + photo.height).toBeLessThanOrEqual(info.y + 1);
   expect(await width()).toBeLessThan(wide);
   expect(await overlapCount(page)).toBe(0);
-  await page.reload();
+  await reloadApp(page);
   await page.click('#w-continue');
   await expect(page.locator('body')).toHaveClass(/compact/);
   await page.click('[data-act=compact]');
@@ -225,7 +226,7 @@ test.describe('wide real-world tree (anonymized)', () => {
     await openApp(page, { draft: { state, fileName: 'wide.ftree', dirty: true } });
     if (cross) {
       await page.evaluate((c) => localStorage.setItem('familytree.cross', c), cross);
-      await page.reload();
+      await reloadApp(page);
     }
     await page.click('#w-continue');
     await page.waitForTimeout(600);
@@ -273,7 +274,7 @@ test.describe('wide real-world tree (anonymized)', () => {
       fileName: 'w.ftree',
       dirty: true,
     });
-    await page.reload();
+    await reloadApp(page);
     await page.click('#w-continue');
     await page.waitForTimeout(600);
     expect(await overlapCount(page)).toBe(0);
@@ -301,7 +302,7 @@ test.describe('wide real-world tree (anonymized)', () => {
       fileName: 'w.ftree',
       dirty: true,
     });
-    await page.reload();
+    await reloadApp(page);
     await page.click('#w-continue');
     await page.waitForTimeout(600);
     expect(await overlapCount(page)).toBe(0);
@@ -354,7 +355,7 @@ test('strict sibling order keeps 1-2-3 left to right even when the middle child 
   const kids = async () => rows(await positions(page))[1].filter((n) => ['First', 'Second', 'Third'].includes(n));
   expect(await kids()).toEqual(['First', 'Second', 'Third']);
   expect(await overlapCount(page)).toBe(0);
-  await page.reload();
+  await reloadApp(page);
   await page.click('#w-continue');
   expect(await kids()).toEqual(['First', 'Second', 'Third']);
 });

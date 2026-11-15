@@ -2,23 +2,22 @@ import { expect } from '@playwright/test';
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-export async function openApp(page, { lang = 'en', noFS = false, draft = null } = {}) {
-  if (noFS)
-    await page.addInitScript(() => {
-      delete window.showSaveFilePicker;
-    });
-  await page.goto('/');
-  await page.evaluate(
-    ({ lang, draft }) => {
-      localStorage.clear();
-      localStorage.setItem('familytree.lang', lang);
-      localStorage.setItem('familytree.installDismissed', '1');
-      if (draft) localStorage.setItem('familytree.draft', JSON.stringify(draft));
-      indexedDB.deleteDatabase('familytree');
+// one navigation per test: storage is seeded before the app boots; the WebGL layer is off unless a test asks for it
+export async function openApp(page, { lang = 'en', noFS = false, draft = null, gl = false } = {}) {
+  await page.addInitScript(
+    ({ lang, draft, noFS, gl }) => {
+      if (noFS) delete window.showSaveFilePicker;
+      if (!localStorage.getItem('familytree.seeded')) {
+        localStorage.setItem('familytree.seeded', '1');
+        localStorage.setItem('familytree.lang', lang);
+        localStorage.setItem('familytree.installDismissed', '1');
+        if (!gl) localStorage.setItem('familytree.nogl', '1');
+        if (draft) localStorage.setItem('familytree.draft', JSON.stringify(draft));
+      }
     },
-    { lang, draft },
+    { lang, draft, noFS, gl },
   );
-  await page.reload();
+  await page.goto('/');
   await page.waitForSelector('#welcome.show');
 }
 
@@ -54,8 +53,7 @@ async function inView(page, loc) {
 }
 export async function select(page, name) {
   await deselect(page);
-  await page.keyboard.press('f');
-  await page.waitForTimeout(400);
+  await settle(page);
   await inView(page, cardOf(page, name));
   await cardOf(page, name).click();
   await expect(cardOf(page, name)).toHaveClass(/selected/);
@@ -80,12 +78,18 @@ export async function addRelative(page, who, key, name, birth) {
   await page.keyboard.type(name);
   if (birth) await page.fill('#sh-birth', birth);
   await finishEditing(page);
-  await page.waitForTimeout(80);
+  await page.waitForSelector('body[data-settled]');
+}
+
+// the draft autosave is debounced; wait until it reflects the page before reloading
+export async function reloadApp(page) {
+  await page.waitForSelector('body:not([data-draft-pending])');
+  await page.reload();
 }
 
 export async function settle(page) {
   await page.keyboard.press('f');
-  await page.waitForTimeout(500);
+  await page.waitForSelector('body[data-settled]');
 }
 
 export async function positions(page) {
@@ -165,11 +169,10 @@ export const PHOTO = new URL('./fixtures/photo.png', import.meta.url).pathname;
 
 export async function setGender(page, name, g) {
   await deselect(page);
-  await page.keyboard.press('f');
-  await page.waitForTimeout(400);
+  await settle(page);
   await inView(page, cardOf(page, name));
   await cardOf(page, name).dblclick();
   await page.click(`#sh-gender [data-v=${g}]`);
   await page.keyboard.press('Escape');
-  await page.waitForTimeout(150);
+  await page.waitForSelector('body[data-settled]');
 }

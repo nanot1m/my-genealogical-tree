@@ -10,6 +10,7 @@ import {
   positions,
   rows,
   setGender,
+  reloadApp,
 } from './helpers.js';
 
 test.describe('spouses and marriages', () => {
@@ -201,7 +202,7 @@ test.describe('replacing parents and marriage order', () => {
     const gaps = await allD();
     expect(gaps).not.toMatch(/A\d/);
     expect((gaps.match(/M/g) || []).length).toBeGreaterThan((plain.match(/M/g) || []).length);
-    await page.reload();
+    await reloadApp(page);
     await page.click('#w-continue');
     expect(await allD()).not.toMatch(/A\d/);
     expect((await allD()).match(/M/g).length).toBe((gaps.match(/M/g) || []).length);
@@ -264,7 +265,7 @@ test.describe('birth order', () => {
     await page.locator('#lg-badges').uncheck();
     await page.keyboard.press('Escape');
     await expect(badge('A')).toBeHidden();
-    await page.reload();
+    await reloadApp(page);
     await page.click('#w-continue');
     await expect(badge('A')).toBeHidden();
     await page.keyboard.press('g');

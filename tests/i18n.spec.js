@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { newTree, cardOf, addRelative } from './helpers.js';
+import { newTree, cardOf, addRelative, reloadApp } from './helpers.js';
 
 test.describe('localization', () => {
   test('switching language translates UI, dates and née, and persists across reload', async ({ page }) => {
@@ -25,7 +25,7 @@ test.describe('localization', () => {
     await expect(cardOf(page, 'Mary Smith').locator('.name')).toContainText('geb. Jones');
     await expect(cardOf(page, 'Mary Smith').locator('.dates')).toContainText('geb. 4. März 1950');
     await page.waitForTimeout(600);
-    await page.reload();
+    await reloadApp(page);
     await expect(page.locator('#lang')).toHaveValue('de');
     await expect(page.locator('[data-act=save]')).toHaveText('Speichern');
   });

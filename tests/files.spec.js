@@ -1,6 +1,16 @@
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
-import { openApp, newTree, firstPerson, addRelative, cardOf, cards, libraryEntries, PHOTO } from './helpers.js';
+import {
+  openApp,
+  newTree,
+  firstPerson,
+  addRelative,
+  cardOf,
+  cards,
+  libraryEntries,
+  PHOTO,
+  reloadApp,
+} from './helpers.js';
 
 const opfsSavePicker = (name) =>
   `window.showSaveFilePicker = async () => (await navigator.storage.getDirectory()).getFileHandle(${JSON.stringify(name)}, { create: true });`;
@@ -61,7 +71,7 @@ test.describe('library mode (no File System Access API)', () => {
     await expect.poll(async () => (await libraryEntries(page))[0].bytes).toBeGreaterThan(before);
     expect(await libraryEntries(page)).toHaveLength(1);
     await page.waitForTimeout(600);
-    await page.reload();
+    await reloadApp(page);
     await expect(cards(page)).toHaveCount(2);
     await expect(page.locator('#welcome.show')).toHaveCount(0);
     await page.click('[data-act=open]');
@@ -110,12 +120,12 @@ test.describe('file handles and launch screen (File System Access API)', () => {
     await expect(page.locator('#filename')).toHaveText('test');
     await expect(page.locator('#filename')).not.toHaveClass(/dirty/);
     await page.waitForTimeout(600);
-    await page.reload();
+    await reloadApp(page);
     await expect(cardOf(page, 'Persisted')).toBeVisible();
     await expect(page.locator('#welcome.show')).toHaveCount(0);
 
     await page.evaluate(() => localStorage.setItem('mockPrompt', '1'));
-    await page.reload();
+    await reloadApp(page);
     await expect(page.locator('#w-recent .recent .nm')).toHaveText(['test']);
     await page.click('#w-recent .recent');
     await expect(cardOf(page, 'Persisted')).toBeVisible();
@@ -128,7 +138,7 @@ test.describe('file handles and launch screen (File System Access API)', () => {
       };
     });
     await page.waitForTimeout(600);
-    await page.reload();
+    await reloadApp(page);
     await expect(page.locator('#w-continue')).toBeVisible();
     await page.click('#w-continue');
     await expect(cards(page)).toHaveCount(2);
@@ -218,7 +228,7 @@ test.describe('PDF export', () => {
     expect(await popup.locator('.page .glue').count()).toBeGreaterThan(0);
     expect(await page.locator('#pd-preview rect').count()).toBeGreaterThan(n);
     await popup.close();
-    await page.reload();
+    await reloadApp(page);
     await page.click('#w-continue');
     await page.click('[data-act=pdf]');
     await expect(page.locator('#pd-mode')).toHaveValue('poster');

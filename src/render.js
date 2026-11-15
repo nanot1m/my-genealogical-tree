@@ -183,8 +183,10 @@ export function animatePositions() {
   if (!moving || reduceMotion) {
     displayPos = new Map(ctx.positions);
     applyPositions(displayPos);
+    document.body.dataset.settled = '1';
     return;
   }
+  delete document.body.dataset.settled;
   applyPositions(from, ctx.positions);
   const start = performance.now(),
     dur = 340;
@@ -198,6 +200,7 @@ export function animatePositions() {
     }
     applyPositions(displayPos, ctx.positions);
     if (k < 1) animFrame = requestAnimationFrame(step);
+    else document.body.dataset.settled = '1';
   };
   animFrame = requestAnimationFrame(step);
 }

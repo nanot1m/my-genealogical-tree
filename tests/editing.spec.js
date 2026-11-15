@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openApp, newTree, firstPerson, cardOf, draftState, PHOTO } from './helpers.js';
+import { openApp, newTree, firstPerson, cardOf, draftState, PHOTO, reloadApp } from './helpers.js';
 
 test.describe('card fields', () => {
   test('name, birth surname, dates, living toggle and age', async ({ page }) => {
@@ -106,7 +106,7 @@ test.describe('card fields', () => {
     await cardOf(page, 'Anna').dblclick();
     await page.fill('#sh-prof', 'Baker');
     expect(Object.values((await draftState(page)).people)[0].profession).toBe('Baker');
-    await page.reload();
+    await reloadApp(page);
     await page.click('#w-continue');
     await cardOf(page, 'Anna').dblclick();
     await expect(page.locator('#sh-prof')).toHaveValue('Baker');

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openApp, cardOf, cards, PHOTO } from './helpers.js';
+import { openApp, cardOf, cards, PHOTO, reloadApp } from './helpers.js';
 
 async function newTreeTouch(page, opts) {
   await openApp(page, opts);
@@ -116,14 +116,14 @@ test.describe('touch devices', () => {
       localStorage.clear();
       localStorage.setItem('familytree.lang', 'ru');
     });
-    await page.reload();
+    await reloadApp(page);
     await expect(page.locator('#install')).toBeVisible();
     await expect(page.locator('#install h4')).toHaveText('Установите Family Tree');
     await expect(page.locator('#inst-steps li')).toHaveCount(3);
     await expect(page.locator('#inst-steps li').first()).toContainText('Поделиться');
     await page.tap('#inst-later');
     await expect(page.locator('#install')).toBeHidden();
-    await page.reload();
+    await reloadApp(page);
     await page.waitForTimeout(1500);
     await expect(page.locator('#install')).toBeHidden();
   });

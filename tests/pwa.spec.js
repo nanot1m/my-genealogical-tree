@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openApp, newTree, cardOf } from './helpers.js';
+import { openApp, newTree, cardOf, reloadApp } from './helpers.js';
 
 test.describe('installable app', () => {
   test('manifest, icons, iOS meta tags and service worker are served and wired up', async ({ page, request }) => {
@@ -36,7 +36,7 @@ test.describe('installable app', () => {
       .poll(() => page.evaluate(async () => !!(await caches.match('./index.html'))), { timeout: 10_000 })
       .toBe(true);
     await context.setOffline(true);
-    await page.reload();
+    await reloadApp(page);
     await expect(page.locator('#welcome.show')).toBeVisible();
     await context.setOffline(false);
   });

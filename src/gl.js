@@ -18,7 +18,7 @@ import {
 import { state } from './model.js';
 import { t } from './i18n.js';
 import { initials, hueOf } from './util.js';
-import { datesText, marriageOrdinal, marriageText, edgeData } from './render.js';
+import { datesText, marriageOrdinal, marriageText, edgeData, reduceMotion } from './render.js';
 
 let app = null,
   ctx = null,
@@ -205,7 +205,7 @@ const mix = (c, a) => {
 
 export function glSetView(v, animate) {
   if (!app) return;
-  if (animate && !viewTween) viewTween = { from: { ...view }, start: performance.now() };
+  if (animate && !reduceMotion) viewTween ??= { from: { ...view }, start: performance.now() };
   view = { ...v };
   if (!animate) viewTween = null;
   invalidate();

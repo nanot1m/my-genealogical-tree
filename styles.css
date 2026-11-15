@@ -169,6 +169,9 @@ body.zooming .card {
   .card.leave {
     animation-duration: 0.01s;
   }
+  #world.anim {
+    transition: none;
+  }
 }
 .card:hover {
   box-shadow: var(--shadow);
