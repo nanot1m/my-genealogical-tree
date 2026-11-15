@@ -44,6 +44,8 @@ const photoTex = new Map(),
   shadowTex = new Map();
 export let glActive = false;
 
+const styleSig = () =>
+  ['has-multi', 'linking', 'no-ord', 'compact'].map((k) => document.body.classList.contains(k)).join();
 const FONT = "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif";
 
 export async function initGL(c, els) {
@@ -106,8 +108,6 @@ export async function initGL(c, els) {
     childList: true,
   });
   // only body classes that change how cards look trigger a rebuild; zooming/panning/selection flags do not
-  const styleSig = () =>
-    ['has-multi', 'linking', 'no-ord', 'compact'].map((k) => document.body.classList.contains(k)).join();
   let sig = styleSig();
   new MutationObserver(() => {
     const next = styleSig();
@@ -386,7 +386,7 @@ export function glSync() {
       ord: el.querySelector('.ord')?.textContent.trim() || '',
       h: ctx.compact ? el.offsetHeight : 0,
     };
-    const key = JSON.stringify(next) + JSON.stringify(state.people[id] || {}) + ctx.compact + document.body.className;
+    const key = JSON.stringify(next) + JSON.stringify(state.people[id] || {}) + ctx.compact + styleSig();
     if (card.key !== key) {
       card.key = key;
       card.st = next;
@@ -1049,11 +1049,19 @@ function arcPoints(p0, p1, rx, ry, large, sweep) {
 }
 
 // ---- badges
+let badgeSig = '';
 function drawBadges(multi) {
-  for (const b of badges) b.root.destroy({ children: true });
-  badges = [];
   const data = edgeData();
   if (!data) return;
+  const sig =
+    multi +
+    data.marriages.map((m) => `${m.f.id}:${m.x}:${m.y}:${m.past}:${m.f.married}:${m.f.ended}:${m.f.status}`).join() +
+    data.houseBadges.map((h) => `${h.h.id}:${h.x}:${h.y}:${h.h.members.length}`).join() +
+    data.relBadges.map((r) => `${r.r.id}:${r.x}:${r.y}:${r.r.label}:${r.r.type}`).join();
+  if (sig === badgeSig) return;
+  badgeSig = sig;
+  for (const b of badges) b.root.destroy({ children: true });
+  badges = [];
   const dim = multi ? 0.45 : 1;
   const pill = (x, y, parts, opts = {}) => {
     const root = new Container();
