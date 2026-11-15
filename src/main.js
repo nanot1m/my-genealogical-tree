@@ -36,6 +36,10 @@ import {
   emptyState,
   isCollapsed,
   toggleCollapsed,
+  isCut,
+  toggleCut,
+  setFocus,
+  reveal,
   hiddenSet,
   childFamily,
   parentFamilies,
@@ -828,14 +832,28 @@ function renderSearch() {
 }
 function pickSearch(id) {
   closeSearch();
-  if (hiddenSet().has(id))
-    mutate(() => {
-      state.collapsed = (state.collapsed || []).filter(
-        (c) => !ancestorsOf(id).has(c) && !spousesOf(id).some((sp) => ancestorsOf(sp).has(c)),
-      );
-    });
+  if (hiddenSet().has(id)) mutate(() => reveal(id));
   select(id);
   centerOn(id);
+}
+// keep the acted-on card where it is on screen while the rest of the tree reflows around it
+function anchoredMutate(id, fn) {
+  const before = positions.get(id);
+  mutate(fn);
+  const after = positions.get(id);
+  if (before && after) {
+    view.x -= (after.x - before.x) * view.s;
+    view.y -= (after.y - before.y) * view.s;
+    applyView();
+  }
+  if (hiddenSet().has(selectedId)) select(id);
+  else if (selectedId) select(selectedId, { scroll: false });
+}
+function toggleCutAbove(id) {
+  anchoredMutate(id, () => toggleCut(id));
+}
+function toggleFocus(id) {
+  anchoredMutate(id, () => setFocus(state.focus === id ? null : id));
 }
 function toggleFold(id) {
   if (!childrenOf(id).length) return;
@@ -1021,6 +1039,10 @@ function select(id, opts = {}) {
     const fb = $('#actions [data-sel=fold]');
     fb.hidden = !childrenOf(id).length;
     fb.textContent = t(isCollapsed(id) ? 'expand' : 'collapse');
+    const cb = $('#actions [data-sel=cut]');
+    cb.hidden = !parentsOf(id).length && !isCut(id);
+    cb.textContent = t(isCut(id) ? 'show_above' : 'hide_above');
+    $('#actions [data-sel=focus]').textContent = t(state.focus === id ? 'show_all' : 'focus_on');
   }
   $('#actions').classList.toggle('show', !!id);
   document.body.classList.toggle('has-selection', !!id);
@@ -2002,6 +2024,8 @@ $('#actions').addEventListener('click', (e) => {
   if (a === 'edit') startEditing(selectedId);
   else if (a === 'link') startLink(selectedId);
   else if (a === 'fold') toggleFold(selectedId);
+  else if (a === 'cut') toggleCutAbove(selectedId);
+  else if (a === 'focus') toggleFocus(selectedId);
   else if (a === 'photo') photoAction(selectedId, b);
   else if (a === 'delete') removeSelected();
   else createRelative(selectedId, a, b);

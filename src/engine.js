@@ -61,6 +61,7 @@ export function computeLayout(model, opts) {
     }
   }
   for (const id of model.collapsed || []) hidden.delete(id);
+  for (const id of model.hidden || []) hidden.add(id);
   for (let grew = true; grew;) {
     grew = false;
     for (const id of Object.keys(people)) {

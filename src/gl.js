@@ -86,6 +86,9 @@ export async function initGL(c, els) {
     photoTex.clear();
     shadowTex.clear();
     gridU.uDotColor = new Color(theme.grid).toArray();
+    badgeSig = '';
+    for (const card of cards.values()) card.redraw = true;
+    sceneDirty = true;
     glSync();
   });
   const watchDpr = () => {

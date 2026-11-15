@@ -9,7 +9,17 @@ export const people = () => Object.values(state.people);
 export const fam = (id) => state.families[id];
 
 export function emptyState() {
-  return { version: 1, people: {}, families: {}, relations: [], indexPerson: null, households: [], collapsed: [] };
+  return {
+    version: 1,
+    people: {},
+    families: {},
+    relations: [],
+    indexPerson: null,
+    households: [],
+    collapsed: [],
+    cutAbove: [],
+    focus: null,
+  };
 }
 export function descendantsOf(pid) {
   const seen = new Set();
@@ -24,6 +34,21 @@ export function descendantsOf(pid) {
   }
   return seen;
 }
+// everyone connected to the parents of pid without passing through pid: the ancestry side of the tree
+export function aboveOf(pid) {
+  const seen = new Set();
+  const q = parentsOf(pid).filter((x) => x !== pid);
+  for (const x of q) seen.add(x);
+  while (q.length) {
+    const x = q.shift();
+    for (const n of [...parentsOf(x), ...spousesOf(x), ...childrenOf(x)])
+      if (n !== pid && !seen.has(n)) {
+        seen.add(n);
+        q.push(n);
+      }
+  }
+  return seen;
+}
 export function hiddenSet() {
   const hidden = new Set();
   for (const id of state.collapsed || []) {
@@ -34,6 +59,13 @@ export function hiddenSet() {
     }
   }
   for (const id of state.collapsed || []) hidden.delete(id);
+  for (const id of state.cutAbove || []) if (state.people[id]) for (const x of aboveOf(id)) hidden.add(x);
+  if (state.focus && state.people[state.focus]) {
+    const keep = new Set([state.focus]);
+    for (const d of descendantsOf(state.focus)) keep.add(d);
+    for (const k of [...keep]) for (const sp of spousesOf(k)) keep.add(sp);
+    for (const p of people()) if (!keep.has(p.id)) hidden.add(p.id);
+  }
   let grew = true;
   while (grew) {
     grew = false;
@@ -50,6 +82,27 @@ export function hiddenSet() {
 }
 export function isCollapsed(pid) {
   return (state.collapsed || []).includes(pid);
+}
+export function isCut(pid) {
+  return (state.cutAbove || []).includes(pid);
+}
+export function toggleCut(pid) {
+  state.cutAbove ??= [];
+  const i = state.cutAbove.indexOf(pid);
+  if (i >= 0) state.cutAbove.splice(i, 1);
+  else state.cutAbove.push(pid);
+}
+export function setFocus(pid) {
+  state.focus = pid || null;
+}
+// make pid visible again by undoing whatever hides it, least disruptive first
+export function reveal(pid) {
+  if (!hiddenSet().has(pid)) return;
+  state.collapsed = (state.collapsed || []).filter(
+    (c) => !ancestorsOf(pid).has(c) && !spousesOf(pid).some((sp) => ancestorsOf(sp).has(c)),
+  );
+  if (hiddenSet().has(pid)) state.cutAbove = (state.cutAbove || []).filter((c) => !aboveOf(c).has(pid));
+  if (hiddenSet().has(pid)) state.focus = null;
 }
 export function toggleCollapsed(pid) {
   state.collapsed ??= [];

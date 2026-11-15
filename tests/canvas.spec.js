@@ -274,6 +274,34 @@ test('viewport position and zoom survive a reload', async ({ page }) => {
   expect(await transform()).toBe(before);
 });
 
+test('hide ancestors and focus mode hide the right people; search reveals them again', async ({ page }) => {
+  await newTree(page);
+  await firstPerson(page, 'Grandpa');
+  await addRelative(page, 'Grandpa', 'c', 'Dad');
+  await addRelative(page, 'Dad', 'c', 'Me');
+  await addRelative(page, 'Me', 'c', 'Kid');
+  await addRelative(page, 'Me', 'm', 'Wife');
+  await addRelative(page, 'Grandpa', 'c', 'Uncle');
+  await select(page, 'Me');
+  await page.click('#actions [data-sel=cut]');
+  await expect(cards(page)).toHaveCount(3);
+  await expect(cardOf(page, 'Grandpa')).toHaveCount(0);
+  await expect(cardOf(page, 'Uncle')).toHaveCount(0);
+  await expect(page.locator('#actions [data-sel=cut]')).toHaveText('Show ancestors');
+  await page.click('#actions [data-sel=cut]');
+  await expect(cards(page)).toHaveCount(6);
+  await select(page, 'Dad');
+  await page.click('#actions [data-sel=focus]');
+  await expect(cards(page)).toHaveCount(4);
+  await expect(cardOf(page, 'Uncle')).toHaveCount(0);
+  await expect(page.locator('#actions [data-sel=focus]')).toHaveText('Show all');
+  await page.keyboard.press('Meta+f');
+  await page.keyboard.type('Uncle');
+  await page.keyboard.press('Enter');
+  await expect(cards(page)).toHaveCount(6);
+  await expect(cardOf(page, 'Uncle')).toHaveClass(/selected/);
+});
+
 test('collapsing a branch hides descendants, survives reload, and search expands it', async ({ page }) => {
   await newTree(page);
   await firstPerson(page, 'Grandpa');

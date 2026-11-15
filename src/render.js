@@ -16,6 +16,7 @@ import {
   kindOf,
   descendantsOf,
   isCollapsed,
+  hiddenSet,
 } from './model.js';
 import { computeLayout } from './engine.js';
 import { applyCrossings } from './crossings.js';
@@ -48,7 +49,13 @@ export function setSpawnFrom(id) {
 export function layout() {
   marriages = [];
   ctx.positions = computeLayout(
-    { people: state.people, families: state.families, collapsed: state.collapsed, indexPerson: state.indexPerson },
+    {
+      people: state.people,
+      families: state.families,
+      collapsed: state.collapsed,
+      hidden: [...hiddenSet()],
+      indexPerson: state.indexPerson,
+    },
     {
       CARD_W: ctx.CARD_W,
       CARD_H: ctx.CARD_H,

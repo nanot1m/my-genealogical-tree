@@ -25,6 +25,8 @@ export function encodeTree(state) {
       indexPerson: state.indexPerson || null,
       households: state.households || [],
       collapsed: state.collapsed || [],
+      cutAbove: state.cutAbove || [],
+      focus: state.focus || null,
       blobs: blobs.map((b) => b.mime),
     }),
   );
@@ -83,5 +85,7 @@ export function decodeTree(buf) {
     indexPerson: meta.indexPerson || null,
     households: meta.households || [],
     collapsed: meta.collapsed || [],
+    cutAbove: meta.cutAbove || [],
+    focus: meta.focus || null,
   };
 }
