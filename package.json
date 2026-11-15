@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
-    "oxfmt": "^0.78.0"
+    "oxfmt": "^0.78.0",
+    "pixi.js": "^8.23.0"
   }
 }

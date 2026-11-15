@@ -24,6 +24,7 @@ import {
   emptyEl,
   cardEl,
 } from './render.js';
+import { initGL, glSetView, glActive } from './gl.js';
 import { initPdf, exportPdf } from './pdf.js';
 import { t, lang, setLangValue, LANG_KEY } from './i18n.js';
 import {
@@ -390,6 +391,13 @@ const ctx = {
 };
 initRender(ctx);
 initPdf(ctx);
+const glReady = initGL(ctx, { viewport, cardsEl }).then((ok) => {
+  if (ok) {
+    renderCards();
+    animatePositions();
+    glSetView(view, false);
+  }
+});
 
 let selectedId = null;
 let multi = new Set(),
@@ -695,14 +703,18 @@ function restoreView() {
 }
 function applyView() {
   world.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.s})`;
+  glSetView(view, world.classList.contains('anim'));
   clearTimeout(saveView.t);
   saveView.t = setTimeout(saveView, 300);
   placeSheet();
-  let g = GRID * view.s;
-  while (g < 16) g *= 2;
-  viewport.style.backgroundSize = `${g}px ${g}px`;
-  viewport.style.backgroundPosition = `${view.x}px ${view.y}px`;
-  $('#zoomlvl').textContent = Math.round(view.s * 100) + '%';
+  if (!glActive) {
+    let g = GRID * view.s;
+    while (g < 16) g *= 2;
+    viewport.style.backgroundSize = `${g}px ${g}px`;
+    viewport.style.backgroundPosition = `${view.x}px ${view.y}px`;
+  }
+  const pct = Math.round(view.s * 100) + '%';
+  if ($('#zoomlvl').textContent !== pct) $('#zoomlvl').textContent = pct;
 }
 function zoomAt(factor, mx, my, anim) {
   document.body.classList.add('zooming');

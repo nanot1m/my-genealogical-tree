@@ -19,6 +19,7 @@ import {
 } from './model.js';
 import { computeLayout } from './engine.js';
 import { applyCrossings } from './crossings.js';
+import { glSync, glSetPositions } from './gl.js';
 
 let ctx = null;
 export function initRender(c) {
@@ -35,6 +36,8 @@ export const viewport = $('#viewport'),
 export const cardEl = (id) => cardsEl.querySelector(`.card[data-id="${id}"]`);
 
 export let marriages = [];
+let lastEdges = null;
+export const edgeData = () => lastEdges;
 let displayPos = new Map(),
   animFrame = 0,
   spawnFrom = null;
@@ -107,6 +110,7 @@ export function renderCards() {
     el.classList.add('leave');
     el.addEventListener('animationend', () => el.remove(), { once: true });
   }
+  glSync();
 }
 
 export function fateGlyph(f) {
@@ -154,6 +158,7 @@ export function applyPositions(map, final = map) {
     el.style.translate = f === p || (f.x === p.x && f.y === p.y) ? '' : `${p.x - f.x}px ${p.y - f.y}px`;
   }
   renderEdges(map);
+  glSetPositions(map);
 }
 
 export function animatePositions() {
@@ -443,35 +448,57 @@ export function renderEdges(pos = ctx.positions) {
         const sgn = i % 2 ? 1 : -1;
         z += ` L${pt.x + nx * 6 * sgn} ${pt.y + ny * 6 * sgn}`;
       }
-      rels.push(`<path class="rel conflict" d="${z} L${p2.x} ${p2.y}"/>`);
+      rels.push({ cls: 'rel conflict', d: `${z} L${p2.x} ${p2.y}` });
     } else if (type === 'close' || type === 'fused') {
       const w = type === 'fused' ? 9 : 6;
-      rels.push(
-        `<path class="rel ${type}" style="stroke-width:${w}" d="${curve}"/><path class="rel inner" style="stroke-width:${w - 4}" d="${curve}"/>`,
-      );
-      if (type === 'fused') rels.push(`<path class="rel ${type}" style="stroke-width:1.5" d="${curve}"/>`);
+      rels.push({ cls: `rel ${type}`, d: curve, width: w }, { cls: 'rel inner', d: curve, width: w - 4 });
+      if (type === 'fused') rels.push({ cls: `rel ${type}`, d: curve, width: 1.5 });
     } else if (type === 'cutoff') {
       const m = q(0.5),
         m2 = q(0.5 + 6 / len),
         m1 = q(0.5 - 6 / len);
       rels.push(
-        `<path class="rel cutoff" d="${curve}"/><path class="rel cutoff" style="stroke-width:2.5" d="M${m1.x + nx * 9} ${m1.y + ny * 9} L${m1.x - nx * 9} ${m1.y - ny * 9} M${m2.x + nx * 9} ${m2.y + ny * 9} L${m2.x - nx * 9} ${m2.y - ny * 9}"/>`,
+        { cls: 'rel cutoff', d: curve },
+        {
+          cls: 'rel cutoff',
+          d: `M${m1.x + nx * 9} ${m1.y + ny * 9} L${m1.x - nx * 9} ${m1.y - ny * 9} M${m2.x + nx * 9} ${m2.y + ny * 9} L${m2.x - nx * 9} ${m2.y - ny * 9}`,
+          width: 2.5,
+        },
       );
       void m;
     } else if (type === 'focused') {
-      rels.push(`<path class="rel focused" marker-end="url(#arrow-head)" d="${curve}"/>`);
+      rels.push({ cls: 'rel focused', d: curve, arrow: true });
     } else {
-      rels.push(`<path class="rel ${esc(type)}" d="${curve}"/>`);
+      rels.push({ cls: `rel ${esc(type)}`, d: curve });
     }
     relBadges.push({ r, x: (p1.x + 2 * cx + p2.x) / 4, y: (p1.y + 2 * cy + p2.y) / 4 });
   }
   const defs = `<defs><marker id="arrow-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="currentColor" style="color: var(--text)"/></marker></defs>`;
   if (ctx.crossMode !== 'default')
     applyCrossings([d, dAdopted, dFoster, dPartners, dPast, dPartnersPast, dHi], ctx.crossMode);
+  const layers = [
+    { cls: 'house', d: dHouse.join(' ') },
+    { cls: '', d: d.join(' ') },
+    { cls: 'adopted', d: dAdopted.join(' ') },
+    { cls: 'foster', d: dFoster.join(' ') },
+    { cls: '', d: dArrow.join(' ') },
+    { cls: 'partners', d: dPartners.join(' ') },
+    { cls: 'past', d: dPast.join(' ') },
+    { cls: 'partners past', d: dPartnersPast.join(' ') },
+    { cls: 'slash', d: dSlash.join(' ') },
+    { cls: 'ended', d: dEnded.join(' ') },
+    { cls: 'hi', d: dHi.join(' ') },
+    ...rels,
+  ];
+  lastEdges = { layers, marriages, houseBadges, relBadges };
   edgesSvg.innerHTML =
     defs +
-    `<path class="house" d="${dHouse.join(' ')}"/><path d="${d.join(' ')}"/><path class="adopted" d="${dAdopted.join(' ')}"/><path class="foster" d="${dFoster.join(' ')}"/><path d="${dArrow.join(' ')}"/><path class="partners" d="${dPartners.join(' ')}"/><path class="past" d="${dPast.join(' ')}"/><path class="partners past" d="${dPartnersPast.join(' ')}"/><path class="slash" d="${dSlash.join(' ')}"/><path class="ended" d="${dEnded.join(' ')}"/><path class="hi" d="${dHi.join(' ')}"/>` +
-    rels.join('');
+    layers
+      .map(
+        (l) =>
+          `<path${l.cls ? ` class="${l.cls}"` : ''}${l.width ? ` style="stroke-width:${l.width}"` : ''}${l.arrow ? ' marker-end="url(#arrow-head)"' : ''} d="${l.d}"/>`,
+      )
+      .join('');
   badgesEl.innerHTML = '';
   for (const { h, x, y } of houseBadges) {
     const el = document.createElement('div');

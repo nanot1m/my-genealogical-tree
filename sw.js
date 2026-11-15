@@ -9,6 +9,8 @@ const ASSETS = [
   './src/crossings.js',
   './src/model.js',
   './src/engine.js',
+  './src/gl.js',
+  './vendor/pixi.min.mjs',
   './src/render.js',
   './src/pdf.js',
   './manifest.webmanifest',

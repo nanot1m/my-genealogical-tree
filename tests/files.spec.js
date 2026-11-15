@@ -145,6 +145,7 @@ test.describe('file handles and launch screen (File System Access API)', () => {
       page.evaluate(
         async () => (await (await (await navigator.storage.getDirectory()).getFileHandle('auto.ftree')).getFile()).size,
       );
+    await expect.poll(() => size().catch(() => 0), { timeout: 5000 }).toBeGreaterThan(0);
     const s1 = await size();
     await addRelative(page, null, 'c', 'FS Kid');
     await expect.poll(size, { timeout: 5000 }).toBeGreaterThan(s1);

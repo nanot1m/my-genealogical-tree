@@ -2396,3 +2396,36 @@ body.compact .fold {
   bottom: auto;
   top: 70px;
 }
+
+/* WebGL layer active: the DOM keeps hit testing and semantics but paints nothing */
+body.gl #viewport {
+  background-image: none;
+}
+body.gl #edges {
+  visibility: hidden;
+}
+body.gl .card,
+body.gl .card:hover,
+body.gl .card.selected,
+body.gl .card.multi,
+body.gl .card.common,
+body.gl .card.index,
+body.gl .card.unborn,
+body.gl .card.link-source {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+body.gl .card .info,
+body.gl .card .ord,
+body.gl .card .photo,
+body.gl .card .fold,
+body.gl .card .plus,
+body.gl .card .photo-x,
+body.gl .marriage,
+body.gl .relbadge {
+  opacity: 0 !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
