@@ -379,10 +379,15 @@ export function renderEdges(pos = ctx.positions) {
         dArrow.push(`M${c.cx - 5} ${c.top - 9} L${c.cx} ${c.top - 1} L${c.cx + 5} ${c.top - 9}`);
       return false;
     };
-    const hiXs = hiFam ? sorted.filter((c) => hi.has(c.id)).map((c) => c.cx) : [];
+    const dropX = (c) => {
+      const other = sorted.find((x) => x.id === twinOf(c.id));
+      return other ? (c.cx + other.cx) / 2 : c.cx;
+    };
+    const dropXs = sorted.map(dropX);
+    const hiXs = hiFam ? sorted.filter((c) => hi.has(c.id)).map(dropX) : [];
     if (origin) {
-      const x0 = sorted[0].cx,
-        x1 = sorted[sorted.length - 1].cx;
+      const x0 = Math.min(...dropXs),
+        x1 = Math.max(...dropXs);
       if (origin.x < x0 - 1) d.push(rounded([origin, { x: origin.x, y: busY }, { x: x1, y: busY }]));
       else if (origin.x > x1 + 1) d.push(rounded([origin, { x: origin.x, y: busY }, { x: x0, y: busY }]));
       else d.push(`M${origin.x} ${origin.y} L${origin.x} ${busY}`, `M${x0} ${busY} L${x1} ${busY}`);
@@ -393,11 +398,10 @@ export function renderEdges(pos = ctx.positions) {
         );
       for (const c of sorted) capture(hiFam && hi.has(c.id), () => drop(c, origin.x));
     } else {
-      const f0 = sorted[0],
-        fn = sorted[sorted.length - 1];
-      d.push(`M${f0.cx} ${busY} L${fn.cx} ${busY}`);
+      const x0 = Math.min(...dropXs);
+      d.push(`M${x0} ${busY} L${Math.max(...dropXs)} ${busY}`);
       if (hiXs.length > 1) dHi.push(`M${Math.min(...hiXs)} ${busY} L${Math.max(...hiXs)} ${busY}`);
-      for (const c of sorted) capture(hiFam && hi.has(c.id), () => drop(c, f0.cx));
+      for (const c of sorted) capture(hiFam && hi.has(c.id), () => drop(c, x0));
     }
   }
   for (const p of people()) {
