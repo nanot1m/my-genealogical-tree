@@ -1816,41 +1816,36 @@ function navigate(dir) {
     if (first) select(first.id);
     return;
   }
-  const id = selectedId;
-  let target = null;
-  if (dir === 'up') target = parentsOf(id)[0];
-  else if (dir === 'down') target = childrenOf(id)[0];
-  else {
-    const sibs = siblingsOf(id);
-    const i = sibs.indexOf(id);
-    target = sibs[i + (dir === 'left' ? -1 : 1)];
-    if (!target)
-      target = spousesOf(id).find((sp) => (positions.get(sp).x - positions.get(id).x) * (dir === 'left' ? -1 : 1) > 0);
-  }
-  if (!target) target = spatialNeighbour(id, dir);
-  if (target) select(target);
-}
-function spatialNeighbour(id, dir) {
-  const a = positions.get(id);
+  const a = positions.get(selectedId);
+  if (!a) return;
+  const cx = a.x + CARD_W / 2;
   let best = null,
     bestD = Infinity;
-  for (const [oid, b] of positions) {
-    if (oid === id) continue;
-    const dx = b.x - a.x,
-      dy = b.y - a.y;
-    let ok;
-    if (dir === 'up') ok = dy < 0 && Math.abs(dx) <= Math.abs(dy) * 2 + CARD_W;
-    else if (dir === 'down') ok = dy > 0 && Math.abs(dx) <= Math.abs(dy) * 2 + CARD_W;
-    else if (dir === 'left') ok = dx < 0 && Math.abs(dy) <= Math.abs(dx);
-    else ok = dx > 0 && Math.abs(dy) <= Math.abs(dx);
-    if (!ok) continue;
-    const d = dir === 'up' || dir === 'down' ? Math.abs(dy) * 2 + Math.abs(dx) : Math.abs(dx) * 2 + Math.abs(dy);
-    if (d < bestD) {
-      bestD = d;
-      best = oid;
+  if (dir === 'up' || dir === 'down') {
+    const rowY = [...positions.values()]
+      .map((p) => p.y)
+      .filter((y) => (dir === 'up' ? y < a.y - 1 : y > a.y + 1))
+      .sort((p, q) => (dir === 'up' ? q - p : p - q))[0];
+    if (rowY === undefined) return;
+    for (const [id, p] of positions) {
+      if (Math.abs(p.y - rowY) > 1) continue;
+      const d = Math.abs(p.x + CARD_W / 2 - cx);
+      if (d < bestD) {
+        bestD = d;
+        best = id;
+      }
+    }
+  } else {
+    for (const [id, p] of positions) {
+      if (id === selectedId || Math.abs(p.y - a.y) > 1) continue;
+      const d = (p.x - a.x) * (dir === 'left' ? -1 : 1);
+      if (d > 0 && d < bestD) {
+        bestD = d;
+        best = id;
+      }
     }
   }
-  return best;
+  if (best) select(best);
 }
 
 document.addEventListener('keydown', (e) => {
