@@ -246,7 +246,9 @@ export function createServer(store = new Store()) {
         familyId: z.string(),
         married: z.string().optional(),
         ended: z.string().optional(),
-        status: z.enum(['married', 'partners', 'separated', 'divorced', 'reconciled_sep', 'reconciled_div']).optional(),
+        status: z
+          .enum(['married', 'partners', 'separated', 'partners_sep', 'divorced', 'reconciled_sep', 'reconciled_div'])
+          .optional(),
         move: z.enum(['earlier', 'later']).optional().describe('Reorder among a person’s marriages'),
         ...writeOpts,
       },
@@ -319,6 +321,24 @@ export function createServer(store = new Store()) {
           if (err) throw new Error(err);
           if (label && type !== 'household') M.state.relations[M.state.relations.length - 1].label = label;
           return type === 'household' ? M.state.households : M.state.relations;
+        },
+        { dryRun, force },
+      ),
+    ),
+  );
+
+  server.registerTool(
+    'detach_from_parents',
+    {
+      description: 'Remove a person from their parents\u2019 family without deleting anyone; siblings are unaffected.',
+      inputSchema: { person: z.string(), ...writeOpts },
+    },
+    guard(async ({ person, dryRun, force }) =>
+      store.mutate(
+        () => {
+          const id = store.resolve(person);
+          M.detachFromParents(id);
+          return store.view(id);
         },
         { dryRun, force },
       ),

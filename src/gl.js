@@ -570,7 +570,7 @@ function drawCard(card, hot) {
     card.texts.push(tx);
   }
   // fold chip
-  if (st.fold && (hot || st.selected || st.foldOn)) {
+  if (st.fold && st.foldOn) {
     const tx = text(st.fold, { fontSize: 11, fontWeight: '600', fill: st.foldOn ? theme.accent : theme.muted });
     const fw = Math.max(22, tx.width + 14);
     const fx = compact ? W - 4 - fw : W + 8 - fw,

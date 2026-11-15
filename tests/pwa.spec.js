@@ -76,7 +76,7 @@ test.describe('in-app documentation', () => {
     await addRelative(page, null, 'c', 'B');
     await page.click('[data-act=legend]');
     await expect(page.locator('#legend.show')).toBeVisible();
-    await expect(page.locator('#legend .item')).toHaveCount(29);
+    await expect(page.locator('#legend .item')).toHaveCount(30);
     await expect(page.locator('#legend h3')).toHaveText([
       'Couples',
       'Children',

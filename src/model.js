@@ -241,6 +241,17 @@ export function addSibling(pid, side) {
   return p;
 }
 
+export function detachFromParents(pid) {
+  const f = childFamily(pid);
+  if (!f) return;
+  f.children = f.children.filter((x) => x !== pid);
+  if (f.kinds) {
+    delete f.kinds[pid];
+    for (const k of Object.values(f.kinds)) if (k.twin === pid) k.twin = '';
+  }
+  if (!f.children.length && f.parents.length <= 1) delete state.families[f.id];
+}
+
 export function deletePerson(pid) {
   delete state.people[pid];
   if (state.indexPerson === pid) state.indexPerson = null;

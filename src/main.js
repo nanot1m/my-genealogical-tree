@@ -38,6 +38,7 @@ import {
   toggleCollapsed,
   isCut,
   toggleCut,
+  detachFromParents,
   setFocus,
   reveal,
   hiddenSet,
@@ -138,6 +139,7 @@ function renderLegend() {
         ['lg_married', couple(`<path d="M42 22 H70"/>`)],
         ['lg_partners', couple(`<path d="M42 22 H70" stroke-dasharray="4 3"/>`)],
         ['lg_separated', couple(`<path d="M42 22 H70"/><path class="r" d="M53 29 L59 15"/>`)],
+        ['lg_partners_sep', couple(`<path d="M42 22 H70" stroke-dasharray="4 3"/><path class="r" d="M53 29 L59 15"/>`)],
         ['lg_divorced', couple(`<path d="M42 22 H70"/><path class="r" d="M50 29 L56 15 M58 29 L64 15"/>`)],
         ['lg_rec_sep', couple(`<path d="M42 22 H70"/><path class="r" d="M53 29 L59 15 M48 15 L64 29"/>`)],
         ['lg_rec_div', couple(`<path d="M42 22 H70"/><path class="r" d="M50 29 L56 15 M58 29 L64 15 M46 15 L66 29"/>`)],
@@ -304,7 +306,7 @@ function setCrossMode(m) {
 let compact = false;
 function setCompact(on) {
   compact = on;
-  localStorage.setItem(COMPACT_KEY, on ? '1' : '');
+  localStorage.setItem(COMPACT_KEY, on ? '1' : '0');
   [CARD_W, CARD_H, COUPLE_GAP] = on ? [150, 164, 40] : [280, 112, 76];
   document.documentElement.style.setProperty('--card-w', CARD_W + 'px');
   document.documentElement.style.setProperty('--card-h', CARD_H + 'px');
@@ -396,7 +398,9 @@ const ctx = {
 };
 initRender(ctx);
 initPdf(ctx);
-const glReady = initGL(ctx, { viewport, cardsEl }).then((ok) => {
+const glReady = (
+  localStorage.getItem('familytree.nogl') ? Promise.resolve(false) : initGL(ctx, { viewport, cardsEl })
+).then((ok) => {
   if (ok) {
     renderCards();
     animatePositions();
@@ -1346,6 +1350,7 @@ function openSheet(id, fresh) {
   sh('sh-kind-row').hidden = sh('sh-twin-row').hidden = sh('sh-identical-row').hidden = !hasParents;
   refreshOrderRow(id);
   sh('sh-family-hint').hidden = hasParents;
+  sh('sh-unparent').hidden = !hasParents;
   if (hasParents) {
     const k = kindOf(id);
     sh('sh-kind').value = k.type;
@@ -1371,7 +1376,7 @@ function openSheet(id, fresh) {
     if (fresh) sh('sh-name').select();
   }
 }
-if (localStorage.getItem(COMPACT_KEY)) setCompact(true);
+if (localStorage.getItem(COMPACT_KEY) === '1') setCompact(true);
 $('#legend .panel').addEventListener('click', (e) => {
   const b = e.target.closest('[data-x]');
   if (b) setCrossMode(b.dataset.x);
@@ -1545,6 +1550,13 @@ sh('sh-delete').addEventListener('click', () => {
   }
 });
 sh('sh-photo').addEventListener('click', () => photoAction(sheetId, sh('sh-photo')));
+sh('sh-unparent').addEventListener('click', () => {
+  const id = sheetId;
+  if (!id || !confirm(t('unparent_confirm'))) return;
+  closeSheet();
+  mutate(() => detachFromParents(id));
+  select(id);
+});
 
 function removePhoto(p) {
   p.photo = null;

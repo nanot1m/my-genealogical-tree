@@ -36,7 +36,7 @@ If you have unsaved edits in the app it warns instead of reloading; save to over
 
 `open_tree`, `tree_summary`, `tree_outline`, `list_people`, `get_person`, `add_person`, `update_person`,
 `add_relative` (parent, child, sibling, spouse), `link_people` (spouse, child_of, parent_of), `set_marriage`,
-`set_child_kind` (adopted, foster, twins, order), `add_relation` (emotional lines, household), `remove_person`,
+`set_child_kind` (adopted, foster, twins, order), `add_relation` (emotional lines, household), `detach_from_parents`, `remove_person`,
 `set_index_person`.
 
 Every writing tool accepts `dryRun: true` to preview and refuses to write if the file changed on disk since it was read

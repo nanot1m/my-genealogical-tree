@@ -323,8 +323,8 @@ test('collapsing a branch hides descendants, survives reload, and search expands
   await page.keyboard.press('Enter');
   await expect(cards(page)).toHaveCount(5);
   await expect(cardOf(page, 'Kid')).toHaveClass(/selected/);
-  await cardOf(page, 'Dad').hover();
-  await cardOf(page, 'Dad').locator('.fold').click();
+  await select(page, 'Dad');
+  await page.keyboard.press('h');
   await expect(cards(page)).toHaveCount(2);
   await page.keyboard.press('Meta+z');
   await expect(cards(page)).toHaveCount(5);

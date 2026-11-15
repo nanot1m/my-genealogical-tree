@@ -297,3 +297,58 @@ test('wide fixture: no overlaps, rules hold', () => {
   console.log(`  wide fixture: ${res.positions.size} people in ${ms.toFixed(1)} ms`);
   assert.ok(ms < 200, 'too slow: ' + ms);
 });
+
+test('rule 21: in-laws hoisted above a sibling row move aside instead of splitting the siblings', () => {
+  // grandparents G1+G2 have Rustam (with wife W, kids S1 S2) and Fatima (husband A without parents).
+  // Fatima's granddaughter K marries T whose parents and grandparents are in the tree.
+  const res = computeLayout(
+    build({
+      people: [
+        ['G1', 'm', '1900'],
+        ['G2', 'f', '1902'],
+        ['Rustam', 'm', '1920'],
+        ['W', 'f', '1922'],
+        ['S1', 'm', '1945'],
+        ['S2', 'm', '1947'],
+        ['Fatima', 'f', '1925'],
+        ['A', 'm', '1920'],
+        ['R', 'm', '1956'],
+        ['Z', 'f', '1958'],
+        ['K', 'f', '1991'],
+        ['T', 'm', '1992'],
+        ['TF', 'm', '1969'],
+        ['TM', 'f', '1969'],
+        ['TGF', 'm', '1940'],
+        ['TGM', 'f', '1942'],
+      ],
+      families: [
+        [
+          ['G1', 'G2'],
+          ['Rustam', 'Fatima'],
+        ],
+        [
+          ['Rustam', 'W'],
+          ['S1', 'S2'],
+        ],
+        [['A', 'Fatima'], ['R']],
+        [['R', 'Z'], ['K']],
+        [['T', 'K'], []],
+        [['TF', 'TM'], ['T']],
+        [['TGF', 'TGM'], ['TF']],
+      ],
+      indexPerson: 'K',
+    }),
+    OPTS,
+  );
+  assert.ok(noOverlap(res));
+  assert.equal(y(res, 'Rustam'), y(res, 'Fatima'));
+  // nothing from T's side sits between the siblings Rustam and Fatima on their row
+  const between = [...res.positions].filter(
+    ([id, p]) => p.y === y(res, 'Rustam') && p.x > x(res, 'Rustam') && p.x < x(res, 'Fatima'),
+  );
+  assert.deepEqual(
+    between.map(([id]) => id).filter((id) => !['W', 'A'].includes(id)),
+    [],
+  );
+  assert.ok(x(res, 'TGF') < x(res, 'Rustam'), 'husband ancestry goes out to the left of the sibling row');
+});

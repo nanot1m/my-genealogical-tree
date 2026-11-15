@@ -68,6 +68,32 @@ test.describe('spouses and marriages', () => {
   });
 });
 
+test.describe('detaching and split partners', () => {
+  test('detach from parents removes the child link; split partners draw a dashed faded line with one slash', async ({
+    page,
+  }) => {
+    page.on('dialog', (d) => d.accept());
+    await newTree(page);
+    await firstPerson(page, 'Pa');
+    await addRelative(page, 'Pa', 'c', 'Kid');
+    await addRelative(page, 'Pa', 'c', 'Other');
+    await select(page, 'Kid');
+    await cardOf(page, 'Kid').dblclick();
+    await expect(page.locator('#sh-unparent')).toBeVisible();
+    await page.click('#sh-unparent');
+    const st = await draftState(page);
+    const fam = familiesByName(st).find((f) => f.parents.includes('Pa'));
+    expect(fam.children).toEqual(['Other']);
+    await expect(cardOf(page, 'Kid')).toHaveCount(1);
+    await addRelative(page, 'Pa', 'm', 'Ex');
+    await page.locator('.marriage').first().click();
+    await page.selectOption('#m-status', 'partners_sep');
+    await page.keyboard.press('Enter');
+    expect((await page.locator('#edges path.partners.past').getAttribute('d')).length).toBeGreaterThan(0);
+    expect(((await page.locator('#edges path.slash').getAttribute('d')).match(/M/g) || []).length).toBe(1);
+  });
+});
+
 test.describe('replacing parents and marriage order', () => {
   test('linking a third parent offers to replace one; siblings keep their parents', async ({ page }) => {
     await newTree(page);

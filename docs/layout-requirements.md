@@ -21,10 +21,11 @@ Rules are agreed. Priority when rules conflict: no overlap (hard), couple integr
 15. Connectors are orthogonal. Child buses run midway between rows with lanes so lines do not merge; a couple's line joins the two cards; non-adjacent couples use a stepped line below the row; lines never pass through a card.
 16. Same data gives the same picture; adding or removing one person moves others as little as the rules allow.
 17. Compact mode changes card size and gaps only, never ordering.
-18. The index person is only highlighted; the layout does not anchor on them.
+18. The index person is only highlighted; the layout does not anchor on them. They do decide which family is the trunk: the roots above the index couple's husband are built first, so everyone else hangs off that line as side blocks. Without an index person the root with the largest descent is built first.
 19. 500 people lay out in well under 100 ms so every edit re-lays out synchronously.
 
 20. Rule 2 is always in force. The "fewer crossings" sibling mode is removed.
+21. In-law blocks that are hoisted above a sibling row never split the siblings. Siblings are packed first by their own rows; a hoisted block that would collide slides further out on its own side (left for a husband's relatives, right for a wife's), even if that puts it far from the spouse it belongs to.
 
 # Engine design
 

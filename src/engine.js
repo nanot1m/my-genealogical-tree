@@ -175,14 +175,18 @@ export function computeLayout(model, opts) {
           pulled,
         );
       const kids = all.filter((c) => !pulled.includes(c));
-      const ordered = [...kids.filter((c) => !sided(c)), ...kids.filter(sided)];
+      // pulled daughters whose husband's family is not placed yet still come last here: the couple stays together
+      // and his relatives hang on his left, instead of waiting for his root tree to be packed far away
+      const ordered = [...kids.filter((c) => !sided(c)), ...kids.filter(sided), ...pulled];
       for (const c of ordered) {
         const cu = unitOf.get(c);
         if (cu.row === null) {
           const i = all.indexOf(c) + 1;
-          const why = sided(c)
-            ? `Child ${i} of ${f.parents.map(nm).join(' + ')}: his wife's parents hang on his right, so he goes after his siblings to keep them clear.`
-            : `Child ${i} of ${f.parents.map(nm).join(' + ')}: children in birth order, families in marriage order (rules 2, 7).`;
+          const why = pulled.includes(c)
+            ? `Child ${i} of ${f.parents.map(nm).join(' + ')}: married daughter kept with her husband after her siblings; his relatives open to his left (rules 3, 4).`
+            : sided(c)
+              ? `Child ${i} of ${f.parents.map(nm).join(' + ')}: his wife's parents hang on his right, so he goes after his siblings to keep them clear.`
+              : `Child ${i} of ${f.parents.map(nm).join(' + ')}: children in birth order, families in marriage order (rules 2, 7).`;
           build(cu, row + 1, why);
           u.kids.push(cu);
         }
@@ -255,7 +259,21 @@ export function computeLayout(model, opts) {
       for (const r of rootsAbove(husband)) preferred.add(r.id);
       if (!preferred.size) preferred.add(unitOf.get(husband).id);
     }
-    const rank = (u) => (preferred.has(u.id) ? 0 : 1);
+    // without an index person the biggest line becomes the trunk, so small in-law trees hang off it rather than the reverse
+    const reach = (u) => {
+      const seen = new Set();
+      const q = [...u.members];
+      while (q.length) {
+        const x = q.shift();
+        for (const c of childrenOf(x))
+          if (vis.has(c) && !seen.has(c)) {
+            seen.add(c);
+            q.push(c);
+          }
+      }
+      return seen.size;
+    };
+    const rank = (u) => (preferred.has(u.id) ? -Infinity : -reach(u));
     const done = new Set();
     const ordered = [];
     while (ordered.length < roots.length) {
@@ -332,83 +350,106 @@ export function computeLayout(model, opts) {
     return out;
   };
   const snap = (contour) => [...contour].map(([r, segs]) => [r, segs.map((s) => [...s])]);
+  // frame: { body, hoists, x }. body is the contour of the unit and its descendants; hoists are rigid groups of
+  // in-law blocks (and their trees) hanging above, each with its own contour and side. Keeping them apart lets a
+  // parent frame pack siblings by their bodies and then slide a hoist further out on its side instead of letting
+  // it land between siblings (rule 21). full() is the union, used wherever the frame is placed as a whole.
+  const full = (f) => f.hoists.reduce((c, h) => merge(c, h.contour), f.body);
+  const shiftFrame = (f, dx) => ({
+    body: shiftContour(f.body, dx),
+    hoists: f.hoists.map((h) => ({ ...h, contour: shiftContour(h.contour, dx) })),
+    x: new Map([...f.x].map(([k, v]) => [k, v + dx])),
+  });
   function layoutNode(u, align = 'center') {
-    let contour = new Map([[u.row, [[0, u.width]]]]);
+    let body = new Map([[u.row, [[0, u.width]]]]);
+    const hoists = [];
     const xs = new Map([[u, 0]]);
+    const all = () => hoists.reduce((c, h) => merge(c, h.contour), body);
     const report = (title, detail, b) =>
       step('coords', title, detail, [...u.members, ...(b ? b.members : [])], {
         unit: u.id,
         reveal: b ? subUnits(b) : subUnits(u),
-        contour: snap(contour),
+        contour: snap(all()),
         local: [...xs].map(([k, v]) => [k.id, v]),
       });
-    const place = (frame, dx) => {
-      for (const [k, v] of frame.x) xs.set(k, v + dx);
-      contour = merge(contour, shiftContour(frame.contour, dx));
-    };
     // a spouse's parents start above that spouse and extend outward (rule 4); inside a side block everything keeps opening outward
     const anchorOf = (b) => u.members.find((m) => parentUnit(m) === b);
-    const putLeft = (b) => {
-      const f = layoutNode(b, 'right');
-      const dx0 = memberOffset(u, anchorOf(b)) + CARD_W - b.width;
-      const push = settle(contour, shiftContour(f.contour, dx0), -1);
-      place(f, dx0 + push);
+    const putBlock = (b, dir) => {
+      const f0 = layoutNode(b, dir < 0 ? 'right' : 'left');
+      const dx0 = dir < 0 ? memberOffset(u, anchorOf(b)) + CARD_W - b.width : memberOffset(u, anchorOf(b));
+      const push = settle(all(), shiftContour(full(f0), dx0), dir);
+      const f = shiftFrame(f0, dx0 + push);
+      for (const [k, v] of f.x) xs.set(k, v);
+      hoists.push({ dir, units: [...f.x.keys()], contour: full(f) });
       report(
-        `Left block: ${unm(b)}`,
-        `Parents of ${nm(anchorOf(b))} end at his column and grow leftwards${push ? `, pushed ${-push}px further left to clear what is already placed` : ''} (rule 4).`,
-        b,
-      );
-    };
-    const putRight = (b) => {
-      const f = layoutNode(b, 'left');
-      const dx0 = memberOffset(u, anchorOf(b));
-      const push = settle(contour, shiftContour(f.contour, dx0), 1);
-      place(f, dx0 + push);
-      report(
-        `Right block: ${unm(b)}`,
-        `Parents of ${nm(anchorOf(b))} start at her column and grow rightwards${push ? `, pushed ${push}px further right to clear what is already placed` : ''} (rule 4).`,
+        `${dir < 0 ? 'Left' : 'Right'} block: ${unm(b)}`,
+        dir < 0
+          ? `Parents of ${nm(anchorOf(b))} end at his column and grow leftwards${push ? `, pushed ${-push}px further left to clear what is already placed` : ''} (rule 4).`
+          : `Parents of ${nm(anchorOf(b))} start at her column and grow rightwards${push ? `, pushed ${push}px further right to clear what is already placed` : ''} (rule 4).`,
         b,
       );
     };
     const blocksAfterKids = align !== 'center';
     if (!blocksAfterKids) {
-      for (const b of u.left) putLeft(b);
-      for (const b of u.right) putRight(b);
+      for (const b of u.left) putBlock(b, -1);
+      for (const b of u.right) putBlock(b, 1);
     }
     if (u.kids.length) {
       let acc = null;
       const placed = [];
+      // a hoisted block whose root is itself a child of this unit is a sibling reached from another direction:
+      // it packs with the children in order instead of sliding aside
+      const sibling = (h) => h.units[0].members.some((m) => parentUnit(m) === u);
       for (const k of u.kids) {
-        const f = layoutNode(k);
-        const dx = acc ? settle(acc, f.contour, 1) : 0;
+        const f0 = layoutNode(k);
+        const f = {
+          x: f0.x,
+          body: f0.hoists.filter(sibling).reduce((c, h) => merge(c, h.contour), f0.body),
+          hoists: f0.hoists.filter((h) => !sibling(h)),
+        };
+        const dx = acc ? settle(acc, f.body, 1) : 0;
         placed.push([k, f, dx]);
-        acc = acc ? merge(acc, shiftContour(f.contour, dx)) : shiftContour(f.contour, dx);
+        acc = acc ? merge(acc, shiftContour(f.body, dx)) : shiftContour(f.body, dx);
       }
+      // parents centre over their own children, not over the children's spouses (rule 8)
+      const childCard = (k) => k.members.find((m) => parentUnit(m) === u) ?? k.members[0];
       const first = placed[0],
         last = placed[placed.length - 1];
-      const firstLeft = first[2] + first[1].x.get(first[0]),
-        lastRight = last[2] + last[1].x.get(last[0]) + last[0].width;
-      const kidsCenter = (firstLeft + first[0].width / 2 + lastRight - last[0].width / 2) / 2;
-      let shift = align === 'left' ? -firstLeft : align === 'right' ? u.width - lastRight : u.width / 2 - kidsCenter;
-      // children's frames carry hoisted in-law blocks in the rows above; keep them clear of this unit and its own blocks
-      const extra = settle(contour, shiftContour(acc, shift), 1);
-      shift += extra;
-      for (const [, f, dx] of placed) place(f, dx + shift);
+      const firstLeft = first[2] + first[1].x.get(first[0]) + memberOffset(first[0], childCard(first[0])),
+        lastRight = last[2] + last[1].x.get(last[0]) + memberOffset(last[0], childCard(last[0])) + CARD_W;
+      const kidsCenter = (firstLeft + lastRight) / 2;
+      const shift = align === 'left' ? -firstLeft : align === 'right' ? u.width - lastRight : u.width / 2 - kidsCenter;
+      const frames = placed.map(([k, f, dx]) => [k, shiftFrame(f, dx + shift)]);
+      for (const [, f] of frames) {
+        for (const [k, v] of f.x) xs.set(k, v);
+        body = merge(body, f.body);
+      }
       const how =
         align === 'center'
           ? 'centred under the parents (rule 8)'
           : `aligned to the ${align} edge, so the block keeps opening ${align === 'left' ? 'right' : 'left'}wards`;
       report(
         `Children of ${unm(u)}`,
-        `${placed.length} subtree${placed.length > 1 ? 's' : ''} packed left to right with ${H_GAP}px between contours, ${how}${
-          extra ? `; moved ${extra}px right to clear in-law blocks hoisted beside the parents` : ''
-        }.`,
+        `${placed.length} subtree${placed.length > 1 ? 's' : ''} packed left to right by their own rows with ${H_GAP}px between contours, ${how}.`,
       );
+      // the in-law groups hoisted above the children row: each slides out on its side until it is clear of everything else
+      for (const [, f] of frames)
+        for (const h of f.hoists) {
+          const push = settle(all(), h.contour, h.dir);
+          for (const unit of h.units) xs.set(unit, xs.get(unit) + push);
+          hoists.push({ dir: h.dir, units: h.units, contour: shiftContour(h.contour, push) });
+          if (push)
+            report(
+              `Moved aside: ${unm(h.units[0])}`,
+              `In-laws hoisted above the children of ${unm(u)} would split the siblings; moved ${Math.abs(push)}px ${h.dir < 0 ? 'left' : 'right'} past them instead (rule 21).`,
+              h.units[0],
+            );
+        }
     }
     if (blocksAfterKids) {
-      for (const b of [...u.left, ...u.right]) (align === 'left' ? putRight : putLeft)(b);
+      for (const b of [...u.left, ...u.right]) putBlock(b, align === 'left' ? 1 : -1);
     }
-    return { contour, x: xs };
+    return { body, hoists, x: xs };
   }
   let offset = 0;
   for (const compTrees of trees) {
@@ -416,9 +457,10 @@ export function computeLayout(model, opts) {
     const frames = [];
     for (const t of compTrees) {
       const f = layoutNode(t);
-      const dx = acc ? settle(acc, f.contour, 1) : 0;
+      const c = full(f);
+      const dx = acc ? settle(acc, c, 1) : 0;
       frames.push([f, dx]);
-      acc = acc ? merge(acc, shiftContour(f.contour, dx)) : shiftContour(f.contour, dx);
+      acc = acc ? merge(acc, shiftContour(c, dx)) : shiftContour(c, dx);
     }
     step(
       'pack',

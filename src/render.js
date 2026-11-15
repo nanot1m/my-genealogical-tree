@@ -142,7 +142,7 @@ export function cardHTML(p) {
         <button class="photo-x ${p.photo ? 'has-photo' : ''}" title="${t('remove_photo')}">×</button>
       </div>
       ${birthOrder(p.id) ? `<span class="ord" title="${t('birth_order')}">${birthOrder(p.id)}</span>` : ''}
-      ${childrenOf(p.id).length ? (isCollapsed(p.id) ? `<button class="fold on" title="${t('expand')}">▸ ${descendantsOf(p.id).size}</button>` : `<button class="fold" title="${t('collapse')}">▾</button>`) : ''}
+      ${childrenOf(p.id).length && isCollapsed(p.id) ? `<button class="fold on" title="${t('expand')}">▸ ${descendantsOf(p.id).size}</button>` : ''}
       <div class="info">
         <div class="name ${p.name ? '' : 'empty'}" title="${esc(fullName(p))}"><span class="nm">${esc(p.name) || t('unnamed')}</span>${p.birthName ? ` <span class="nee">${t('nee')} ${esc(p.birthName)}</span>` : ''}</div>
         <div class="dates ${dt ? '' : 'empty'}">${esc(dt)}${p.fate ? `<span class="fate-chip">${t('fate_' + p.fate)}</span>` : ''}</div>
@@ -238,7 +238,7 @@ export function renderEdges(pos = ctx.positions) {
     fn();
     lineBuckets.forEach((b, i) => dHi.push(...b.slice(before[i])));
   };
-  const isPast = (f) => !!f.ended || f.status === 'divorced' || f.status === 'separated';
+  const isPast = (f) => !!f.ended || ['divorced', 'separated', 'partners_sep'].includes(f.status);
   const hi = ctx.hiPeople.size ? ctx.hiPeople : focusSet(ctx.selectedId);
   const hull = (pts) => {
     pts = [...pts].sort((a, b) => a.x - b.x || a.y - b.y);
@@ -330,7 +330,8 @@ export function renderEdges(pos = ctx.positions) {
           Math.abs(a.top - b.top) < 1 &&
           ![...pos.values()].some((q) => Math.abs(q.y - a.top) < 1 && q.x > a.x && q.x < b.x);
         const past = isPast(f);
-        const bucket = f.status === 'partners' ? (past ? dPartnersPast : dPartners) : past ? dPast : d;
+        const partners = f.status === 'partners' || f.status === 'partners_sep';
+        const bucket = partners ? (past ? dPartnersPast : dPartners) : past ? dPast : d;
         if (adjacent) {
           bucket.push(`M${a.cx + halfW} ${a.cy} L${b.cx - halfW} ${b.cy}`);
           origin = { x: (a.cx + b.cx) / 2, y: a.cy };
@@ -552,7 +553,13 @@ export function marriageOrdinal(f) {
 
 export function marriageText(f) {
   const mark =
-    f.status === 'divorced' ? '⚡ ' : f.status === 'separated' ? '⁄ ' : f.status?.startsWith('reconciled') ? '↺ ' : '';
+    f.status === 'divorced'
+      ? '⚡ '
+      : f.status === 'separated' || f.status === 'partners_sep'
+        ? '⁄ '
+        : f.status?.startsWith('reconciled')
+          ? '↺ '
+          : '';
   if (!f.married && !f.ended) return mark.trim();
   const widowed = f.parents.map((id) => state.people[id]).filter((p) => p && !p.alive);
   const death = widowed.length
@@ -563,7 +570,7 @@ export function marriageText(f) {
     : '';
   const end = f.ended
     ? year(f.ended)
-    : f.status === 'divorced' || f.status === 'separated'
+    : ['divorced', 'separated', 'partners_sep'].includes(f.status)
       ? '?'
       : death
         ? '† ' + death
@@ -577,6 +584,7 @@ export const statusHint = (st) =>
       married: 'lg_married',
       partners: 'lg_partners',
       separated: 'lg_separated',
+      partners_sep: 'lg_partners_sep',
       divorced: 'lg_divorced',
       reconciled_sep: 'lg_rec_sep',
       reconciled_div: 'lg_rec_div',
