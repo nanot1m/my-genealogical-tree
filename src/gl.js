@@ -4,7 +4,8 @@ import {
   Container,
   Graphics,
   GraphicsPath,
-  Text,
+  BitmapText,
+  BitmapFontManager,
   TextStyle,
   Texture,
   Sprite,
@@ -37,9 +38,7 @@ let cards = new Map(),
   theme = null,
   dirty = false,
   sceneDirty = true,
-  viewTween = null,
-  textRes = 1,
-  textQueue = [];
+  viewTween = null;
 const photoTex = new Map(),
   imgCache = new Map(),
   shadowTex = new Map();
@@ -93,8 +92,7 @@ export async function initGL(c, els) {
       () => {
         app.renderer.resolution = devicePixelRatio || 1;
         app.resize();
-        textRes = 0;
-        resolveText();
+        invalidate();
         watchDpr();
       },
       { once: true },
@@ -152,6 +150,10 @@ export async function initGL(c, els) {
     app.resize();
     invalidate();
   }).observe(viewport);
+  // one glyph atlas per font weight, shared by every label. Dynamic fonts rasterize at a 100px base, so the
+  // resolution is chosen to give ~64 device px per 16px label on this screen: sharp up to about 2x zoom.
+  BitmapFontManager.defaultOptions.resolution = Math.min(2, ((devicePixelRatio || 1) * 32) / 100);
+  BitmapFontManager.defaultOptions.textureSize = 512;
   glActive = true;
   window.__gl = {
     app,
@@ -165,7 +167,6 @@ export async function initGL(c, els) {
     },
   };
   document.body.classList.add('gl');
-  textRes = app.renderer.resolution;
   return true;
 }
 
@@ -204,28 +205,7 @@ export function glSetView(v, animate) {
   if (animate && !viewTween) viewTween = { from: { ...view }, start: performance.now() };
   view = { ...v };
   if (!animate) viewTween = null;
-  clearTimeout(glSetView.t);
-  glSetView.t = setTimeout(resolveText, 160);
   invalidate();
-}
-
-// text textures follow the zoom level so glyphs stay crisp; re-rasterize in small batches to keep frames short
-function resolveText() {
-  if (!app) return;
-  const base = app.renderer.resolution;
-  const want = Math.min(base * 2.5, Math.max(base, base * view.s));
-  if (textRes && Math.abs(Math.log(want / textRes)) < 0.25) return;
-  textRes = want;
-  textQueue = [...cards.values()].flatMap((c) => c.texts).concat(badges.flatMap((b) => b.texts));
-  invalidate();
-}
-function drainText() {
-  const t0 = performance.now();
-  while (textQueue.length && performance.now() - t0 < 3) {
-    const tx = textQueue.pop();
-    if (!tx.destroyed) tx.resolution = textRes;
-  }
-  if (textQueue.length) invalidate();
 }
 
 export function glSetPositions(map) {
@@ -245,7 +225,7 @@ function ease(k) {
   return 1 - Math.pow(1 - k, 3);
 }
 
-const stats = { frames: 0, ms: 0, max: 0 };
+const stats = { frames: 0, ms: 0, max: 0, edges: 0, badges: 0, cards: 0, render: 0 };
 function frame(now) {
   dirty = false;
   if (!app) return;
@@ -264,7 +244,6 @@ function frame(now) {
   const vw = app.screen.width,
     vh = app.screen.height;
   drawGrid(v, vw, vh);
-  drainText();
   const left = -v.x / v.s - 60,
     top = -v.y / v.s - 60,
     right = (vw - v.x) / v.s + 60,
@@ -272,10 +251,15 @@ function frame(now) {
   const body = document.body.classList;
   const multi = body.contains('has-multi');
   if (sceneDirty) {
+    const t1 = performance.now();
     drawEdges(multi);
+    const t2 = performance.now();
     drawBadges(multi);
+    stats.edges += t2 - t1;
+    stats.badges += performance.now() - t2;
     sceneDirty = false;
   }
+  const t3 = performance.now();
   for (const [id, card] of cards) {
     const p = pos.get(id);
     if (!p) {
@@ -296,7 +280,10 @@ function frame(now) {
       else invalidate();
     }
   }
+  const t4 = performance.now();
+  stats.cards += t4 - t3;
   app.renderer.render(app.stage);
+  stats.render += performance.now() - t4;
   const dt = performance.now() - t0;
   stats.frames++;
   stats.ms += dt;
@@ -397,7 +384,7 @@ export function glSync() {
       fold: el.querySelector('.fold')?.textContent.trim() || '',
       foldOn: !!el.querySelector('.fold.on'),
       ord: el.querySelector('.ord')?.textContent.trim() || '',
-      h: el.offsetHeight,
+      h: ctx.compact ? el.offsetHeight : 0,
     };
     const key = JSON.stringify(next) + JSON.stringify(state.people[id] || {}) + ctx.compact + document.body.className;
     if (card.key !== key) {
@@ -420,8 +407,7 @@ export function glSync() {
 }
 
 function text(str, style) {
-  const tx = new Text({ text: str, style: new TextStyle({ fontFamily: FONT, ...style }), resolution: textRes });
-  return tx;
+  return new BitmapText({ text: str, style: { fontFamily: FONT, ...style } });
 }
 
 function clampLines(str, style, width, maxLines) {
