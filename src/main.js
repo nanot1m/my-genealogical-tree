@@ -39,6 +39,8 @@ import {
   isCut,
   toggleCut,
   detachFromParents,
+  anythingHidden,
+  showEverything,
   setFocus,
   reveal,
   hiddenSet,
@@ -434,21 +436,36 @@ function mutate(fn) {
   afterChange();
   return r;
 }
+// the person an undo/redo step touched, preferring one still present so it can be shown
+function changedPerson(before, after) {
+  const ids = new Set([...Object.keys(before.people), ...Object.keys(after.people)]);
+  const people = [...ids].filter((id) => JSON.stringify(before.people[id]) !== JSON.stringify(after.people[id]));
+  const fams = new Set([...Object.keys(before.families), ...Object.keys(after.families)]);
+  const famPeople = [...fams]
+    .filter((id) => JSON.stringify(before.families[id]) !== JSON.stringify(after.families[id]))
+    .flatMap((id) => [...(after.families[id]?.children || []), ...(after.families[id]?.parents || [])]);
+  const candidates = [...people, ...famPeople].filter((id) => after.people[id]);
+  return candidates[0] || null;
+}
+function restore(json) {
+  const before = state;
+  setState(JSON.parse(json));
+  const pick = changedPerson(before, state);
+  if (!state.people[selectedId]) selectedId = null;
+  afterChange();
+  if (pick) select(pick);
+}
 function undo() {
   if (editingId) stopEditing();
   if (!undoStack.length) return toast(t('nothing_undo'));
   redoStack.push(snapshot());
-  setState(JSON.parse(undoStack.pop()));
-  if (!state.people[selectedId]) selectedId = null;
-  afterChange();
+  restore(undoStack.pop());
 }
 function redo() {
   if (editingId) stopEditing();
   if (!redoStack.length) return toast(t('nothing_redo'));
   undoStack.push(snapshot());
-  setState(JSON.parse(redoStack.pop()));
-  if (!state.people[selectedId]) selectedId = null;
-  afterChange();
+  restore(redoStack.pop());
 }
 function touch() {
   dirty = true;
@@ -2020,6 +2037,11 @@ document.querySelectorAll('[data-act]').forEach((b) =>
       zoomin: () => zoomAt(1.2, c, m, true),
       zoomout: () => zoomAt(1 / 1.2, c, m, true),
       fit: fitView,
+      unfold: () => {
+        const id = selectedId;
+        mutate(showEverything);
+        if (id) select(id);
+      },
       compact: toggleCompact,
       help: () => $('#help').classList.toggle('show'),
       legend: () => {

@@ -83,6 +83,14 @@ export function hiddenSet() {
 export function isCollapsed(pid) {
   return (state.collapsed || []).includes(pid);
 }
+export function anythingHidden() {
+  return !!((state.collapsed || []).length || (state.cutAbove || []).length || state.focus);
+}
+export function showEverything() {
+  state.collapsed = [];
+  state.cutAbove = [];
+  state.focus = null;
+}
 export function isCut(pid) {
   return (state.cutAbove || []).includes(pid);
 }

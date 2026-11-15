@@ -17,6 +17,7 @@ import {
   descendantsOf,
   isCollapsed,
   hiddenSet,
+  anythingHidden,
 } from './model.js';
 import { computeLayout } from './engine.js';
 import { applyCrossings } from './crossings.js';
@@ -74,6 +75,7 @@ export function render() {
   animatePositions();
   ctx.placeSheet();
   emptyEl.hidden = people().length > 0;
+  $('[data-act=unfold]').hidden = !anythingHidden();
   $('#actions').classList.toggle('show', !!ctx.selectedId && !ctx.editingId);
   document.body.classList.toggle('has-selection', !!ctx.selectedId);
   $('#filename').textContent = ctx.shownName(ctx.fileName);

@@ -276,6 +276,25 @@ test('viewport position and zoom survive a reload', async ({ page }) => {
   expect(await transform()).toBe(before);
 });
 
+test('undo selects the person it changed and brings them into view', async ({ page }) => {
+  await newTree(page);
+  await firstPerson(page, 'Root');
+  for (let i = 0; i < 6; i++) await addRelative(page, 'Root', 'c', 'Kid ' + i);
+  await select(page, 'Kid 0');
+  await page.keyboard.press('Backspace');
+  await expect(cardOf(page, 'Kid 0')).toHaveCount(0);
+  await page.keyboard.press('+');
+  await page.keyboard.press('+');
+  await page.keyboard.press('+');
+  await page.keyboard.press('Meta+z');
+  await expect(cardOf(page, 'Kid 0')).toHaveClass(/selected/);
+  const box = await cardOf(page, 'Kid 0').boundingBox();
+  const vp = page.viewportSize();
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(vp.width);
+  expect(box.y + box.height).toBeLessThanOrEqual(vp.height);
+});
+
 test('hide ancestors and focus mode hide the right people; search reveals them again', async ({ page }) => {
   await newTree(page);
   await firstPerson(page, 'Grandpa');
@@ -327,6 +346,12 @@ test('collapsing a branch hides descendants, survives reload, and search expands
   await expect(cardOf(page, 'Kid')).toHaveClass(/selected/);
   await select(page, 'Dad');
   await page.keyboard.press('h');
+  await expect(cards(page)).toHaveCount(2);
+  await expect(page.locator('[data-act=unfold]')).toBeVisible();
+  await page.click('[data-act=unfold]');
+  await expect(cards(page)).toHaveCount(5);
+  await expect(page.locator('[data-act=unfold]')).toBeHidden();
+  await page.keyboard.press('Meta+z');
   await expect(cards(page)).toHaveCount(2);
   await page.keyboard.press('Meta+z');
   await expect(cards(page)).toHaveCount(5);
