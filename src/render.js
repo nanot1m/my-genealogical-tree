@@ -21,7 +21,7 @@ import {
 } from './model.js';
 import { computeLayout } from './engine.js';
 import { applyCrossings } from './crossings.js';
-import { glSync, glSetPositions } from './gl.js';
+import { gl } from './glbridge.js';
 
 let ctx = null;
 export function initRender(c) {
@@ -119,7 +119,7 @@ export function renderCards() {
     el.classList.add('leave');
     el.addEventListener('animationend', () => el.remove(), { once: true });
   }
-  glSync();
+  gl.sync();
 }
 
 export function fateGlyph(f) {
@@ -167,7 +167,7 @@ export function applyPositions(map, final = map) {
     el.style.translate = f === p || (f.x === p.x && f.y === p.y) ? '' : `${p.x - f.x}px ${p.y - f.y}px`;
   }
   renderEdges(map);
-  glSetPositions(map);
+  gl.setPositions(map);
 }
 
 export function animatePositions() {

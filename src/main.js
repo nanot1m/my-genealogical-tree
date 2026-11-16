@@ -24,7 +24,7 @@ import {
   emptyEl,
   cardEl,
 } from './render.js';
-import { initGL, glSetView, glActive } from './gl.js';
+import { enableGL, gl } from './glbridge.js';
 import { encodeTree, decodeTree } from './ftree.js';
 import { initPdf, exportPdf } from './pdf.js';
 import { t, lang, setLangValue, LANG_KEY } from './i18n.js';
@@ -400,13 +400,11 @@ const ctx = {
 };
 initRender(ctx);
 initPdf(ctx);
-const glReady = (
-  localStorage.getItem('familytree.nogl') ? Promise.resolve(false) : initGL(ctx, { viewport, cardsEl })
-).then((ok) => {
+enableGL(ctx, { viewport, cardsEl }).then((ok) => {
   if (ok) {
     renderCards();
     animatePositions();
-    glSetView(view, false);
+    gl.setView(view, false);
   }
 });
 
@@ -729,11 +727,11 @@ function restoreView() {
 }
 function applyView() {
   world.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.s})`;
-  glSetView(view, world.classList.contains('anim'));
+  gl.setView(view, world.classList.contains('anim'));
   clearTimeout(saveView.t);
   saveView.t = setTimeout(saveView, 300);
   placeSheet();
-  if (!glActive) {
+  if (!gl.active) {
     let g = GRID * view.s;
     while (g < 16) g *= 2;
     viewport.style.backgroundSize = `${g}px ${g}px`;

@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// one navigation per test: storage is seeded before the app boots; the WebGL layer is off unless a test asks for it
+// one navigation per test: storage is seeded before the app boots; the WebGL layer is opt-in, so only its spec enables it
 export async function openApp(page, { lang = 'en', noFS = false, draft = null, gl = false } = {}) {
   await page.addInitScript(
     ({ lang, draft, noFS, gl }) => {
@@ -11,7 +11,7 @@ export async function openApp(page, { lang = 'en', noFS = false, draft = null, g
         localStorage.setItem('familytree.seeded', '1');
         localStorage.setItem('familytree.lang', lang);
         localStorage.setItem('familytree.installDismissed', '1');
-        if (!gl) localStorage.setItem('familytree.nogl', '1');
+        if (gl) localStorage.setItem('familytree.gl', '1');
         if (draft) localStorage.setItem('familytree.draft', JSON.stringify(draft));
       }
     },
