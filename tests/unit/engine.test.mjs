@@ -352,3 +352,44 @@ test('rule 21: in-laws hoisted above a sibling row move aside instead of splitti
   );
   assert.ok(x(res, 'TGF') < x(res, 'Rustam'), 'husband ancestry goes out to the left of the sibling row');
 });
+
+test('rule 22: with a target aspect, components wrap into rows; without it they stay in one row', () => {
+  const spec = { people: [], families: [] };
+  for (let i = 0; i < 6; i++) {
+    spec.people.push([`a${i}`, 'm', '1950'], [`b${i}`, 'f', '1952'], [`c${i}`, 'm', '1980']);
+    spec.families.push([[`a${i}`, `b${i}`], [`c${i}`]]);
+  }
+  const oneRow = computeLayout(build(spec), OPTS);
+  assert.equal(new Set([...oneRow.positions.values()].map((p) => p.y)).size, 2);
+  const square = computeLayout(build(spec), { ...OPTS, aspect: 1 });
+  const ys = new Set([...square.positions.values()].map((p) => p.y));
+  assert.ok(ys.size > 2, 'components wrapped into more rows');
+  const xs = [...square.positions.values()].map((p) => p.x);
+  const w = Math.max(...xs) + OPTS.CARD_W - Math.min(...xs);
+  const h = Math.max(...ys) + OPTS.CARD_H;
+  assert.ok(w / h < 3, `shape approaches the target, got ${Math.round(w)}x${Math.round(h)}`);
+  assert.ok(noOverlap(square));
+});
+
+test('hidden ids passed by the model are excluded with their in-law spouses pruned', () => {
+  const res = computeLayout(
+    {
+      ...build({
+        people: [
+          ['p', 'm'],
+          ['m', 'f'],
+          ['k', 'm'],
+          ['kw', 'f'],
+          ['g', 'f'],
+        ],
+        families: [
+          [['p', 'm'], ['k']],
+          [['k', 'kw'], ['g']],
+        ],
+      }),
+      hidden: ['k', 'g'],
+    },
+    OPTS,
+  );
+  assert.deepEqual([...res.positions.keys()].sort(), ['m', 'p']);
+});

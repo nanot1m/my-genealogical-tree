@@ -20,7 +20,9 @@ export function initPdf(c) {
   });
 }
 
-export const PAPERS = { a4: [210, 297], a3: [297, 420], letter: [215.9, 279.4] };
+export const PAPERS = { a4: [210, 297], a3: [297, 420], a2: [420, 594], letter: [215.9, 279.4] };
+// compose modes: a fixed grid of sheets that together form the next paper sizes up
+export const COMPOSE = { compose2: 2, compose4: 4 };
 
 export const PDF_KEY = 'familytree.pdf';
 
@@ -28,6 +30,7 @@ export const pdfOpts = () => ({
   paper: $('#pd-paper').value,
   mode: $('#pd-mode').value,
   scale: +$('#pd-scale').value,
+  pack: $('#pd-pack').checked,
   orient: $('#pd-orient').value,
   gray: $('#pd-gray').checked,
   plain: $('#pd-plain').checked,
@@ -44,6 +47,26 @@ export function pdfPlan(o) {
   const orient = (pw, ph) => {
     const aw = pw - 2 * margin,
       ah = ph - 2 * margin - footer;
+    if (COMPOSE[o.mode]) {
+      const n = COMPOSE[o.mode];
+      const tw = aw - overlap,
+        th = ah - overlap;
+      const grids =
+        n === 2
+          ? [
+              [2, 1],
+              [1, 2],
+            ]
+          : [[2, 2]];
+      let best = null;
+      for (const [cols, rows] of grids) {
+        const W = (cols - 1) * tw + aw,
+          H = (rows - 1) * th + ah;
+        const s = Math.min(W / (b.w + 2 * pad), H / (b.h + 2 * pad));
+        if (!best || s > best.s) best = { pw, ph, aw, ah, margin, footer, overlap, s, tw, th, cols, rows, fixed: true };
+      }
+      return best;
+    }
     if (o.mode === 'fit')
       return {
         pw,
@@ -81,10 +104,11 @@ export function pdfPlan(o) {
     plan.landscape = plan.pw > plan.ph;
     plan.tiles = [];
     const fit = o.mode === 'fit';
-    const totalW = fit ? plan.aw / plan.s : 0,
-      totalH = fit ? plan.ah / plan.s : 0;
-    const ox = fit ? b.x + b.w / 2 - totalW / 2 : b.x - pad,
-      oy = fit ? b.y + b.h / 2 - totalH / 2 : b.y - pad;
+    const centred = fit || plan.fixed;
+    const totalW = centred ? ((plan.cols - 1) * (plan.tw || 0) + plan.aw) / plan.s : 0,
+      totalH = centred ? ((plan.rows - 1) * (plan.th || 0) + plan.ah) / plan.s : 0;
+    const ox = centred ? b.x + b.w / 2 - totalW / 2 : b.x - pad,
+      oy = centred ? b.y + b.h / 2 - totalH / 2 : b.y - pad;
     for (let r = 0; r < plan.rows; r++)
       for (let c = 0; c < plan.cols; c++) {
         const x0 = ox + (c * plan.tw) / plan.s,
@@ -92,7 +116,9 @@ export function pdfPlan(o) {
         const w = (c < plan.cols - 1 ? plan.tw : plan.aw) / plan.s,
           h = (r < plan.rows - 1 ? plan.th : plan.ah) / plan.s;
         const used =
-          fit || cards.some((p) => p.x < x0 + w && p.x + ctx.CARD_W > x0 && p.y < y0 + h && p.y + ctx.CARD_H > y0);
+          fit ||
+          plan.fixed ||
+          cards.some((p) => p.x < x0 + w && p.x + ctx.CARD_W > x0 && p.y < y0 + h && p.y + ctx.CARD_H > y0);
         if (used) plan.tiles.push({ r, c, x0, y0 });
       }
     return plan;
@@ -112,6 +138,8 @@ export function pdfPlan(o) {
             ? L
             : P;
   plan.paperMM = plan.pw > plan.ph ? [sh, sw] : [sw, sh];
+  // names below about 7pt stop being readable; the hint and the paper overlay warn about it
+  plan.namePt = Math.round((15.5 * plan.s * 72) / 96);
   if (o.mode === 'poster' && plan.tiles.length === 1) {
     const f = pdfPlan({ ...o, mode: 'fit' });
     if (f.s > plan.s) return f;
@@ -122,12 +150,13 @@ export function pdfPlan(o) {
 export function pdfHint() {
   if (!ctx.positions.size) return '';
   const plan = pdfPlan(pdfOpts());
-  $('#pd-scale-row').hidden = pdfOpts().mode === 'fit';
+  $('#pd-scale-row').hidden = pdfOpts().mode !== 'poster';
   drawPdfPreview(plan);
   return (
     t('pd_pages')
       .replace('{n}', plan.tiles.length)
       .replace('{s}', Math.round(plan.s * 100)) +
+    (plan.namePt < 7 ? ' · ' + t('pd_small').replace('{pt}', plan.namePt) : '') +
     ' · ' +
     t('pd_print_hint')
       .replace('{p}', $('#pd-paper').selectedOptions[0].textContent)

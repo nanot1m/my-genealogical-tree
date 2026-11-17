@@ -26,6 +26,7 @@ Rules are agreed. Priority when rules conflict: no overlap (hard), couple integr
 
 20. Rule 2 is always in force. The "fewer crossings" sibling mode is removed.
 21. In-law blocks that are hoisted above a sibling row never split the siblings. Siblings are packed first by their own rows; a hoisted block that would collide slides further out on its own side (left for a husband's relatives, right for a wife's), even if that puts it far from the spouse it belongs to.
+22. Disconnected groups normally go in one row (rule 13). When a target paper shape is given, they wrap into several rows so the whole picture approaches that shape; the order of groups is unchanged, only the line breaks are added.
 
 # Engine design
 

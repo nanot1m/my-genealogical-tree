@@ -1,7 +1,7 @@
 // Pure layout engine: people + families in, positions out. No DOM, no app state.
 
 export function computeLayout(model, opts) {
-  const { CARD_W, CARD_H, COUPLE_GAP, H_GAP, V_GAP, TREE_GAP } = opts;
+  const { CARD_W, CARD_H, COUPLE_GAP, H_GAP, V_GAP, TREE_GAP, aspect = 0 } = opts;
   const people = model.people || {},
     families = model.families || {};
   const famList = Object.values(families);
@@ -451,7 +451,7 @@ export function computeLayout(model, opts) {
     }
     return { body, hoists, x: xs };
   }
-  let offset = 0;
+  const blocks = [];
   for (const compTrees of trees) {
     let acc = null;
     const frames = [];
@@ -462,31 +462,60 @@ export function computeLayout(model, opts) {
       frames.push([f, dx]);
       acc = acc ? merge(acc, shiftContour(c, dx)) : shiftContour(c, dx);
     }
-    step(
-      'pack',
-      `Component ${trees.indexOf(compTrees) + 1}: ${compTrees.length} tree${compTrees.length > 1 ? 's' : ''}`,
-      `Root trees packed left to right in root order; the whole component is placed after the previous one with ${TREE_GAP}px gap.`,
-      compTrees.flatMap((t) => t.members),
-      { reveal: compTrees.flatMap((t) => subUnits(t)) },
-    );
     let minX = Infinity,
       maxX = -Infinity,
-      minRow = Infinity;
-    for (const segs of acc.values())
-      for (const [l, r] of segs) {
+      minRow = Infinity,
+      maxRow = -Infinity;
+    for (const [r, segs] of acc) {
+      minRow = Math.min(minRow, r);
+      maxRow = Math.max(maxRow, r);
+      for (const [l, rr] of segs) {
         minX = Math.min(minX, l);
-        maxX = Math.max(maxX, r);
+        maxX = Math.max(maxX, rr);
       }
-    for (const r of acc.keys()) minRow = Math.min(minRow, r);
+    }
+    const cunits = [];
     for (const [f, dx] of frames)
       for (const [u, x] of f.x) {
-        u.x = x + dx + offset - minX;
+        u.x = x + dx - minX;
         u.row -= minRow;
+        cunits.push(u);
       }
-    offset += maxX - minX + TREE_GAP;
+    blocks.push({ trees: compTrees, units: cunits, width: maxX - minX, rows: maxRow - minRow + 1 });
   }
-  for (const u of units)
-    for (const m of u.members) positions.set(m, { x: u.x + memberOffset(u, m), y: u.row * (CARD_H + V_GAP) });
+  // components go left to right; with a target aspect (paper) they wrap into rows so the whole picture has that shape (rule 22)
+  const rowH = CARD_H + V_GAP;
+  let targetW = Infinity;
+  if (aspect > 0 && blocks.length > 1) {
+    const area = blocks.reduce((a, c) => a + (c.width + TREE_GAP) * (c.rows * rowH + V_GAP), 0);
+    targetW = Math.max(Math.max(...blocks.map((c) => c.width)), Math.sqrt(area * aspect));
+  }
+  let x0 = 0,
+    rowTop = 0,
+    rowDepth = 0;
+  for (const c of blocks) {
+    if (x0 > 0 && x0 + c.width > targetW) {
+      x0 = 0;
+      rowTop += rowDepth + 1;
+      rowDepth = 0;
+    }
+    for (const u of c.units) {
+      u.x += x0;
+      u.row += rowTop;
+    }
+    step(
+      'pack',
+      `Component ${blocks.indexOf(c) + 1}: ${c.trees.length} tree${c.trees.length > 1 ? 's' : ''}`,
+      targetW < Infinity
+        ? `Root trees packed left to right; components wrap into rows to match the paper shape (rule 22).`
+        : `Root trees packed left to right in root order; the whole component is placed after the previous one with ${TREE_GAP}px gap.`,
+      c.trees.flatMap((t) => t.members),
+      { reveal: c.trees.flatMap((t) => subUnits(t)) },
+    );
+    x0 += c.width + TREE_GAP;
+    rowDepth = Math.max(rowDepth, c.rows);
+  }
+  for (const u of units) for (const m of u.members) positions.set(m, { x: u.x + memberOffset(u, m), y: u.row * rowH });
   if (trace)
     trace.units = units.map((u) => ({
       id: u.id,

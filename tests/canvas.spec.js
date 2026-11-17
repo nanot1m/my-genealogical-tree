@@ -10,6 +10,7 @@ import {
   positions,
   attachConsoleGuard,
   reloadApp,
+  setGender,
 } from './helpers.js';
 
 test.describe('canvas and first person', () => {
@@ -293,6 +294,56 @@ test('undo selects the person it changed and brings them into view', async ({ pa
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(vp.width);
   expect(box.y + box.height).toBeLessThanOrEqual(vp.height);
+});
+
+test('toolbar search opens the finder; statistics panel counts people, genders and lifespans', async ({ page }) => {
+  await newTree(page);
+  await firstPerson(page, 'Anna', '1950-01-01');
+  await addRelative(page, 'Anna', 'c', 'Kid', '1980-05-05');
+  await setGender(page, 'Anna', 'f');
+  await page.click('[data-act=search]');
+  await expect(page.locator('#search')).toHaveClass(/show/);
+  await page.keyboard.type('Kid');
+  await page.keyboard.press('Enter');
+  await expect(cardOf(page, 'Kid')).toHaveClass(/selected/);
+  await page.click('[data-act=stats]');
+  await expect(page.locator('#stats')).toHaveClass(/show/);
+  const text = await page.locator('#stats .panel').innerText();
+  expect(text).toContain('People');
+  expect(text).toMatch(/People\s*2/);
+  expect(text).toMatch(/Women\s*1/);
+  expect(text).toMatch(/Births from – to\s*1950 – 1980/);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#stats')).not.toHaveClass(/show/);
+});
+
+test('hide a person with their branch, the parent shows a count, reload keeps it, paper overlay and compose modes work', async ({
+  page,
+}) => {
+  await newTree(page);
+  await firstPerson(page, 'Grandpa');
+  await addRelative(page, 'Grandpa', 'c', 'Dad');
+  await addRelative(page, 'Dad', 'c', 'Me');
+  await addRelative(page, 'Grandpa', 'c', 'Uncle');
+  await select(page, 'Dad');
+  await page.click('#actions [data-sel=hide]');
+  await expect(cards(page)).toHaveCount(2);
+  await expect(cardOf(page, 'Grandpa').locator('.fold')).toHaveText('▸ 2');
+  await reloadApp(page);
+  await page.click('#w-continue');
+  await expect(cards(page)).toHaveCount(2);
+  await page.click('[data-act=paper]');
+  await expect(page.locator('#paper rect')).toHaveCount(1);
+  await page.click('[data-act=pdf]');
+  await page.selectOption('#pd-mode', 'compose4');
+  await expect(page.locator('#pd-hint')).toContainText('4 sheet');
+  await expect(page.locator('#paper rect')).toHaveCount(4);
+  await page.selectOption('#pd-paper', 'a2');
+  await page.selectOption('#pd-mode', 'fit');
+  await expect(page.locator('#paper rect')).toHaveCount(1);
+  await page.click('#pd-cancel');
+  await cardOf(page, 'Grandpa').locator('.fold').click();
+  await expect(cards(page)).toHaveCount(4);
 });
 
 test('hide ancestors and focus mode hide the right people; search reveals them again', async ({ page }) => {

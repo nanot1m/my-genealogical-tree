@@ -26,7 +26,7 @@ import {
 } from './render.js';
 import { enableGL, gl } from './glbridge.js';
 import { encodeTree, decodeTree } from './ftree.js';
-import { initPdf, exportPdf } from './pdf.js';
+import { initPdf, exportPdf, pdfPlan, pdfOpts, PDF_KEY } from './pdf.js';
 import { t, lang, setLangValue, LANG_KEY } from './i18n.js';
 import {
   state,
@@ -41,6 +41,8 @@ import {
   detachFromParents,
   anythingHidden,
   showEverything,
+  hidePerson,
+  descendantsOf,
   setFocus,
   reveal,
   hiddenSet,
@@ -396,6 +398,12 @@ const ctx = {
   },
   get bbox() {
     return bbox;
+  },
+  get packAspect() {
+    return packAspect();
+  },
+  get drawPaper() {
+    return drawPaper;
   },
 };
 initRender(ctx);
@@ -767,6 +775,131 @@ function toggleCompact() {
   render();
   fitView();
 }
+// ---- statistics panel
+function renderStats() {
+  const ps = people();
+  const now = new Date().getFullYear();
+  const yearOf = (s) => (s ? +s.slice(0, 4) : null);
+  const alive = ps.filter((p) => p.alive && !p.fate),
+    dead = ps.filter((p) => !p.alive && !p.fate),
+    men = ps.filter((p) => p.gender === 'm'),
+    women = ps.filter((p) => p.gender === 'f'),
+    photos = ps.filter((p) => p.photo),
+    dated = ps.filter((p) => p.birth);
+  const ages = dead.filter((p) => p.birth && p.death).map((p) => yearOf(p.death) - yearOf(p.birth));
+  const livingAges = alive.filter((p) => p.birth).map((p) => now - yearOf(p.birth));
+  const avg = (xs) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : null);
+  const fams = Object.values(state.families);
+  const marriages = fams.filter((f) => f.parents.length === 2);
+  const kidsPer = fams.filter((f) => f.children.length).map((f) => f.children.length);
+  const years = dated.map((p) => yearOf(p.birth));
+  const oldest = dead
+    .filter((p) => p.birth && p.death)
+    .sort((a, b) => yearOf(b.death) - yearOf(b.birth) - (yearOf(a.death) - yearOf(a.birth)))[0];
+  const eldest = alive.filter((p) => p.birth).sort((a, b) => yearOf(a.birth) - yearOf(b.birth))[0];
+  const gens = positions.size ? new Set([...positions.values()].map((p) => p.y)).size : 0;
+  const byDecade = new Map();
+  for (const y of years) byDecade.set(Math.floor(y / 10) * 10, (byDecade.get(Math.floor(y / 10) * 10) || 0) + 1);
+  const decades = [...byDecade].sort((a, b) => a[0] - b[0]);
+  const maxD = Math.max(1, ...decades.map(([, n]) => n));
+  const nm = (p) => esc(p.name || t('unnamed'));
+  const row = (k, v) => (v == null || v === '' ? '' : `<div><span>${esc(t(k))}</span><b>${v}</b></div>`);
+  const pct = (n) => (ps.length ? ` · ${Math.round((100 * n) / ps.length)}%` : '');
+  $('#stats .panel').innerHTML =
+    `<h2>${esc(t('stats_title'))}</h2><div class="grid">` +
+    row('st_people', ps.length) +
+    row('st_men', men.length + pct(men.length)) +
+    row('st_women', women.length + pct(women.length)) +
+    row('st_alive', alive.length) +
+    row('st_dead', dead.length) +
+    row('st_marriages', marriages.length) +
+    row('st_children_avg', avg(kidsPer)) +
+    row('st_generations', gens) +
+    row('st_photos', photos.length + pct(photos.length)) +
+    row('st_dated', dated.length + pct(dated.length)) +
+    row('st_life', avg(ages) != null ? `${avg(ages)} ${t('years')}` : null) +
+    row('st_age_living', avg(livingAges) != null ? `${avg(livingAges)} ${t('years')}` : null) +
+    row('st_span', years.length ? `${Math.min(...years)} – ${Math.max(...years)}` : null) +
+    row('st_longest', oldest ? `${nm(oldest)} · ${yearOf(oldest.death) - yearOf(oldest.birth)}` : null) +
+    row('st_eldest', eldest ? `${nm(eldest)} · ${now - yearOf(eldest.birth)}` : null) +
+    `</div>` +
+    (decades.length > 1
+      ? `<h3>${esc(t('st_births'))}</h3><div class="bars">${decades
+          .map(
+            ([d, n]) =>
+              `<div title="${d}s: ${n}"><i style="height:${Math.round((100 * n) / maxD)}%"></i><span>${String(d).slice(2)}</span></div>`,
+          )
+          .join('')}</div>`
+      : '');
+}
+$('#stats').addEventListener('click', (e) => {
+  if (e.target === $('#stats')) $('#stats').classList.remove('show');
+});
+
+// ---- paper overlay: sheet borders of the print plan drawn in world coordinates
+const PAPER_KEY = 'familytree.paper';
+let paperOn = localStorage.getItem(PAPER_KEY) === '1';
+const paperSvg = $('#paper');
+function loadPdfSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PDF_KEY) || '{}');
+    if (saved.paper) $('#pd-paper').value = saved.paper;
+    if (saved.mode) $('#pd-mode').value = saved.mode;
+    if (saved.scale) $('#pd-scale').value = String(saved.scale);
+    if (saved.orient) $('#pd-orient').value = saved.orient;
+    $('#pd-gray').checked = !!saved.gray;
+    $('#pd-plain').checked = !!saved.plain;
+    $('#pd-pack').checked = !!saved.pack;
+  } catch (_) {}
+}
+loadPdfSettings();
+function packAspect() {
+  if (!$('#pd-pack').checked) return 0;
+  const plan = positions.size ? pdfPlan(pdfOpts()) : null;
+  if (!plan) return 0;
+  return ((plan.cols - 1) * (plan.tw || 0) + plan.aw) / ((plan.rows - 1) * (plan.th || 0) + plan.ah);
+}
+function setPaper(on) {
+  paperOn = on;
+  localStorage.setItem(PAPER_KEY, on ? '1' : '0');
+  document.querySelector('[data-act=paper]').classList.toggle('on', on);
+  $('#pd-show').checked = on;
+  drawPaper();
+}
+function drawPaper() {
+  paperSvg.hidden = !paperOn || !positions.size;
+  if (paperSvg.hidden) return;
+  const plan = pdfPlan(pdfOpts());
+  const w = plan.aw / plan.s,
+    h = plan.ah / plan.s;
+  const multi = plan.tiles.length > 1;
+  const label = (tl) => `${String.fromCharCode(65 + tl.r)}${tl.c + 1}`;
+  const size = $('#pd-paper').selectedOptions[0].textContent;
+  const info = `${size} ${t(plan.landscape ? 'pd_landscape' : 'pd_portrait').toLowerCase()} · ${plan.tiles.length} · ${Math.round(plan.s * 100)}%`;
+  const fs = Math.max(14, 36 / Math.max(plan.s, 0.2));
+  paperSvg.innerHTML =
+    plan.tiles
+      .map(
+        (tl) =>
+          `<rect x="${tl.x0}" y="${tl.y0}" width="${w}" height="${h}"/>` +
+          (multi ? `<text x="${tl.x0 + fs * 0.5}" y="${tl.y0 + fs * 1.2}" font-size="${fs}">${label(tl)}</text>` : ''),
+      )
+      .join('') +
+    `<text class="info${plan.namePt < 7 ? ' warn' : ''}" x="${plan.tiles[0].x0}" y="${plan.tiles[0].y0 - fs * 0.5}" font-size="${fs}">${esc(info)}${plan.namePt < 7 ? ' · ' + esc(t('pd_small').replace('{pt}', plan.namePt)) : ''}</text>`;
+}
+$('#pdfdlg').addEventListener('change', (e) => {
+  if (e.target.id === 'pd-show') return setPaper(e.target.checked);
+  localStorage.setItem(PDF_KEY, JSON.stringify(pdfOpts()));
+  if (
+    e.target.id === 'pd-pack' ||
+    e.target.id === 'pd-paper' ||
+    e.target.id === 'pd-mode' ||
+    e.target.id === 'pd-orient'
+  )
+    render();
+  drawPaper();
+});
+document.querySelector('[data-act=paper]').classList.toggle('on', paperOn);
 function fitView() {
   if (!positions.size) return resetView();
   const b = bbox();
@@ -1310,7 +1443,13 @@ cardsEl.addEventListener('click', (e) => {
     return;
   }
   if (e.target.closest('.fold')) {
-    toggleFold(id);
+    if (isCollapsed(id)) toggleFold(id);
+    else
+      anchoredMutate(id, () => {
+        state.hiddenPeople = (state.hiddenPeople || []).filter((h) => h !== id && !descendantsOf(h).has(id));
+        for (const d of descendantsOf(id))
+          state.hiddenPeople = state.hiddenPeople.filter((h) => h !== d && !descendantsOf(h).has(d));
+      });
     return;
   }
   if (e.shiftKey || e.metaKey || e.ctrlKey) {
@@ -1933,6 +2072,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if ($('#help').classList.contains('show')) return $('#help').classList.remove('show');
     if ($('#legend').classList.contains('show')) return $('#legend').classList.remove('show');
+    if ($('#stats').classList.contains('show')) return $('#stats').classList.remove('show');
     if (welcome.classList.contains('show') && people().length) return hideWelcome();
     if (mpopFamily) return closeMarriage();
     if (linkFrom) return cancelLink();
@@ -2024,7 +2164,10 @@ document.querySelectorAll('[data-act]').forEach((b) =>
       saveas: () => save(true),
       undo,
       redo,
-      pdf: exportPdf,
+      pdf: () => {
+        $('#pd-show').checked = paperOn;
+        exportPdf();
+      },
       download,
       filemenu: () =>
         openMenu(b, shownName(fileName), [
@@ -2038,6 +2181,14 @@ document.querySelectorAll('[data-act]').forEach((b) =>
       zoomin: () => zoomAt(1.2, c, m, true),
       zoomout: () => zoomAt(1 / 1.2, c, m, true),
       fit: fitView,
+      paper: () => setPaper(!paperOn),
+      search: () => people().length && openSearch(),
+      stats: () => {
+        $('#help').classList.remove('show');
+        $('#legend').classList.remove('show');
+        renderStats();
+        $('#stats').classList.toggle('show');
+      },
       unfold: () => {
         const id = selectedId;
         mutate(showEverything);
@@ -2061,7 +2212,12 @@ $('#actions').addEventListener('click', (e) => {
   else if (a === 'fold') toggleFold(selectedId);
   else if (a === 'cut') toggleCutAbove(selectedId);
   else if (a === 'focus') toggleFocus(selectedId);
-  else if (a === 'photo') photoAction(selectedId, b);
+  else if (a === 'hide') {
+    const id = selectedId,
+      next = parentsOf(id)[0] || spousesOf(id)[0] || null;
+    mutate(() => hidePerson(id));
+    select(next && !hiddenSet().has(next) ? next : null);
+  } else if (a === 'photo') photoAction(selectedId, b);
   else if (a === 'delete') removeSelected();
   else createRelative(selectedId, a, b);
 });

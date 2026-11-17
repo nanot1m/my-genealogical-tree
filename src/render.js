@@ -18,6 +18,7 @@ import {
   isCollapsed,
   hiddenSet,
   anythingHidden,
+  hiddenBelow,
 } from './model.js';
 import { computeLayout } from './engine.js';
 import { applyCrossings } from './crossings.js';
@@ -64,6 +65,7 @@ export function layout() {
       H_GAP: ctx.H_GAP,
       V_GAP: ctx.V_GAP,
       TREE_GAP: ctx.TREE_GAP,
+      aspect: ctx.packAspect,
     },
   ).positions;
 }
@@ -76,6 +78,7 @@ export function render() {
   ctx.placeSheet();
   emptyEl.hidden = people().length > 0;
   $('[data-act=unfold]').hidden = !anythingHidden();
+  ctx.drawPaper?.();
   $('#actions').classList.toggle('show', !!ctx.selectedId && !ctx.editingId);
   document.body.classList.toggle('has-selection', !!ctx.selectedId);
   $('#filename').textContent = ctx.shownName(ctx.fileName);
@@ -144,7 +147,7 @@ export function cardHTML(p) {
         <button class="photo-x ${p.photo ? 'has-photo' : ''}" title="${t('remove_photo')}">×</button>
       </div>
       ${birthOrder(p.id) ? `<span class="ord" title="${t('birth_order')}">${birthOrder(p.id)}</span>` : ''}
-      ${childrenOf(p.id).length && isCollapsed(p.id) ? `<button class="fold on" title="${t('expand')}">▸ ${descendantsOf(p.id).size}</button>` : ''}
+      ${childrenOf(p.id).length && (isCollapsed(p.id) || hiddenBelow(p.id)) ? `<button class="fold on" title="${t(isCollapsed(p.id) ? 'expand' : 'show_hidden')}">▸ ${isCollapsed(p.id) ? descendantsOf(p.id).size : hiddenBelow(p.id)}</button>` : ''}
       <div class="info">
         <div class="name ${p.name ? '' : 'empty'}" title="${esc(fullName(p))}"><span class="nm">${esc(p.name) || t('unnamed')}</span>${p.birthName ? ` <span class="nee">${t('nee')} ${esc(p.birthName)}</span>` : ''}</div>
         <div class="dates ${dt ? '' : 'empty'}">${esc(dt)}${p.fate ? `<span class="fate-chip">${t('fate_' + p.fate)}</span>` : ''}</div>

@@ -19,6 +19,7 @@ export function emptyState() {
     collapsed: [],
     cutAbove: [],
     focus: null,
+    hiddenPeople: [],
   };
 }
 export function descendantsOf(pid) {
@@ -60,6 +61,14 @@ export function hiddenSet() {
   }
   for (const id of state.collapsed || []) hidden.delete(id);
   for (const id of state.cutAbove || []) if (state.people[id]) for (const x of aboveOf(id)) hidden.add(x);
+  for (const id of state.hiddenPeople || []) {
+    if (!state.people[id]) continue;
+    hidden.add(id);
+    for (const d of descendantsOf(id)) {
+      hidden.add(d);
+      for (const sp of spousesOf(d)) hidden.add(sp);
+    }
+  }
   if (state.focus && state.people[state.focus]) {
     const keep = new Set([state.focus]);
     for (const d of descendantsOf(state.focus)) keep.add(d);
@@ -84,12 +93,32 @@ export function isCollapsed(pid) {
   return (state.collapsed || []).includes(pid);
 }
 export function anythingHidden() {
-  return !!((state.collapsed || []).length || (state.cutAbove || []).length || state.focus);
+  return !!(
+    (state.collapsed || []).length ||
+    (state.cutAbove || []).length ||
+    (state.hiddenPeople || []).length ||
+    state.focus
+  );
 }
 export function showEverything() {
   state.collapsed = [];
   state.cutAbove = [];
+  state.hiddenPeople = [];
   state.focus = null;
+}
+export function isHiddenPerson(pid) {
+  return (state.hiddenPeople || []).includes(pid);
+}
+export function hidePerson(pid) {
+  state.hiddenPeople ??= [];
+  if (!state.hiddenPeople.includes(pid)) state.hiddenPeople.push(pid);
+}
+// descendants hidden below a visible person, by collapse or by hiding: shown as a count on the card
+export function hiddenBelow(pid) {
+  const h = hiddenSet();
+  let n = 0;
+  for (const d of descendantsOf(pid)) if (h.has(d)) n++;
+  return n;
 }
 export function isCut(pid) {
   return (state.cutAbove || []).includes(pid);
@@ -110,6 +139,8 @@ export function reveal(pid) {
     (c) => !ancestorsOf(pid).has(c) && !spousesOf(pid).some((sp) => ancestorsOf(sp).has(c)),
   );
   if (hiddenSet().has(pid)) state.cutAbove = (state.cutAbove || []).filter((c) => !aboveOf(c).has(pid));
+  if (hiddenSet().has(pid))
+    state.hiddenPeople = (state.hiddenPeople || []).filter((h) => h !== pid && !descendantsOf(h).has(pid));
   if (hiddenSet().has(pid)) state.focus = null;
 }
 export function toggleCollapsed(pid) {
