@@ -88,7 +88,9 @@ test.describe('detaching and split partners', () => {
     await expect(cardOf(page, 'Kid')).toHaveCount(1);
     await addRelative(page, 'Pa', 'm', 'Ex');
     await page.locator('.marriage').first().click();
-    await page.selectOption('#m-status', 'partners_sep');
+    await page.selectOption('#m-status', 'partners');
+    await page.selectOption('#m-status', 'separated');
+    await expect(page.locator('#m-status')).toHaveValue('partners_sep');
     await page.keyboard.press('Enter');
     expect((await page.locator('#edges path.partners.past').getAttribute('d')).length).toBeGreaterThan(0);
     expect(((await page.locator('#edges path.slash').getAttribute('d')).match(/M/g) || []).length).toBe(1);

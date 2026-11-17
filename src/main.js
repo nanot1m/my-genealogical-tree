@@ -546,7 +546,10 @@ mpop.addEventListener('input', (e) => {
   if (e.target.id === 'm-from') f.married = e.target.value;
   if (e.target.id === 'm-to') f.ended = e.target.value;
   if (e.target.id === 'm-status') {
-    f.status = e.target.value;
+    // an unmarried couple that separates stays unmarried: keep the dashed notation
+    const wasPartners = f.status === 'partners' || f.status === 'partners_sep';
+    f.status = wasPartners && e.target.value === 'separated' ? 'partners_sep' : e.target.value;
+    e.target.value = f.status;
     $('#m-hint').textContent = statusHint(f.status);
   }
   touch();
