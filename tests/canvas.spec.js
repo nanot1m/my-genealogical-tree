@@ -367,6 +367,16 @@ test('hide ancestors and focus mode hide the right people; search reveals them a
   await expect(cards(page)).toHaveCount(4);
   await expect(cardOf(page, 'Uncle')).toHaveCount(0);
   await expect(page.locator('#actions [data-sel=focus]')).toHaveText('Show all');
+  await select(page, 'Me');
+  await page.click('#actions [data-sel=lineage]');
+  await expect(cardOf(page, 'Grandpa')).toHaveCount(1);
+  await expect(cardOf(page, 'Kid')).toHaveCount(1);
+  await expect(cardOf(page, 'Uncle')).toHaveCount(0);
+  await expect(page.locator('#actions [data-sel=lineage]')).toHaveText('Show all');
+  await page.click('#actions [data-sel=lineage]');
+  await expect(cards(page)).toHaveCount(6);
+  await select(page, 'Dad');
+  await page.click('#actions [data-sel=focus]');
   await page.keyboard.press('Meta+f');
   await page.keyboard.type('Uncle');
   await page.keyboard.press('Enter');

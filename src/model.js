@@ -19,6 +19,7 @@ export function emptyState() {
     collapsed: [],
     cutAbove: [],
     focus: null,
+    focusMode: 'down',
     hiddenPeople: [],
   };
 }
@@ -72,6 +73,7 @@ export function hiddenSet() {
   if (state.focus && state.people[state.focus]) {
     const keep = new Set([state.focus]);
     for (const d of descendantsOf(state.focus)) keep.add(d);
+    if (state.focusMode === 'line') for (const a of ancestorsOf(state.focus)) keep.add(a);
     for (const k of [...keep]) for (const sp of spousesOf(k)) keep.add(sp);
     for (const p of people()) if (!keep.has(p.id)) hidden.add(p.id);
   }
@@ -129,8 +131,9 @@ export function toggleCut(pid) {
   if (i >= 0) state.cutAbove.splice(i, 1);
   else state.cutAbove.push(pid);
 }
-export function setFocus(pid) {
+export function setFocus(pid, mode = 'down') {
   state.focus = pid || null;
+  state.focusMode = mode;
 }
 // make pid visible again by undoing whatever hides it, least disruptive first
 export function reveal(pid) {

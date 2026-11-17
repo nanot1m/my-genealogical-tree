@@ -1083,8 +1083,10 @@ function anchoredMutate(id, fn) {
 function toggleCutAbove(id) {
   anchoredMutate(id, () => toggleCut(id));
 }
-function toggleFocus(id) {
-  anchoredMutate(id, () => setFocus(state.focus === id ? null : id));
+function toggleFocus(id, mode = 'down') {
+  anchoredMutate(id, () =>
+    state.focus === id && (state.focusMode || 'down') === mode ? setFocus(null) : setFocus(id, mode),
+  );
 }
 function toggleFold(id) {
   if (!childrenOf(id).length) return;
@@ -1273,7 +1275,9 @@ function select(id, opts = {}) {
     const cb = $('#actions [data-sel=cut]');
     cb.hidden = !parentsOf(id).length && !isCut(id);
     cb.textContent = t(isCut(id) ? 'show_above' : 'hide_above');
-    $('#actions [data-sel=focus]').textContent = t(state.focus === id ? 'show_all' : 'focus_on');
+    const fm = state.focus === id ? state.focusMode || 'down' : null;
+    $('#actions [data-sel=focus]').textContent = t(fm === 'down' ? 'show_all' : 'focus_on');
+    $('#actions [data-sel=lineage]').textContent = t(fm === 'line' ? 'show_all' : 'lineage_on');
   }
   $('#actions').classList.toggle('show', !!id);
   document.body.classList.toggle('has-selection', !!id);
@@ -2341,6 +2345,7 @@ $('#actions').addEventListener('click', (e) => {
   else if (a === 'fold') toggleFold(selectedId);
   else if (a === 'cut') toggleCutAbove(selectedId);
   else if (a === 'focus') toggleFocus(selectedId);
+  else if (a === 'lineage') toggleFocus(selectedId, 'line');
   else if (a === 'hide') {
     const id = selectedId,
       next = parentsOf(id)[0] || spousesOf(id)[0] || null;
