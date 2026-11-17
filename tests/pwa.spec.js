@@ -76,7 +76,7 @@ test.describe('in-app documentation', () => {
     await addRelative(page, null, 'c', 'B');
     await page.click('[data-act=legend]');
     await expect(page.locator('#legend.show')).toBeVisible();
-    await expect(page.locator('#legend .item')).toHaveCount(30);
+    await expect(page.locator('#legend .item')).toHaveCount(46);
     await expect(page.locator('#legend h3')).toHaveText([
       'Couples',
       'Children',
@@ -93,7 +93,7 @@ test.describe('in-app documentation', () => {
     await page.keyboard.press('l');
     await cardOf(page, 'B').click();
     await expect(page.locator('#menu button small').first()).toHaveText('Draw a marriage line between the two');
-    await expect(page.locator('#menu button', { hasText: 'Conflict' }).locator('small')).toHaveText(
+    await expect(page.locator('#menu button', { hasText: /^↔ Conflict/ }).locator('small')).toHaveText(
       'Zigzag: frequent conflict',
     );
     await page.keyboard.press('Escape');

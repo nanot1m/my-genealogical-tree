@@ -11,6 +11,7 @@ import {
   rows,
   setGender,
   reloadApp,
+  sheetTab,
 } from './helpers.js';
 
 test.describe('spouses and marriages', () => {
@@ -80,6 +81,7 @@ test.describe('detaching and split partners', () => {
     await addRelative(page, 'Pa', 'c', 'Other');
     await select(page, 'Kid');
     await cardOf(page, 'Kid').dblclick();
+    await sheetTab(page, 'family');
     await expect(page.locator('#sh-unparent')).toBeVisible();
     await page.click('#sh-unparent');
     const st = await draftState(page);
@@ -245,17 +247,21 @@ test.describe('birth order', () => {
     await expect(badge('C')).toHaveText('3');
     await expect(cardOf(page, 'Mom').locator('.ord')).toHaveCount(0);
     await cardOf(page, 'C').dblclick();
+    await sheetTab(page, 'family');
     await expect(page.locator('#sh-order-row')).toBeVisible();
     await page.click('#sh-order [data-ord="-1"]');
     await expect(badge('C')).toHaveText('2');
     await expect(badge('B')).toHaveText('3');
     await page.keyboard.press('Escape');
     await cardOf(page, 'A').dblclick();
+    await sheetTab(page, 'person');
     await page.fill('#sh-birth', '1990-01-01');
+    await sheetTab(page, 'family');
     await expect(page.locator('#sh-order [data-ord="1"]')).toBeDisabled();
     await expect(page.locator('#sh-order-hint')).toBeVisible();
     await page.keyboard.press('Escape');
     await cardOf(page, 'B').dblclick();
+    await sheetTab(page, 'person');
     await page.fill('#sh-birth', '1980-01-01');
     await page.keyboard.press('Escape');
     await expect(badge('B')).toHaveText('1');
@@ -326,7 +332,7 @@ test.describe('linking existing people', () => {
     await select(page, 'A');
     await page.keyboard.press('l');
     await cardOf(page, 'B').click();
-    await page.locator('#menu button', { hasText: 'Conflict' }).click();
+    await page.locator('#menu button', { hasText: /^↔ Conflict/ }).click();
     await expect(page.locator('#edges path.rel.conflict')).toHaveCount(1);
     await expect(page.locator('.relbadge')).toHaveText('Conflict');
     await page.locator('.relbadge').click();
@@ -365,6 +371,7 @@ test.describe('genogram markers', () => {
       await page.click('#sh-gender [data-v=m]');
       await page.locator('#sh-alive').uncheck();
       await page.fill('#sh-death', '2010-01-01');
+      await sheetTab(page, 'person');
       await page.locator('#sh-index').check();
     });
     await expect(cardOf(page, 'Boris')).toHaveClass(/deceased/);
@@ -375,16 +382,20 @@ test.describe('genogram markers', () => {
     expect(r[0]).toEqual(['Boris', 'Anna']);
     for (const k of ['Twin1', 'Twin2', 'Adopted', 'Foster', 'Preg']) await addRelative(page, 'Anna', 'c', k);
     await edit('Twin1', async () => {
+      await sheetTab(page, 'family');
       await page.selectOption('#sh-twin', { label: 'Twin2' });
       await page.locator('#sh-identical').check();
     });
     await edit('Adopted', async () => {
+      await sheetTab(page, 'family');
       await page.selectOption('#sh-kind', 'adopted');
     });
     await edit('Foster', async () => {
+      await sheetTab(page, 'family');
       await page.selectOption('#sh-kind', 'foster');
     });
     await edit('Preg', async () => {
+      await sheetTab(page, 'genogram');
       await page.selectOption('#sh-fate', 'pregnancy');
     });
     await expect(cardOf(page, 'Preg').locator('.photo svg.fg path')).toHaveCount(1);
@@ -401,7 +412,7 @@ test.describe('genogram markers', () => {
     await select(page, 'Anna');
     await page.keyboard.press('l');
     await cardOf(page, 'Foster').click();
-    await page.locator('#menu button', { hasText: 'Focused' }).click();
+    await page.locator('#menu button', { hasText: /^→ Focused on/ }).click();
     await expect(page.locator('#edges path.rel.focused')).toHaveAttribute('marker-end', /arrow-head/);
     await expect(page.locator('#edges path.rel.close[marker-start]')).toHaveCount(0);
     await select(page, 'Boris');
@@ -412,6 +423,7 @@ test.describe('genogram markers', () => {
     await page.keyboard.press('Enter');
     expect(((await page.locator('#edges path.slash').getAttribute('d')).match(/M/g) || []).length).toBe(3);
     await edit('Boris', async () => {
+      await sheetTab(page, 'genogram');
       await page.selectOption('#sh-illness', 'active');
       await page.selectOption('#sh-substance', 'recovered');
     });
@@ -441,7 +453,9 @@ test.describe('genogram markers', () => {
     await firstPerson(page, 'Mom');
     await addRelative(page, null, 'c', 'Z');
     await cardOf(page, 'Z').dblclick();
+    await sheetTab(page, 'genogram');
     await page.selectOption('#sh-fate', 'miscarriage');
+    await sheetTab(page, 'family');
     await page.locator('#sh-ended').check();
     await page.keyboard.press('Enter');
     await expect(cardOf(page, 'Z')).toHaveClass(/unborn/);

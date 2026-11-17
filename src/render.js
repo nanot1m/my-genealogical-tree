@@ -110,7 +110,8 @@ export function renderCards() {
       (ctx.linkFrom === p.id ? ' link-source' : '') +
       (!p.alive && !p.fate ? ' deceased' : '') +
       (state.indexPerson === p.id ? ' index' : '') +
-      (p.gender ? ' g-' + p.gender : '');
+      (p.gender ? ' g-' + p.gender : '') +
+      (p.pet ? ' pet' : '');
     if (fresh) el.addEventListener('animationend', () => el.classList.remove('enter'), { once: true });
     el.style.setProperty('--h', hueOf(p.id));
     el.innerHTML = cardHTML(p);
@@ -125,6 +126,26 @@ export function renderCards() {
   gl.sync();
 }
 
+export function marksHTML(p) {
+  const m = [];
+  if (p.therapy)
+    m.push(
+      `<i class="mark" title="${t('therapy')}"><svg viewBox="0 0 16 16"><rect x="2" y="5" width="12" height="7"/></svg></i>`,
+    );
+  if (p.secret)
+    m.push(
+      `<i class="mark" title="${t('secret')}"><svg viewBox="0 0 16 16"><path d="M8 3 L14 13 H2 Z" fill="currentColor"/></svg></i>`,
+    );
+  if (p.migration)
+    m.push(
+      `<i class="mark" title="${t(p.migration === '2' ? 'mig_2' : 'mig_1')}"><svg viewBox="0 0 16 16">${p.migration === '2' ? '<path d="M2 6 q2 -3 4 0 t4 0 t4 0"/><path d="M2 11 q2 -3 4 0 t4 0 t4 0"/>' : '<path d="M2 8 q2 -3 4 0 t4 0 t4 0"/>'}</svg></i>`,
+    );
+  if (p.smoker) m.push(`<i class="mark txt" title="${t('smoker')}">${t('mk_smoker')}</i>`);
+  if (p.overweight) m.push(`<i class="mark txt" title="${t('overweight')}">${t('mk_overweight')}</i>`);
+  if (p.language) m.push(`<i class="mark txt" title="${t('language_issue')}">${t('mk_language')}</i>`);
+  return m.length ? `<span class="marks">${m.join('')}</span>` : '';
+}
+
 export function fateGlyph(f) {
   const g =
     {
@@ -132,6 +153,7 @@ export function fateGlyph(f) {
       miscarriage: '<circle cx="16" cy="16" r="6" fill="currentColor"/>',
       abortion: '<path d="M9 9 L23 23 M23 9 L9 23"/>',
       stillborn: '<rect x="7" y="7" width="18" height="18" rx="2"/><path d="M9 9 L23 23 M23 9 L9 23"/>',
+      unknown: '<circle cx="16" cy="16" r="3" fill="currentColor"/>',
     }[f] || '';
   return `<svg class="fg" viewBox="0 0 32 32">${g}</svg>`;
 }
@@ -143,10 +165,12 @@ export function cardHTML(p) {
       <div class="photo" title="${t('set_photo')}">
         ${p.fate ? fateGlyph(p.fate) : p.photo ? `<img src="${p.photo}" alt="">` : `<span>${initials(p.name)}</span>`}
         ${p.illness ? `<i class="hx ill ${p.illness}" title="${t('illness')}"></i>` : ''}${p.substance ? `<i class="hx sub ${p.substance}" title="${t('substance')}"></i>` : ''}
+        ${p.orientation === 'gay' ? `<svg class="mk ori" viewBox="0 0 32 32" title="${t('o_gay')}"><path d="M16 9 L24 23 H8 Z"/></svg>` : ''}${p.orientation === 'bi' ? `<svg class="mk ori" viewBox="0 0 32 32"><circle cx="11" cy="12" r="1.8"/><circle cx="20" cy="9" r="1.8"/><circle cx="23" cy="19" r="1.8"/><circle cx="13" cy="22" r="1.8"/><circle cx="19" cy="24" r="1.8"/></svg>` : ''}${p.trans === 'mtf' ? `<svg class="mk ori" viewBox="0 0 32 32"><circle cx="16" cy="16" r="9"/></svg>` : ''}${p.trans === 'ftm' ? `<svg class="mk ori" viewBox="0 0 32 32"><rect x="8" y="8" width="16" height="16" rx="2"/></svg>` : ''}
         <div class="cam">📷</div>
         <button class="photo-x ${p.photo ? 'has-photo' : ''}" title="${t('remove_photo')}">×</button>
       </div>
       ${birthOrder(p.id) ? `<span class="ord" title="${t('birth_order')}">${birthOrder(p.id)}</span>` : ''}
+      ${marksHTML(p)}
       ${childrenOf(p.id).length && (isCollapsed(p.id) || hiddenBelow(p.id)) ? `<button class="fold on" title="${t(isCollapsed(p.id) ? 'expand' : 'show_hidden')}">▸ ${isCollapsed(p.id) ? descendantsOf(p.id).size : hiddenBelow(p.id)}</button>` : ''}
       <div class="info">
         <div class="name ${p.name ? '' : 'empty'}" title="${esc(fullName(p))}"><span class="nm">${esc(p.name) || t('unnamed')}</span>${p.birthName ? ` <span class="nee">${t('nee')} ${esc(p.birthName)}</span>` : ''}</div>
@@ -247,6 +271,7 @@ export function renderEdges(pos = ctx.positions) {
     lineBuckets.forEach((b, i) => dHi.push(...b.slice(before[i])));
   };
   const isPast = (f) => !!f.ended || ['divorced', 'separated', 'partners_sep'].includes(f.status);
+  const dAffair = [];
   const hi = ctx.hiPeople.size ? ctx.hiPeople : focusSet(ctx.selectedId);
   const hull = (pts) => {
     pts = [...pts].sort((a, b) => a.x - b.x || a.y - b.y);
@@ -304,6 +329,10 @@ export function renderEdges(pos = ctx.positions) {
     return { id, x: p.x, cx: p.x + ctx.CARD_W / 2, cy: p.y + midY, top: p.y, bottom: p.y + contentBottom(id) };
   };
   const slashes = (mx, my, status) => {
+    if (status === 'affair') {
+      dAffair.push(`M${mx - 7} ${my + 6} L${mx} ${my - 7} L${mx + 7} ${my + 6} Z`);
+      return;
+    }
     if (!status || status === 'married' || status === 'partners') return;
     const two = status === 'divorced' || status === 'reconciled_div';
     if (two) {
@@ -338,7 +367,7 @@ export function renderEdges(pos = ctx.positions) {
           Math.abs(a.top - b.top) < 1 &&
           ![...pos.values()].some((q) => Math.abs(q.y - a.top) < 1 && q.x > a.x && q.x < b.x);
         const past = isPast(f);
-        const partners = f.status === 'partners' || f.status === 'partners_sep';
+        const partners = ['partners', 'partners_sep', 'affair'].includes(f.status);
         const bucket = partners ? (past ? dPartnersPast : dPartners) : past ? dPast : d;
         if (adjacent) {
           bucket.push(`M${a.cx + halfW} ${a.cy} L${b.cx - halfW} ${b.cy}`);
@@ -456,15 +485,69 @@ export function renderEdges(pos = ctx.positions) {
     });
     const curve = `M${p1.x} ${p1.y} Q${cx} ${cy} ${p2.x} ${p2.y}`;
     const type = r.type;
-    if (type === 'conflict') {
+    const zig = (amp, off = 0) => {
       const n = Math.max(8, Math.round(len / 14));
-      let z = `M${p1.x} ${p1.y}`;
+      let z = `M${p1.x + nx * off} ${p1.y + ny * off}`;
       for (let i = 1; i < n; i++) {
         const pt = q(i / n);
         const sgn = i % 2 ? 1 : -1;
-        z += ` L${pt.x + nx * 6 * sgn} ${pt.y + ny * 6 * sgn}`;
+        z += ` L${pt.x + nx * (amp * sgn + off)} ${pt.y + ny * (amp * sgn + off)}`;
       }
-      rels.push({ cls: 'rel conflict', d: `${z} L${p2.x} ${p2.y}` });
+      return `${z} L${p2.x + nx * off} ${p2.y + ny * off}`;
+    };
+    const offCurve = (off) =>
+      `M${p1.x + nx * off} ${p1.y + ny * off} Q${cx + nx * off} ${cy + ny * off} ${p2.x + nx * off} ${p2.y + ny * off}`;
+    if (type === 'conflict') {
+      rels.push({ cls: 'rel conflict', d: zig(6) });
+    } else if (type === 'close_hostile') {
+      rels.push({ cls: 'rel', d: offCurve(4) }, { cls: 'rel', d: offCurve(-4) }, { cls: 'rel conflict', d: zig(5) });
+    } else if (type === 'neg_focus') {
+      rels.push({ cls: 'rel conflict', d: zig(6), arrow: true });
+    } else if (type === 'abuse_physical') {
+      rels.push({ cls: 'rel conflict', d: zig(6), width: 3, arrow: true });
+    } else if (type === 'abuse_emotional') {
+      rels.push({ cls: 'rel conflict', d: zig(5, 4) }, { cls: 'rel conflict', d: zig(5, -4), arrow: true });
+    } else if (type === 'abuse_sexual') {
+      rels.push({ cls: 'rel conflict', d: zig(8), width: 3.5, arrow: true });
+    } else if (type === 'spiritual') {
+      const n = Math.max(8, Math.round(len / 10));
+      let z = `M${p1.x} ${p1.y}`;
+      for (let i = 1; i <= n; i++) {
+        const pt = q(i / n),
+          prev = q((i - 0.5) / n),
+          sgn = i % 2 ? 1 : -1;
+        z += ` Q${prev.x + nx * 7 * sgn} ${prev.y + ny * 7 * sgn} ${pt.x} ${pt.y}`;
+      }
+      rels.push({ cls: 'rel', d: z });
+    } else if (type === 'positive') {
+      rels.push({ cls: 'rel', d: curve, width: 5 }, { cls: 'rel inner', d: curve, width: 2 });
+      const m = q(0.5);
+      rels.push({
+        cls: 'rel',
+        d: `M${m.x - 5} ${m.y} L${m.x + 5} ${m.y} M${m.x} ${m.y - 5} L${m.x} ${m.y + 5}`,
+        width: 1.8,
+      });
+    } else if (type === 'caregiver') {
+      rels.push({ cls: 'rel', d: curve, arrow: true });
+      const m = q(0.5);
+      rels.push({ cls: 'rel', d: `M${m.x - 6} ${m.y - 6} L${m.x} ${m.y} L${m.x - 6} ${m.y + 6}`, width: 1.8 });
+    } else if (type === 'cutoff_repaired') {
+      const m1 = q(0.5 - 6 / len),
+        m2 = q(0.5 + 6 / len),
+        m = q(0.5);
+      rels.push(
+        { cls: 'rel cutoff', d: curve },
+        {
+          cls: 'rel cutoff',
+          d: `M${m1.x + nx * 9} ${m1.y + ny * 9} L${m1.x - nx * 9} ${m1.y - ny * 9} M${m2.x + nx * 9} ${m2.y + ny * 9} L${m2.x - nx * 9} ${m2.y - ny * 9}`,
+          width: 2.5,
+        },
+        {
+          cls: 'rel',
+          d: `M${m1.x + nx * 10} ${m1.y + ny * 10} Q${m.x + nx * 18} ${m.y + ny * 18} ${m2.x + nx * 10} ${m2.y + ny * 10}`,
+          width: 1.8,
+        },
+      );
     } else if (type === 'close' || type === 'fused') {
       const w = type === 'fused' ? 9 : 6;
       rels.push({ cls: `rel ${type}`, d: curve, width: w }, { cls: 'rel inner', d: curve, width: w - 4 });
@@ -504,6 +587,7 @@ export function renderEdges(pos = ctx.positions) {
     { cls: 'slash', d: dSlash.join(' ') },
     { cls: 'ended', d: dEnded.join(' ') },
     { cls: 'hi', d: dHi.join(' ') },
+    { cls: 'affair', d: dAffair.join(' ') },
     ...rels,
   ];
   lastEdges = { layers, marriages, houseBadges, relBadges };
@@ -593,6 +677,7 @@ export const statusHint = (st) =>
       partners: 'lg_partners',
       separated: 'lg_separated',
       partners_sep: 'lg_partners_sep',
+      affair: 'lg_affair',
       divorced: 'lg_divorced',
       reconciled_sep: 'lg_rec_sep',
       reconciled_div: 'lg_rec_div',

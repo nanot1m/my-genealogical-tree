@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openApp, newTree, firstPerson, cardOf, draftState, PHOTO, reloadApp } from './helpers.js';
+import { openApp, newTree, firstPerson, cardOf, draftState, PHOTO, reloadApp, sheetTab } from './helpers.js';
 
 test.describe('card fields', () => {
   test('name, birth surname, dates, living toggle and age', async ({ page }) => {
@@ -26,6 +26,7 @@ test.describe('card fields', () => {
     await cardOf(page, 'Ivan').dblclick();
     await page.fill('#sh-place', 'Kazan');
     await page.fill('#sh-prof', 'Engineer');
+    await sheetTab(page, 'notes');
     await page.fill('#sh-notes', 'Line one');
     await page.keyboard.press('Enter');
     await page.keyboard.type('Line two');
@@ -39,6 +40,7 @@ test.describe('card fields', () => {
     await cardOf(page, 'Ivan').dblclick();
     await expect(page.locator('#sh-place')).toHaveValue('Kazan');
     await expect(page.locator('#sh-prof')).toHaveValue('Engineer');
+    await sheetTab(page, 'notes');
     await expect(page.locator('#sh-notes')).toHaveValue('Line one\nLine two');
   });
 
@@ -118,6 +120,7 @@ test.describe('card fields', () => {
     await firstPerson(page, 'Anna');
     await cardOf(page, 'Anna').dblclick();
     await page.locator('#sh-alive').uncheck();
+    await sheetTab(page, 'notes');
     await page.fill('#sh-notes', 'a\nb\nc\nd\ne\nf');
     await page.waitForTimeout(200);
     const r = await page.locator('#sheet .sheet').boundingBox();

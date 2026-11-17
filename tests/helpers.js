@@ -176,3 +176,7 @@ export async function setGender(page, name, g) {
   await page.keyboard.press('Escape');
   await page.waitForSelector('body[data-settled]');
 }
+
+export async function sheetTab(page, name) {
+  await page.click(`#sheet .sh-tabs [data-tab=${name}]`);
+}

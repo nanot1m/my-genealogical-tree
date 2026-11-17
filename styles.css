@@ -2515,3 +2515,113 @@ body.gl .relbadge {
   border-radius: 3px 3px 0 0;
   min-height: 2px;
 }
+
+#sheet .sh-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+#sheet .sh-tabs {
+  display: flex;
+  gap: 2px;
+  margin: 10px 0 4px;
+  padding: 3px;
+  background: var(--panel-2);
+  border-radius: 10px;
+}
+#sheet .sh-tabs button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 6px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+#sheet .sh-tabs button.on {
+  background: var(--card);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+#sheet .sh-checks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 12px;
+  margin-top: 6px;
+}
+#sheet section[data-tab] {
+  border-top: none;
+  padding-top: 8px;
+}
+.photo .mk {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.6;
+  opacity: 0.75;
+  pointer-events: none;
+}
+.photo .mk circle,
+.photo .mk path[fill] {
+  fill: var(--text);
+}
+.photo .mk.ori path {
+  fill: none;
+}
+.photo .mk.ori circle[r='1.8'] {
+  fill: var(--text);
+}
+.card.pet .photo {
+  border-radius: 6px;
+  transform: rotate(45deg) scale(0.78);
+}
+.card.pet .photo img,
+.card.pet .photo span {
+  transform: rotate(-45deg);
+}
+.marks {
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 3px;
+  pointer-events: none;
+}
+.marks .mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 3px;
+  border-radius: 5px;
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 700;
+}
+.marks .mark svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+body.compact .marks {
+  bottom: auto;
+  top: 76px;
+}
+#edges path.affair {
+  fill: var(--text);
+  stroke: none;
+  opacity: 0.8;
+}

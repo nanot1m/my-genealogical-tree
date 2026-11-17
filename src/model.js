@@ -234,6 +234,15 @@ export function newPerson() {
     gender: '',
     illness: '',
     substance: '',
+    orientation: '',
+    trans: '',
+    migration: '',
+    pet: false,
+    therapy: false,
+    secret: false,
+    smoker: false,
+    overweight: false,
+    language: false,
   };
   state.people[p.id] = p;
   return p;

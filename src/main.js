@@ -144,6 +144,10 @@ function renderLegend() {
         ['lg_partners', couple(`<path d="M42 22 H70" stroke-dasharray="4 3"/>`)],
         ['lg_separated', couple(`<path d="M42 22 H70"/><path class="r" d="M53 29 L59 15"/>`)],
         ['lg_partners_sep', couple(`<path d="M42 22 H70" stroke-dasharray="4 3"/><path class="r" d="M53 29 L59 15"/>`)],
+        [
+          'lg_affair',
+          couple(`<path d="M42 22 H70" stroke-dasharray="4 3"/><path class="f" d="M52 26 L56 18 L60 26 Z"/>`),
+        ],
         ['lg_divorced', couple(`<path d="M42 22 H70"/><path class="r" d="M50 29 L56 15 M58 29 L64 15"/>`)],
         ['lg_rec_sep', couple(`<path d="M42 22 H70"/><path class="r" d="M53 29 L59 15 M48 15 L64 29"/>`)],
         ['lg_rec_div', couple(`<path d="M42 22 H70"/><path class="r" d="M50 29 L56 15 M58 29 L64 15 M46 15 L66 29"/>`)],
@@ -182,6 +186,7 @@ function renderLegend() {
         ['lg_miscarriage', `<circle class="f" cx="56" cy="22" r="7"/>`],
         ['lg_abortion', `<path d="M48 14 L64 30 M64 14 L48 30"/>`],
         ['lg_stillborn', `<rect x="44" y="10" width="24" height="24" rx="3"/><path d="M48 14 L64 30 M64 14 L48 30"/>`],
+        ['lg_unknown', `<circle class="f" cx="56" cy="22" r="3"/>`],
       ],
     ],
     [
@@ -205,6 +210,25 @@ function renderLegend() {
           `<circle class="c" cx="40" cy="22" r="14"/><path class="t" d="M26 22 A14 14 0 0 0 54 22 Z"/><circle class="c" cx="78" cy="22" r="14"/><path class="hz" d="M64 22 A14 14 0 0 0 92 22 Z"/>`,
         ],
         ['lg_ended', card(38, 4, 36, 18) + `<path class="m" d="M56 22 V32 M44 32 H68"/>`],
+        [
+          'lg_orientation',
+          `<circle class="c" cx="40" cy="22" r="14"/><path d="M40 13 L48 28 H32 Z"/><circle class="c" cx="78" cy="22" r="14"/><circle class="f" cx="73" cy="20" r="1.6"/><circle class="f" cx="80" cy="16" r="1.6"/><circle class="f" cx="82" cy="25" r="1.6"/><circle class="f" cx="75" cy="27" r="1.6"/>`,
+        ],
+        [
+          'lg_trans',
+          `<rect class="c" x="26" y="8" width="28" height="28" rx="5"/><circle cx="40" cy="22" r="9"/><circle class="c" cx="78" cy="22" r="14"/><rect x="70" y="14" width="16" height="16" rx="2"/>`,
+        ],
+        ['lg_pet', `<path class="c" d="M56 6 L72 22 L56 38 L40 22 Z"/>`],
+        [
+          'lg_marks',
+          card(30, 10, 52, 24) +
+            `<rect x="36" y="16" width="10" height="7"/><path class="f" d="M50 23 L54 16 L58 23 Z"/><path d="M62 20 q2 -4 4 0 t4 0"/><path d="M72 20 q2 -4 4 0 t4 0 M72 24 q2 -4 4 0 t4 0"/>`,
+        ],
+        [
+          'lg_flags',
+          card(30, 10, 52, 24) +
+            `<text x="38" y="30" font-size="8" fill="currentColor" stroke="none">S</text><text x="50" y="30" font-size="8" fill="currentColor" stroke="none">O</text><text x="62" y="30" font-size="8" fill="currentColor" stroke="none">L</text>`,
+        ],
         [
           'lg_household',
           card(14, 10, 36, 14) +
@@ -238,6 +262,54 @@ function renderLegend() {
         ['rel_distant', card(2, 13, 30) + card(80, 13, 30) + `<path class="m" d="M32 22 H80" stroke-dasharray="7 5"/>`],
         ['rel_cutoff', card(2, 13, 30) + card(80, 13, 30) + `<path d="M32 22 H80 M52 14 V30 M60 14 V30"/>`],
         ['rel_focused', card(2, 13, 30) + card(80, 13, 30) + `<path d="M32 22 H76 M70 16 L78 22 L70 28"/>`],
+        [
+          'rel_positive',
+          card(2, 13, 30) +
+            card(80, 13, 30) +
+            `<path d="M32 22 H80" stroke-width="4"/><path class="bgline" d="M32 22 H80" stroke-width="2"/><path d="M52 18 V26 M56 22 H48" stroke-width="1.5"/>`,
+        ],
+        [
+          'rel_spiritual',
+          card(2, 13, 30) + card(80, 13, 30) + `<path d="M32 22 c4 -6 8 -6 12 0 s8 6 12 0 s8 -6 12 0 s8 6 12 0"/>`,
+        ],
+        [
+          'rel_close_hostile',
+          card(2, 13, 30) +
+            card(80, 13, 30) +
+            `<path d="M32 19 H80 M32 25 H80"/><path class="r" d="M44 22 L48 17 L52 27 L56 17 L60 27 L64 17 L68 22"/>`,
+        ],
+        [
+          'rel_neg_focus',
+          card(2, 13, 30) +
+            card(80, 13, 30) +
+            `<path class="r" d="M32 22 L38 16 L44 28 L50 16 L56 28 L62 16 L68 22 H76 M70 16 L78 22 L70 28"/>`,
+        ],
+        [
+          'rel_caregiver',
+          card(2, 13, 30) + card(80, 13, 30) + `<path d="M32 22 H76 M70 16 L78 22 L70 28 M62 16 L70 22 L62 28"/>`,
+        ],
+        [
+          'rel_cutoff_repaired',
+          card(2, 13, 30) + card(80, 13, 30) + `<path d="M32 22 H80 M52 14 V30 M60 14 V30 M50 12 Q56 4 62 12"/>`,
+        ],
+        [
+          'rel_abuse_physical',
+          card(2, 13, 30) +
+            card(80, 13, 30) +
+            `<path class="r" d="M32 22 L38 16 L44 28 L50 16 L56 28 L62 16 L68 22 H76 M70 16 L78 22 L70 28" stroke-width="2.5"/>`,
+        ],
+        [
+          'rel_abuse_emotional',
+          card(2, 13, 30) +
+            card(80, 13, 30) +
+            `<path class="r" d="M32 19 L38 13 L44 25 L50 13 L56 25 L62 13 L68 19 M32 25 L38 19 L44 31 L50 19 L56 31 L62 19 L68 25 M68 22 H76 M70 16 L78 22 L70 28"/>`,
+        ],
+        [
+          'rel_abuse_sexual',
+          card(2, 13, 30) +
+            card(80, 13, 30) +
+            `<path class="r" d="M32 22 L38 14 L44 30 L50 14 L56 30 L62 14 L68 22 H76 M70 16 L78 22 L70 28" stroke-width="3"/>`,
+        ],
       ],
     ],
   ];
@@ -867,8 +939,9 @@ function setPaper(on) {
   drawPaper();
 }
 function drawPaper() {
-  paperSvg.hidden = !paperOn || !positions.size;
-  if (paperSvg.hidden) return;
+  const off = !paperOn || !positions.size;
+  paperSvg.toggleAttribute('hidden', off);
+  if (off) return;
   const plan = pdfPlan(pdfOpts());
   const w = plan.aw / plan.s,
     h = plan.ah / plan.s;
@@ -1320,6 +1393,23 @@ function relationText(ids, depths, nearest) {
   const removed = r === 1 ? t('removed_once') : r === 2 ? t('removed_twice') : t('removed_n').replace('{r}', r);
   return sentence(a, kinTerm('cousin', deg, ga) + ' ' + removed, b);
 }
+export const REL_TYPES = [
+  'close',
+  'fused',
+  'positive',
+  'spiritual',
+  'conflict',
+  'close_hostile',
+  'distant',
+  'cutoff',
+  'cutoff_repaired',
+  'focused',
+  'neg_focus',
+  'caregiver',
+  'abuse_physical',
+  'abuse_emotional',
+  'abuse_sexual',
+];
 let linkFrom = null;
 function startLink(id) {
   if (!id || people().length < 2) return;
@@ -1358,8 +1448,11 @@ function finishLink(targetId, anchor) {
       );
     else toast(err);
   };
-  const relItems = ['close', 'fused', 'conflict', 'distant', 'cutoff', 'focused'].map((type) => ({
-    label: (type === 'focused' ? '→ ' : '↔ ') + t('rel_' + type),
+  const relItems = REL_TYPES.map((type) => ({
+    label:
+      (['focused', 'neg_focus', 'caregiver', 'abuse_physical', 'abuse_emotional', 'abuse_sexual'].includes(type)
+        ? '→ '
+        : '↔ ') + t('rel_' + type),
     hint: t('hint_rel_' + type),
     run: () => apply(() => addRelation(a, b, type)),
   }));
@@ -1477,6 +1570,17 @@ cardsEl.addEventListener('click', (e) => {
 const sheet = $('#sheet');
 let sheetId = null,
   sheetSnapshot = null;
+const TAB_KEY = 'familytree.sheetTab';
+function showTab(name) {
+  for (const b of sheet.querySelectorAll('.sh-tabs button')) b.classList.toggle('on', b.dataset.tab === name);
+  for (const s of sheet.querySelectorAll('section[data-tab]')) s.hidden = s.dataset.tab !== name;
+  localStorage.setItem(TAB_KEY, name);
+  placeSheet();
+}
+sheet.querySelector('.sh-tabs').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (b) showTab(b.dataset.tab);
+});
 function openSheet(id, fresh) {
   if (sheetId && sheetId !== id) closeSheet();
   if (editingId) stopEditing();
@@ -1503,6 +1607,11 @@ function openSheet(id, fresh) {
   sh('sh-index').checked = state.indexPerson === id;
   sh('sh-illness').value = p.illness || '';
   sh('sh-substance').value = p.substance || '';
+  sh('sh-orientation').value = p.orientation || '';
+  sh('sh-trans').value = p.trans || '';
+  sh('sh-migration').value = p.migration || '';
+  for (const k of ['pet', 'therapy', 'secret', 'smoker', 'overweight', 'language']) sh('sh-' + k).checked = !!p[k];
+  showTab(fresh ? 'person' : localStorage.getItem(TAB_KEY) || 'person');
   const hasParents = !!childFamily(id);
   sh('sh-kind-row').hidden = sh('sh-twin-row').hidden = sh('sh-identical-row').hidden = !hasParents;
   refreshOrderRow(id);
@@ -1626,6 +1735,23 @@ sheet.addEventListener('input', (e) => {
       break;
     case 'sh-substance':
       p.substance = e.target.value;
+      break;
+    case 'sh-orientation':
+      p.orientation = e.target.value;
+      break;
+    case 'sh-trans':
+      p.trans = e.target.value;
+      break;
+    case 'sh-migration':
+      p.migration = e.target.value;
+      break;
+    case 'sh-pet':
+    case 'sh-therapy':
+    case 'sh-secret':
+    case 'sh-smoker':
+    case 'sh-overweight':
+    case 'sh-language':
+      p[e.target.id.slice(3)] = e.target.checked;
       break;
     case 'sh-index':
       state.indexPerson = e.target.checked ? p.id : null;

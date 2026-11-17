@@ -177,6 +177,7 @@
           <option value="partners" data-i18n="st_partners"></option>
           <option value="separated" data-i18n="st_separated"></option>
           <option value="partners_sep" data-i18n="st_partners_sep"></option>
+          <option value="affair" data-i18n="st_affair"></option>
           <option value="divorced" data-i18n="st_divorced"></option>
           <option value="reconciled_sep" data-i18n="st_reconciled_sep"></option>
           <option value="reconciled_div" data-i18n="st_reconciled_div"></option>
@@ -316,50 +317,41 @@
       <div class="sheet">
         <div class="grab"></div>
         <div class="sh-top">
-          <h4 data-i18n="sheet_title"></h4>
+          <div class="photo" id="sh-photo"></div>
+          <div class="sh-names">
+            <input
+              type="text"
+              autocomplete="off"
+              autocapitalize="words"
+              spellcheck="false"
+              data-1p-ignore
+              data-lpignore="true"
+              data-bwignore
+              data-form-type="other"
+              id="sh-name"
+            />
+            <input
+              type="text"
+              autocomplete="off"
+              autocapitalize="words"
+              spellcheck="false"
+              data-1p-ignore
+              data-lpignore="true"
+              data-bwignore
+              data-form-type="other"
+              id="sh-bname"
+            />
+          </div>
           <button type="button" id="sh-close" aria-label="Close">×</button>
         </div>
-        <section>
-          <h5 data-i18n="sec_person"></h5>
-          <div class="sh-head">
-            <div class="photo" id="sh-photo"></div>
-            <div class="sh-names">
-              <input
-                type="text"
-                id="sh-name"
-                autocomplete="off"
-                autocapitalize="words"
-                spellcheck="false"
-                data-1p-ignore
-                data-lpignore="true"
-                data-bwignore
-                data-form-type="other"
-              />
-              <input
-                type="text"
-                id="sh-bname"
-                autocomplete="off"
-                autocapitalize="words"
-                spellcheck="false"
-                data-1p-ignore
-                data-lpignore="true"
-                data-bwignore
-                data-form-type="other"
-              />
-            </div>
-          </div>
+        <div class="sh-tabs" role="tablist">
+          <button type="button" data-tab="person" class="on" data-i18n="tab_person"></button
+          ><button type="button" data-tab="family" data-i18n="tab_family"></button
+          ><button type="button" data-tab="genogram" data-i18n="tab_genogram"></button
+          ><button type="button" data-tab="notes" data-i18n="tab_notes"></button>
+        </div>
+        <section data-tab="person">
           <div class="sh-grid">
-            <label class="wide"
-              ><span data-i18n="profession"></span
-              ><input
-                type="text"
-                id="sh-prof"
-                autocomplete="off"
-                data-1p-ignore
-                data-lpignore="true"
-                data-bwignore
-                data-form-type="other"
-            /></label>
             <label
               ><span data-i18n="gender"></span>
               <div class="seg" id="sh-gender">
@@ -367,19 +359,18 @@
                 ><button type="button" data-v="f" data-i18n="g_f"></button></div
             ></label>
             <label
-              ><span data-i18n="fate"></span
-              ><select id="sh-fate">
-                <option value="" data-i18n="fate_none"></option>
-                <option value="pregnancy" data-i18n="fate_pregnancy"></option>
-                <option value="miscarriage" data-i18n="fate_miscarriage"></option>
-                <option value="abortion" data-i18n="fate_abortion"></option>
-                <option value="stillborn" data-i18n="fate_stillborn"></option></select
-            ></label>
-          </div>
-        </section>
-        <section>
-          <h5 data-i18n="sec_dates"></h5>
-          <div class="sh-grid">
+              ><span data-i18n="profession"></span
+              ><input
+                type="text"
+                autocomplete="off"
+                autocapitalize="words"
+                spellcheck="false"
+                data-1p-ignore
+                data-lpignore="true"
+                data-bwignore
+                data-form-type="other"
+                id="sh-prof"
+            /></label>
             <label
               ><span class="cap"
                 ><span data-i18n="born"></span><button type="button" class="df-mode" data-for="sh-birth"></button></span
@@ -389,13 +380,14 @@
               ><span data-i18n="birthplace"></span
               ><input
                 type="text"
-                id="sh-place"
                 autocomplete="off"
                 autocapitalize="words"
+                spellcheck="false"
                 data-1p-ignore
                 data-lpignore="true"
                 data-bwignore
                 data-form-type="other"
+                id="sh-place"
             /></label>
             <label id="sh-death-row"
               ><span class="cap"
@@ -403,10 +395,14 @@
               ><input type="date" id="sh-death"
             /></label>
           </div>
-          <label class="sh-check"><input type="checkbox" id="sh-alive" /><span data-i18n="living"></span></label>
+          <div class="sh-checks">
+            <label class="sh-check"><input type="checkbox" id="sh-alive" /><span data-i18n="living"></span></label>
+            <label class="sh-check"
+              ><input type="checkbox" id="sh-index" /><span data-i18n="index_person"></span
+            ></label>
+          </div>
         </section>
-        <section id="sh-family">
-          <h5 data-i18n="sec_family"></h5>
+        <section data-tab="family" hidden>
           <div class="sh-grid">
             <label id="sh-kind-row"
               ><span data-i18n="child_link"></span
@@ -420,9 +416,12 @@
               ><select id="sh-twin"></select
             ></label>
           </div>
-          <label class="sh-check" id="sh-identical-row"
-            ><input type="checkbox" id="sh-identical" /><span data-i18n="identical"></span
-          ></label>
+          <div class="sh-checks">
+            <label class="sh-check" id="sh-identical-row"
+              ><input type="checkbox" id="sh-identical" /><span data-i18n="identical"></span
+            ></label>
+            <label class="sh-check"><input type="checkbox" id="sh-ended" /><span data-i18n="line_ended"></span></label>
+          </div>
           <div class="sh-grid" id="sh-order-row">
             <label class="wide"
               ><span data-i18n="birth_order"></span>
@@ -435,9 +434,18 @@
           <p class="sh-hint" id="sh-family-hint" data-i18n="no_parents_hint"></p>
           <button type="button" id="sh-unparent" class="danger" data-i18n="unparent"></button>
         </section>
-        <section>
-          <h5 data-i18n="sec_notation"></h5>
+        <section data-tab="genogram" hidden>
           <div class="sh-grid">
+            <label
+              ><span data-i18n="fate"></span
+              ><select id="sh-fate">
+                <option value="" data-i18n="fate_none"></option>
+                <option value="pregnancy" data-i18n="fate_pregnancy"></option>
+                <option value="miscarriage" data-i18n="fate_miscarriage"></option>
+                <option value="abortion" data-i18n="fate_abortion"></option>
+                <option value="stillborn" data-i18n="fate_stillborn"></option>
+                <option value="unknown" data-i18n="fate_unknown"></option></select
+            ></label>
             <label
               ><span data-i18n="illness"></span
               ><select id="sh-illness">
@@ -450,15 +458,46 @@
               ><select id="sh-substance">
                 <option value="" data-i18n="h_none"></option>
                 <option value="active" data-i18n="h_active"></option>
+                <option value="suspected" data-i18n="h_suspected"></option>
                 <option value="recovered" data-i18n="h_recovered"></option></select
             ></label>
+            <label
+              ><span data-i18n="orientation"></span
+              ><select id="sh-orientation">
+                <option value="" data-i18n="o_none"></option>
+                <option value="gay" data-i18n="o_gay"></option>
+                <option value="bi" data-i18n="o_bi"></option></select
+            ></label>
+            <label
+              ><span data-i18n="trans"></span
+              ><select id="sh-trans">
+                <option value="" data-i18n="o_none"></option>
+                <option value="mtf" data-i18n="t_mtf"></option>
+                <option value="ftm" data-i18n="t_ftm"></option></select
+            ></label>
+            <label
+              ><span data-i18n="migration"></span
+              ><select id="sh-migration">
+                <option value="" data-i18n="o_none"></option>
+                <option value="1" data-i18n="mig_1"></option>
+                <option value="2" data-i18n="mig_2"></option></select
+            ></label>
           </div>
-          <label class="sh-check"><input type="checkbox" id="sh-index" /><span data-i18n="index_person"></span></label>
-          <label class="sh-check"><input type="checkbox" id="sh-ended" /><span data-i18n="line_ended"></span></label>
+          <div class="sh-checks">
+            <label class="sh-check"><input type="checkbox" id="sh-pet" /><span data-i18n="pet"></span></label>
+            <label class="sh-check"><input type="checkbox" id="sh-therapy" /><span data-i18n="therapy"></span></label>
+            <label class="sh-check"><input type="checkbox" id="sh-secret" /><span data-i18n="secret"></span></label>
+            <label class="sh-check"><input type="checkbox" id="sh-smoker" /><span data-i18n="smoker"></span></label>
+            <label class="sh-check"
+              ><input type="checkbox" id="sh-overweight" /><span data-i18n="overweight"></span
+            ></label>
+            <label class="sh-check"
+              ><input type="checkbox" id="sh-language" /><span data-i18n="language_issue"></span
+            ></label>
+          </div>
         </section>
-        <section>
-          <h5 data-i18n="sec_notes"></h5>
-          <textarea id="sh-notes" rows="4" autocomplete="off" spellcheck="true"></textarea>
+        <section data-tab="notes" hidden>
+          <textarea id="sh-notes" rows="7" autocomplete="off" spellcheck="true"></textarea>
         </section>
         <div class="foot">
           <button id="sh-delete" class="danger" data-i18n="delete"></button
