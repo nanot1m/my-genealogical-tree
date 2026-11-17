@@ -28,6 +28,7 @@ export function encodeTree(state) {
       cutAbove: state.cutAbove || [],
       focus: state.focus || null,
       focusMode: state.focusMode || 'down',
+      focusDegree: state.focusDegree || 0,
       hiddenPeople: state.hiddenPeople || [],
       blobs: blobs.map((b) => b.mime),
     }),
@@ -90,6 +91,7 @@ export function decodeTree(buf) {
     cutAbove: meta.cutAbove || [],
     focus: meta.focus || null,
     focusMode: meta.focusMode || 'down',
+    focusDegree: meta.focusDegree || 0,
     hiddenPeople: meta.hiddenPeople || [],
   };
 }

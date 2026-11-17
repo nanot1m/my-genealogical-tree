@@ -736,7 +736,8 @@ function openMenu(anchor, title, items) {
     `<div class="t">${esc(title)}</div>` +
     items
       .map(
-        (it, i) => `<button data-i="${i}">${esc(it.label)}${it.hint ? `<small>${esc(it.hint)}</small>` : ''}</button>`,
+        (it, i) =>
+          `<button data-i="${i}"${it.id ? ` data-id="${it.id}"` : ''}${it.on ? ' class="on"' : ''}>${esc(it.label)}${it.hint ? `<small>${esc(it.hint)}</small>` : ''}</button>`,
       )
       .join('');
   menu.onclick = (e) => {
@@ -1099,7 +1100,6 @@ function toggleFold(id) {
     applyView();
   }
   if (hiddenSet().has(selectedId)) select(id);
-  if (selectedId) $('#actions [data-sel=fold]').textContent = t(isCollapsed(selectedId) ? 'expand' : 'collapse');
 }
 sq.addEventListener('input', () => {
   sIdx = 0;
@@ -1269,15 +1269,6 @@ function select(id, opts = {}) {
   selectedId = id;
   if (!opts.keepMulti) clearMulti();
   if (id) {
-    const fb = $('#actions [data-sel=fold]');
-    fb.hidden = !childrenOf(id).length;
-    fb.textContent = t(isCollapsed(id) ? 'expand' : 'collapse');
-    const cb = $('#actions [data-sel=cut]');
-    cb.hidden = !parentsOf(id).length && !isCut(id);
-    cb.textContent = t(isCut(id) ? 'show_above' : 'hide_above');
-    const fm = state.focus === id ? state.focusMode || 'down' : null;
-    $('#actions [data-sel=focus]').textContent = t(fm === 'down' ? 'show_all' : 'focus_on');
-    $('#actions [data-sel=lineage]').textContent = t(fm === 'line' ? 'show_all' : 'lineage_on');
   }
   $('#actions').classList.toggle('show', !!id);
   document.body.classList.toggle('has-selection', !!id);
@@ -2336,22 +2327,56 @@ document.querySelectorAll('[data-act]').forEach((b) =>
     })[b.dataset.act]();
   }),
 );
+// everything that hides or reveals around the selected person lives in one menu; labels reflect the current state
+function viewMenu(anchor) {
+  const id = selectedId;
+  const fm = state.focus === id ? state.focusMode || 'down' : null;
+  const items = [];
+  if (childrenOf(id).length)
+    items.push({ id: 'fold', label: t(isCollapsed(id) ? 'expand' : 'collapse'), run: () => toggleFold(id) });
+  if (parentsOf(id).length || isCut(id))
+    items.push({ id: 'cut', label: t(isCut(id) ? 'show_above' : 'hide_above'), run: () => toggleCutAbove(id) });
+  items.push({
+    id: 'focus',
+    label: t(fm === 'down' ? 'show_all' : 'focus_on'),
+    on: fm === 'down',
+    run: () => toggleFocus(id),
+  });
+  items.push({
+    id: 'lineage',
+    label: fm === 'line' ? `${t('lineage_on')}: ${t('kin_' + (state.focusDegree || 0))}` : t('lineage_pick'),
+    on: fm === 'line',
+    run: () =>
+      openMenu(anchor, t('lineage_on'), [
+        ...[0, 1, 2, 3, 4].map((k) => ({
+          id: 'kin-' + k,
+          label: t('kin_' + k),
+          on: fm === 'line' && (state.focusDegree || 0) === k,
+          run: () => anchoredMutate(id, () => setFocus(id, 'line', k)),
+        })),
+        ...(fm === 'line' ? [{ id: 'kin-off', label: t('show_all'), run: () => toggleFocus(id, 'line') }] : []),
+      ]),
+  });
+  items.push({
+    id: 'hide',
+    label: t('hide_person'),
+    run: () => {
+      const next = parentsOf(id)[0] || spousesOf(id)[0] || null;
+      mutate(() => hidePerson(id));
+      select(next && !hiddenSet().has(next) ? next : null);
+    },
+  });
+  if (anythingHidden()) items.push({ id: 'unfold', label: t('unfold'), run: () => mutate(showEverything) });
+  openMenu(anchor, t('view_title'), items);
+}
 $('#actions').addEventListener('click', (e) => {
   const b = e.target.closest('[data-sel]');
   if (!b || !selectedId) return;
   const a = b.dataset.sel;
   if (a === 'edit') startEditing(selectedId);
   else if (a === 'link') startLink(selectedId);
-  else if (a === 'fold') toggleFold(selectedId);
-  else if (a === 'cut') toggleCutAbove(selectedId);
-  else if (a === 'focus') toggleFocus(selectedId);
-  else if (a === 'lineage') toggleFocus(selectedId, 'line');
-  else if (a === 'hide') {
-    const id = selectedId,
-      next = parentsOf(id)[0] || spousesOf(id)[0] || null;
-    mutate(() => hidePerson(id));
-    select(next && !hiddenSet().has(next) ? next : null);
-  } else if (a === 'photo') photoAction(selectedId, b);
+  else if (a === 'view') viewMenu(b);
+  else if (a === 'photo') photoAction(selectedId, b);
   else if (a === 'delete') removeSelected();
   else createRelative(selectedId, a, b);
 });

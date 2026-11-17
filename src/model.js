@@ -20,6 +20,7 @@ export function emptyState() {
     cutAbove: [],
     focus: null,
     focusMode: 'down',
+    focusDegree: 0,
     hiddenPeople: [],
   };
 }
@@ -73,7 +74,25 @@ export function hiddenSet() {
   if (state.focus && state.people[state.focus]) {
     const keep = new Set([state.focus]);
     for (const d of descendantsOf(state.focus)) keep.add(d);
-    if (state.focusMode === 'line') for (const a of ancestorsOf(state.focus)) keep.add(a);
+    if (state.focusMode === 'line') {
+      for (const a of ancestorsOf(state.focus)) keep.add(a);
+      // degree k: everyone descending from an ancestor at most k generations up (1 siblings, 2 first cousins, …)
+      const k = state.focusDegree || 0;
+      if (k > 0) {
+        const depth = new Map([[state.focus, 0]]);
+        const q = [state.focus];
+        while (q.length) {
+          const x = q.shift();
+          if (depth.get(x) >= k) continue;
+          for (const a of parentsOf(x))
+            if (!depth.has(a)) {
+              depth.set(a, depth.get(x) + 1);
+              q.push(a);
+            }
+        }
+        for (const a of depth.keys()) for (const d of descendantsOf(a)) keep.add(d);
+      }
+    }
     for (const k of [...keep]) for (const sp of spousesOf(k)) keep.add(sp);
     for (const p of people()) if (!keep.has(p.id)) hidden.add(p.id);
   }
@@ -131,9 +150,10 @@ export function toggleCut(pid) {
   if (i >= 0) state.cutAbove.splice(i, 1);
   else state.cutAbove.push(pid);
 }
-export function setFocus(pid, mode = 'down') {
+export function setFocus(pid, mode = 'down', degree = state.focusDegree || 0) {
   state.focus = pid || null;
   state.focusMode = mode;
+  state.focusDegree = degree;
 }
 // make pid visible again by undoing whatever hides it, least disruptive first
 export function reveal(pid) {

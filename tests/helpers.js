@@ -180,3 +180,15 @@ export async function setGender(page, name, g) {
 export async function sheetTab(page, name) {
   await page.click(`#sheet .sh-tabs [data-tab=${name}]`);
 }
+
+// the selection bar's View menu: open it and pick an entry by id (fold, cut, focus, lineage, hide, unfold, kin-N)
+export async function viewAction(page, id) {
+  await page.click('#actions [data-sel=view]');
+  await page.click(`#menu [data-id=${id}]`);
+}
+export async function viewLabel(page, id) {
+  await page.click('#actions [data-sel=view]');
+  const text = await page.locator(`#menu [data-id=${id}]`).innerText();
+  await page.keyboard.press('Escape');
+  return text;
+}

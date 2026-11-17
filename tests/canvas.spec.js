@@ -11,6 +11,8 @@ import {
   attachConsoleGuard,
   reloadApp,
   setGender,
+  viewAction,
+  viewLabel,
 } from './helpers.js';
 
 test.describe('canvas and first person', () => {
@@ -326,7 +328,7 @@ test('hide a person with their branch, the parent shows a count, reload keeps it
   await addRelative(page, 'Dad', 'c', 'Me');
   await addRelative(page, 'Grandpa', 'c', 'Uncle');
   await select(page, 'Dad');
-  await page.click('#actions [data-sel=hide]');
+  await viewAction(page, 'hide');
   await expect(cards(page)).toHaveCount(2);
   await expect(cardOf(page, 'Grandpa').locator('.fold')).toHaveText('▸ 2');
   await reloadApp(page);
@@ -355,28 +357,36 @@ test('hide ancestors and focus mode hide the right people; search reveals them a
   await addRelative(page, 'Me', 'm', 'Wife');
   await addRelative(page, 'Grandpa', 'c', 'Uncle');
   await select(page, 'Me');
-  await page.click('#actions [data-sel=cut]');
+  await viewAction(page, 'cut');
   await expect(cards(page)).toHaveCount(3);
   await expect(cardOf(page, 'Grandpa')).toHaveCount(0);
   await expect(cardOf(page, 'Uncle')).toHaveCount(0);
-  await expect(page.locator('#actions [data-sel=cut]')).toHaveText('Show ancestors');
-  await page.click('#actions [data-sel=cut]');
+  expect(await viewLabel(page, 'cut')).toBe('Show ancestors');
+  await viewAction(page, 'cut');
   await expect(cards(page)).toHaveCount(6);
   await select(page, 'Dad');
-  await page.click('#actions [data-sel=focus]');
+  await viewAction(page, 'focus');
   await expect(cards(page)).toHaveCount(4);
   await expect(cardOf(page, 'Uncle')).toHaveCount(0);
-  await expect(page.locator('#actions [data-sel=focus]')).toHaveText('Show all');
+  expect(await viewLabel(page, 'focus')).toBe('Show all');
   await select(page, 'Me');
-  await page.click('#actions [data-sel=lineage]');
+  await viewAction(page, 'lineage');
+  await page.click('#menu [data-id=kin-0]');
   await expect(cardOf(page, 'Grandpa')).toHaveCount(1);
   await expect(cardOf(page, 'Kid')).toHaveCount(1);
   await expect(cardOf(page, 'Uncle')).toHaveCount(0);
-  await expect(page.locator('#actions [data-sel=lineage]')).toHaveText('Show all');
-  await page.click('#actions [data-sel=lineage]');
+  expect(await viewLabel(page, 'lineage')).toContain('Direct line only');
+  await viewAction(page, 'lineage');
+  await page.click('#menu [data-id=kin-2]');
+  await expect(cardOf(page, 'Uncle')).toHaveCount(1);
+  await viewAction(page, 'lineage');
+  await page.click('#menu [data-id=kin-0]');
+  await expect(cardOf(page, 'Uncle')).toHaveCount(0);
+  await viewAction(page, 'lineage');
+  await page.click('#menu [data-id=kin-off]');
   await expect(cards(page)).toHaveCount(6);
   await select(page, 'Dad');
-  await page.click('#actions [data-sel=focus]');
+  await viewAction(page, 'focus');
   await page.keyboard.press('Meta+f');
   await page.keyboard.type('Uncle');
   await page.keyboard.press('Enter');
@@ -395,7 +405,7 @@ test('collapsing a branch hides descendants, survives reload, and search expands
   await page.keyboard.press('h');
   await expect(cards(page)).toHaveCount(2);
   await expect(cardOf(page, 'Dad').locator('.fold')).toHaveText('▸ 2');
-  await expect(page.locator('#actions [data-sel=fold]')).toHaveText('Expand branch');
+  expect(await viewLabel(page, 'fold')).toBe('Expand branch');
   await page.waitForTimeout(600);
   await reloadApp(page);
   await page.click('#w-continue');
