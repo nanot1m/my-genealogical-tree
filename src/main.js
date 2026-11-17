@@ -392,6 +392,7 @@ function setCompact(on) {
 const GRID = 24,
   MIN_ZOOM = 0.15,
   MAX_ZOOM = 3;
+const dense = () => $('#pd-dense').checked;
 const DRAFT_KEY = 'familytree.draft';
 
 let positions = new Map();
@@ -403,16 +404,16 @@ const ctx = {
     return CARD_W;
   },
   get COUPLE_GAP() {
-    return COUPLE_GAP;
+    return Math.round(COUPLE_GAP * (dense() ? 0.5 : 1));
   },
   get H_GAP() {
-    return H_GAP;
+    return Math.round(H_GAP * (dense() ? 0.55 : 1));
   },
   get V_GAP() {
-    return V_GAP;
+    return Math.round(V_GAP * (dense() ? 0.75 : 1));
   },
   get TREE_GAP() {
-    return TREE_GAP;
+    return Math.round(TREE_GAP * (dense() ? 0.5 : 1));
   },
   get compact() {
     return compact;
@@ -922,6 +923,7 @@ function loadPdfSettings() {
     $('#pd-gray').checked = !!saved.gray;
     $('#pd-plain').checked = !!saved.plain;
     $('#pd-pack').checked = !!saved.pack;
+    $('#pd-dense').checked = !!saved.dense;
   } catch (_) {}
 }
 loadPdfSettings();
@@ -965,6 +967,7 @@ $('#pdfdlg').addEventListener('change', (e) => {
   localStorage.setItem(PDF_KEY, JSON.stringify(pdfOpts()));
   if (
     e.target.id === 'pd-pack' ||
+    e.target.id === 'pd-dense' ||
     e.target.id === 'pd-paper' ||
     e.target.id === 'pd-mode' ||
     e.target.id === 'pd-orient'

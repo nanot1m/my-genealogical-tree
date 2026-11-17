@@ -31,6 +31,7 @@ export const pdfOpts = () => ({
   mode: $('#pd-mode').value,
   scale: +$('#pd-scale').value,
   pack: $('#pd-pack').checked,
+  dense: $('#pd-dense').checked,
   orient: $('#pd-orient').value,
   gray: $('#pd-gray').checked,
   plain: $('#pd-plain').checked,
