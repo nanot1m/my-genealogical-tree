@@ -166,6 +166,7 @@ export function cardHTML(p) {
         ${p.fate ? fateGlyph(p.fate) : p.photo ? `<img src="${p.photo}" alt="">` : `<span>${initials(p.name)}</span>`}
         ${p.illness ? `<i class="hx ill ${p.illness}" title="${t('illness')}"></i>` : ''}${p.substance ? `<i class="hx sub ${p.substance}" title="${t('substance')}"></i>` : ''}
         ${p.orientation === 'gay' ? `<svg class="mk ori" viewBox="0 0 32 32" title="${t('o_gay')}"><path d="M16 9 L24 23 H8 Z"/></svg>` : ''}${p.orientation === 'bi' ? `<svg class="mk ori" viewBox="0 0 32 32"><circle cx="11" cy="12" r="1.8"/><circle cx="20" cy="9" r="1.8"/><circle cx="23" cy="19" r="1.8"/><circle cx="13" cy="22" r="1.8"/><circle cx="19" cy="24" r="1.8"/></svg>` : ''}${p.trans === 'mtf' ? `<svg class="mk ori" viewBox="0 0 32 32"><circle cx="16" cy="16" r="9"/></svg>` : ''}${p.trans === 'ftm' ? `<svg class="mk ori" viewBox="0 0 32 32"><rect x="8" y="8" width="16" height="16" rx="2"/></svg>` : ''}
+        ${!p.alive && !p.fate ? '<svg class="dx" viewBox="0 0 64 64" aria-hidden="true"><path d="M4 60 L60 4 M4 4 L60 60"/></svg>' : ''}
         <div class="cam">📷</div>
         <button class="photo-x ${p.photo ? 'has-photo' : ''}" title="${t('remove_photo')}">×</button>
       </div>

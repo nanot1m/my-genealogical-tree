@@ -10,6 +10,7 @@ import {
   libraryEntries,
   PHOTO,
   reloadApp,
+  select,
 } from './helpers.js';
 
 const opfsSavePicker = (name) =>
@@ -201,6 +202,10 @@ test.describe('PDF export', () => {
     await newTree(page);
     await firstPerson(page, 'Anna');
     for (let i = 0; i < 6; i++) await addRelative(page, 'Anna', 'c', 'Kid ' + i);
+    await select(page, 'Anna');
+    await cardOf(page, 'Anna').dblclick();
+    await page.locator('#sh-alive').uncheck();
+    await page.keyboard.press('Enter');
     await page.click('[data-act=pdf]');
     await expect(page.locator('#pdfdlg')).toBeVisible();
     await page.selectOption('#pd-mode', 'fit');
@@ -209,6 +214,7 @@ test.describe('PDF export', () => {
     await popup.waitForLoadState();
     await expect(popup.locator('.page')).toHaveCount(1);
     await expect(popup.locator('.card')).toHaveCount(7);
+    await expect(popup.locator('.card.deceased .photo svg.dx')).toHaveCount(1);
     await expect(popup.locator('.plus').first()).toBeHidden();
     expect(await popup.evaluate(() => document.querySelector('style:last-of-type').textContent)).toMatch(
       /@page \{ size: 297mm 210mm/,

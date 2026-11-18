@@ -260,6 +260,7 @@ export function printPdf(o) {
   const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><title>${esc(ctx.shownName(ctx.fileName))}</title><style>${css}
     @page { size: ${plan.paperMM[0]}mm ${plan.paperMM[1]}mm; margin: 0; }
     :root { color-scheme: light; --card-w: ${ctx.CARD_W}px; --card-h: ${ctx.CARD_H}px; --shadow-sm: none; --shadow: none; --shadow-lg: none; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .card, .card.selected, .card.multi, .marriage, .relbadge, .ord { box-shadow: none; }
     ${
       o.plain
